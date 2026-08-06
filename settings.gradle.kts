@@ -1,8 +1,5 @@
-plugins {
-    kotlin("jvm") version "1.9.24" apply false
-}
+rootProject.name = "printscript"
 
-allprojects {
-    group = "org.printscript"
-    version = "0.1.0-SNAPSHOT"
-}
+include(
+    "lexer"
+)
