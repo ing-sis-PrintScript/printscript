@@ -1,0 +1,10 @@
+package org.printscript.lexer
+
+enum class TokenType {
+    LET, PRINTLN, TYPE_NUMBER, TYPE_STRING,
+    IDENTIFIER,
+    NUMBER_LITERAL, STRING_LITERAL,
+    COLON, ASSIGN, SEMICOLON, LPAREN, RPAREN,
+    PLUS, MINUS, STAR, SLASH,
+    EOF,
+}
