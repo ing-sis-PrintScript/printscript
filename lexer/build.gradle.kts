@@ -3,5 +3,6 @@ plugins {
 }
 
 dependencies {
+    api(project(":common"))
     testImplementation(kotlin("test"))
 }
