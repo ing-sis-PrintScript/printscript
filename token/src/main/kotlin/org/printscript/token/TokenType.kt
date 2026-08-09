@@ -1,4 +1,4 @@
-package org.printscript.lexer
+package org.printscript.token
 
 enum class TokenType {
     LET, PRINTLN, TYPE_NUMBER, TYPE_STRING,
