@@ -1,5 +1,7 @@
 rootProject.name = "printscript"
 
 include(
-    "lexer"
+    "lexer",
+    "parser",
+    "ast"
 )
