@@ -3,10 +3,13 @@ package org.printscript.lexer
 import org.printscript.common.Position
 import org.printscript.common.errorOrNull
 import org.printscript.common.getOrNull
+import org.printscript.lexer.rules.NumberRule
+import org.printscript.lexer.rules.WordRule
 import org.printscript.token.TokenType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 /**
  * Tests del reconocedor solo: sin secuencias, sin streaming, sin líneas.
@@ -56,10 +59,17 @@ class TokenMatcherTest {
         assertEquals(Position(1, 9), error.range.start)
     }
 
-    /** El vocabulario entra por constructor: la misma clase sirve para otra versión. */
+    /** Las reglas entran por constructor: cambiando la lista cambia el lenguaje. */
     @Test
-    fun `se le puede cambiar el vocabulario`() {
-        val sinKeywords = TokenMatcher(keywords = emptyMap())
+    fun `se le puede cambiar el juego de reglas`() {
+        val sinKeywords = TokenMatcher(listOf(WordRule(emptyMap())))
         assertEquals(TokenType.IDENTIFIER, assertNotNull(sinKeywords.match("let x", 0, 1).getOrNull()).type)
+    }
+
+    /** Una regla se puede testear sola, sin matcher ni lexer de por medio. */
+    @Test
+    fun `NumberRule contesta null si no arranca con digito`() {
+        assertNull(NumberRule.match("let x", 0, 1))
+        assertNotNull(NumberRule.match("42", 0, 1))
     }
 }
