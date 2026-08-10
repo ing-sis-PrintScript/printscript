@@ -1,4 +1,8 @@
 package org.printscript.ast
 
-class Types {
-}
+
+enum class DeclaredType { NUMBER, STRING }
+
+
+
+enum class BinaryOperator { PLUS, MINUS, TIMES, DIVIDE }
