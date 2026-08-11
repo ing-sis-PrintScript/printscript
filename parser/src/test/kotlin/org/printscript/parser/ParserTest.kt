@@ -327,11 +327,18 @@ class ParserTest {
 
     @Test
     fun `el range de una declaracion va del let al punto y coma`() {
-        // "let a: number = 12;" → del let (col 1) al ; (col 19)
-        val node = single(let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi())
+        val letToken = let()
+        val a = id("a")
+        val dosPuntos = colon()
+        val tipo = typeNumber()
+        val igual = assign()
+        val valor = num("12")
+        val puntoYComa = semi()
 
-        assertEquals(Position(1, 1), node.range.start)
-        assertEquals(Position(1, 19), node.range.end)
+        val node = single(letToken, a, dosPuntos, tipo, igual, valor, puntoYComa)
+
+        assertEquals(letToken.range.start, node.range.start, "el statement arranca en el 'let'")
+        assertEquals(puntoYComa.range.end, node.range.end, "y termina en el ';'")
     }
 
     /**

@@ -1,7 +1,9 @@
 package org.printscript.parser
 
 
+import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
+import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.token.Token
 import org.printscript.token.TokenType
@@ -24,6 +26,9 @@ class TokenStream(val tokens: Sequence<Result<Token, PrintScriptError>>) {
 
     private val iterator = tokens.iterator()
     private var buffered: Result<Token, PrintScriptError>? = null
+    private var exhausted = false
+    private var lastRange = Range(Position(1, 1), Position(1, 1))
+
 
     fun peek(): Result<Token, PrintScriptError> {
         val cached = buffered
@@ -73,7 +78,7 @@ class TokenStream(val tokens: Sequence<Result<Token, PrintScriptError>>) {
             is Result.Failure -> false
         }
 
-    fun atEnd(): Boolean = peekIs(TokenType.EOF)
+    fun atEnd(): Boolean = peekIs(TokenType.EOF) || exhausted
 
     /**
      * Despues de un error, descarta tokens hasta llegar a un ";"
@@ -92,14 +97,14 @@ class TokenStream(val tokens: Sequence<Result<Token, PrintScriptError>>) {
     }
 
 
-    private fun readNext(): Result<Token, PrintScriptError> =
-        if (iterator.hasNext()) iterator.next()
-        else Result.Failure(SyntaxError("Fin de archivo inesperado", lastRange))
+    private fun readNext(): Result<Token, PrintScriptError> {
+        if (!iterator.hasNext()) {
+            exhausted = true
+            return Result.Failure(SyntaxError("Fin de archivo inesperado", lastRange))
+        }
 
-    private var lastRange = org.printscript.common.Range(
-        org.printscript.common.Position(1, 1),
-        org.printscript.common.Position(1, 1),
-    )
-
-
+        val next = iterator.next()
+        if (next is Result.Success) lastRange = next.value.range
+        return next
+    }
 }
