@@ -1,4 +1,4 @@
-package org.printscript.interpreter
+package org.printscript.interpreter.io
 
 interface PrintScriptIO {
     fun print(message: String)
