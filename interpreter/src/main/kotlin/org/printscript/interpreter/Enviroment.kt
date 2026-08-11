@@ -2,45 +2,58 @@ package org.printscript.interpreter
 
 import org.printscript.ast.DeclaredType
 import org.printscript.common.Range
+import org.printscript.common.Result
 
-private data class VariableSymbol(val value: Any?, val type: DeclaredType)
+private data class VariableSymbol(val value: PrintScriptValue?, val type: DeclaredType)
 
-class Environment {
-    private val memory = mutableMapOf<String, VariableSymbol>()
+class Environment private constructor(
+    private val memory: Map<String, VariableSymbol>
+) {
 
-    fun declare(name: String, type: DeclaredType, value: Any?, range: Range) {
+    constructor() : this(emptyMap())
+
+    fun declare(name: String, type: DeclaredType, value: PrintScriptValue?, range: Range): Result<Environment, InterpreterError> {
         if (memory.containsKey(name)) {
-            throw RuntimeError("La variable '$name' ya fue declarada.", range)
+            return Result.Failure(InterpreterError("La variable '$name' ya fue declarada.", range))
         }
+
         if (value != null) {
-            checkType(type, value, range)
+            val typeCheck = checkType(type, value, range)
+            if (typeCheck is Result.Failure) return typeCheck
         }
-        memory[name] = VariableSymbol(value, type)
+
+        val newMemory = memory + (name to VariableSymbol(value, type))
+        return Result.Success(Environment(newMemory))
     }
 
-    fun assign(name: String, value: Any, range: Range) {
+    fun assign(name: String, value: PrintScriptValue, range: Range): Result<Environment, InterpreterError> {
         val existing = memory[name]
-            ?: throw RuntimeError("La variable '$name' no ha sido declarada.", range)
+            ?: return Result.Failure(InterpreterError("La variable '$name' no ha sido declarada.", range))
 
-        checkType(existing.type, value, range)
-        memory[name] = VariableSymbol(value, existing.type)
+        val typeCheck = checkType(existing.type, value, range)
+        if (typeCheck is Result.Failure) return typeCheck
+
+        val newMemory = memory + (name to VariableSymbol(value, existing.type))
+        return Result.Success(Environment(newMemory))
     }
 
-    fun get(name: String, range: Range): Any {
+    fun get(name: String, range: Range): Result<PrintScriptValue, InterpreterError> {
         val symbol = memory[name]
-            ?: throw RuntimeError("La variable '$name' no ha sido declarada.", range)
+            ?: return Result.Failure(InterpreterError("La variable '$name' no ha sido declarada.", range))
 
-        return symbol.value
-            ?: throw RuntimeError("La variable '$name' no ha sido inicializada.", range)
+        return symbol.value?.let { Result.Success(it) }
+            ?: Result.Failure(InterpreterError("La variable '$name' no ha sido inicializada.", range))
     }
 
-    private fun checkType(expectedType: DeclaredType, value: Any, range: Range) {
+    private fun checkType(expectedType: DeclaredType, value: PrintScriptValue, range: Range): Result<Unit, InterpreterError> {
         val isValid = when (expectedType) {
-            DeclaredType.NUMBER -> value is Number
-            DeclaredType.STRING -> value is String
+            DeclaredType.NUMBER -> value is PrintScriptValue.NumberValue
+            DeclaredType.STRING -> value is PrintScriptValue.StringValue
         }
-        if (!isValid) {
-            throw RuntimeError("Se esperaba un tipo '$expectedType' pero se obtuvo un valor distinto.", range)
+        return if (!isValid) {
+            Result.Failure(InterpreterError("Se esperaba un tipo '$expectedType' pero se obtuvo un valor distinto.", range))
+        } else {
+            Result.Success(Unit)
         }
     }
 }

@@ -1,49 +1,48 @@
 package org.printscript.interpreter
 
 import org.printscript.ast.*
+import org.printscript.common.Result
 
-class ExpressionEvaluator(private val env: Environment) {
+class ExpressionEvaluator {
 
-    fun evaluate(expression: Expression): Any {
+    fun evaluate(expression: Expression, env: Environment): Result<PrintScriptValue, InterpreterError> {
         return when (expression) {
-            is NumberLiteral -> expression.value
-            is StringLiteral -> expression.value
+            is NumberLiteral -> Result.Success(PrintScriptValue.NumberValue(expression.value))
+            is StringLiteral -> Result.Success(PrintScriptValue.StringValue(expression.value))
             is Identifier -> env.get(expression.name, expression.range)
-            is BinaryExpression -> evaluateBinary(expression)
-            is CallExpression -> throw RuntimeError("Solo se soporta la llamada a 'println'.", expression.range)
+            is BinaryExpression -> evaluateBinary(expression, env)
+            is CallExpression -> Result.Failure(InterpreterError("Solo se soporta la llamada a 'println'.", expression.range))
         }
     }
 
-    private fun evaluateBinary(node: BinaryExpression): Any {
-        val left = evaluate(node.left)
-        val right = evaluate(node.right)
+    private fun evaluateBinary(node: BinaryExpression, env: Environment): Result<PrintScriptValue, InterpreterError> {
+        val leftResult = evaluate(node.left, env)
+        if (leftResult is Result.Failure) return leftResult
 
-        if (node.operator == BinaryOperator.PLUS && (left is String || right is String)) {
-            return formatValue(left) + formatValue(right)
+        val rightResult = evaluate(node.right, env)
+        if (rightResult is Result.Failure) return rightResult
+
+        val left = (leftResult as Result.Success).value
+        val right = (rightResult as Result.Success).value
+
+        if (node.operator == BinaryOperator.PLUS && (left is PrintScriptValue.StringValue || right is PrintScriptValue.StringValue)) {
+            return Result.Success(PrintScriptValue.StringValue(left.toString() + right.toString()))
         }
 
-        if (left is Number && right is Number) {
-            val l = left.toDouble()
-            val r = right.toDouble()
+        if (left is PrintScriptValue.NumberValue && right is PrintScriptValue.NumberValue) {
+            val l = left.value
+            val r = right.value
             return when (node.operator) {
-                BinaryOperator.PLUS -> l + r
-                BinaryOperator.MINUS -> l - r
-                BinaryOperator.TIMES -> l * r
+                BinaryOperator.PLUS -> Result.Success(PrintScriptValue.NumberValue(l + r))
+                BinaryOperator.MINUS -> Result.Success(PrintScriptValue.NumberValue(l - r))
+                BinaryOperator.TIMES -> Result.Success(PrintScriptValue.NumberValue(l * r))
                 BinaryOperator.DIVIDE -> {
-                    if (r == 0.0) throw RuntimeError("División por cero.", node.range)
-                    l / r
+                    if (r == 0.0) Result.Failure(InterpreterError("División por cero.", node.range))
+                    else Result.Success(PrintScriptValue.NumberValue(l / r))
                 }
             }
         }
 
-        throw RuntimeError("Operación inválida entre '$left' y '$right'.", node.range)
-    }
-
-    fun formatValue(value: Any): String {
-        return if (value is Double && value % 1 == 0.0) {
-            value.toLong().toString()
-        } else {
-            value.toString()
-        }
+        return Result.Failure(InterpreterError("Operación inválida entre '$left' y '$right'.", node.range))
     }
 }
