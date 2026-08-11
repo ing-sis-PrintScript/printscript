@@ -4,4 +4,6 @@ include(
     "common",
     "token",
     "lexer",
+    "ast",
+    "parser",
 )
