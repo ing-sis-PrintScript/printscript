@@ -42,3 +42,43 @@ fun <T, E> Sequence<Result<T, E>>.collectResults(): Result<List<T>, E> {
     }
     return Result.Success(items)
 }
+
+/**
+ * Transforma el valor si fue Success. Si fue Failure, lo deja pasar intacto.
+ *
+ * Sirve cuando la transformación NO puede fallar:
+ *   expect(NUMBER_LITERAL).map { NumberLiteral(it.value.toDouble(), it.range) }
+ */
+inline fun <T, E, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> = when (this) {
+    is Result.Success -> Result.Success(transform(value))
+    is Result.Failure -> this
+}
+
+/**
+ * Igual que map, pero para cuando la transformación TAMBIÉN puede fallar.
+ *
+ * Es la que encadena: sin ella, aplicar map a algo que devuelve Result te deja
+ * un Result<Result<...>> anidado. Con flatMap la cadena queda plana y corta sola
+ * en el primer Failure — nadie tiene que escribir el if de "si falló, salir".
+ */
+inline fun <T, E, R> Result<T, E>.flatMap(transform: (T) -> Result<R, E>): Result<R, E> = when (this) {
+    is Result.Success -> transform(value)
+    is Result.Failure -> this
+}
+
+/**
+ * Transforma el error, dejando el valor intacto. El espejo de map.
+ *
+ * Por si alguna etapa necesita enriquecer un error de la anterior con contexto
+ * propio antes de propagarlo.
+ */
+inline fun <T, E, F> Result<T, E>.mapError(transform: (E) -> F): Result<T, F> = when (this) {
+    is Result.Success -> this
+    is Result.Failure -> Result.Failure(transform(error))
+}
+
+/** El valor si fue Success, o el default si fue Failure. */
+fun <T, E> Result<T, E>.getOrElse(default: T): T = when (this) {
+    is Result.Success -> value
+    is Result.Failure -> default
+}

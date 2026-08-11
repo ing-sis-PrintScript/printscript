@@ -45,7 +45,7 @@ class Lexer(private val matcher: TokenMatcher = TokenMatcher()) {
         }
 
         // Token final. Le avisa al parser "hasta acá llegó el archivo".
-        yield(Result.Success(Token(TokenType.EOF, "", Range(endPosition, endPosition))))
+        yield(Result.Success(Token(TokenType.EOF, "","", Range(endPosition, endPosition))))
     }
 
     /** Atajo para cuando el fuente ya está en memoria (tests, strings cortos). */

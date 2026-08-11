@@ -6,5 +6,6 @@ include(
     "lexer",
     "token",
     "ast",
-    "parser"
+    "parser",
+    "interpreter"
 )

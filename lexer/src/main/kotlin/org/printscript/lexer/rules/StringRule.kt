@@ -17,6 +17,6 @@ object StringRule : TokenRule {
             return errorOf("String sin cerrar", lineNumber, from, line.length - from)
         }
 
-        return tokenOf(TokenType.STRING_LITERAL, line.substring(from, closing + 1), lineNumber, from)
+        return tokenOf(TokenType.STRING_LITERAL, line.substring(from, closing + 1), line.substring(from + 1, closing), lineNumber, from)
     }
 }
