@@ -1,13 +1,8 @@
 plugins {
-    kotlin("jvm")
+    id("printscript.kotlin-library-conventions")
 }
 
 dependencies {
     api(project(":ast"))
     implementation(project(":token"))
-    testImplementation(kotlin("test"))
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

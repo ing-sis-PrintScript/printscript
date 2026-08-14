@@ -1,0 +1,15 @@
+[versions]
+kotlin = "2.4.10"
+junit = "5.11.4"
+jvm = "21"
+
+[libraries]
+# Se usa como dependencia de buildSrc para poner el Kotlin Gradle Plugin en el
+# classpath de los convention plugins (ahi el bloque plugins {} no lleva version).
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
