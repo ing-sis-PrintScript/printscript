@@ -5,7 +5,6 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.parser.statements.StatementParser
 import org.printscript.token.Token
-import org.printscript.token.TokenType
 
 /**
  * Convierte una secuencia de tokens en una secuencia de nodos del AST.
@@ -16,9 +15,13 @@ import org.printscript.token.TokenType
  *
  * No sabe parsear nada: elige quién parsea y coordina qué hacer ante un error.
  * La gramática vive en los StatementParser y en el ExpressionParser.
+ *
+ * Tampoco sabe qué versión del lenguaje está parseando: la lista de parsers es
+ * obligatoria y viene de afuera. Un default apuntando a PrintScript10 dejaba la
+ * 1.0 horneada adentro de la clase que justamente no tiene que conocerla.
  */
 class Parser(
-    private val statementParsers: List<StatementParser> = PrintScript10.statementParsers(),
+    private val statementParsers: List<StatementParser>,
 ) {
 
     fun parse(tokens: Sequence<Result<Token, PrintScriptError>>): Sequence<Result<ASTNode, PrintScriptError>> =

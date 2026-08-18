@@ -32,7 +32,7 @@ import kotlin.test.assertTrue
  */
 class ParserTest {
 
-    private val parser = Parser()
+    private val parser = Parser(PrintScript10.statementParsers())
 
     // ---- helpers ----
 

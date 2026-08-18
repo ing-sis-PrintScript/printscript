@@ -18,7 +18,7 @@ import org.printscript.token.TokenType
 
 
 class DeclarationParser(
-    private val expressions: ExpressionParser = ExpressionParser(),
+    private val expressions: ExpressionParser,
 ) : StatementParser {
 
     override fun canHandle(type: TokenType): Boolean = type == TokenType.LET

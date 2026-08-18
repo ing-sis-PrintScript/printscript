@@ -30,7 +30,7 @@ import org.printscript.token.TokenType
  * no lo usa nadie".
  */
 class CallParser(
-    private val expressions: ExpressionParser = ExpressionParser(),
+    private val expressions: ExpressionParser,
 ) : StatementParser {
 
     override fun canHandle(type: TokenType): Boolean = type == TokenType.PRINTLN
