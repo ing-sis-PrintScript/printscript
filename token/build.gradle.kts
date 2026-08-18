@@ -1,8 +1,7 @@
 plugins {
-    kotlin("jvm")
+    id("printscript.kotlin-library-conventions")
 }
 
 dependencies {
     api(project(":common"))
-    testImplementation(kotlin("test"))
 }

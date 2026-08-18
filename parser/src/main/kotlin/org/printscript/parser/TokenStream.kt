@@ -8,18 +8,6 @@ import org.printscript.common.Result
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-/**
- * Lectura de tokens con lookahead de uno.
- *
- * Un Sequence solo deja pedir "dame el siguiente": no hay forma de mirar sin
- * consumir ni de volver atrás. Pero el parser necesita ver el próximo token para
- * decidir qué regla aplicar, SIN gastarlo, porque el que después construye el
- * nodo va a querer consumirlo él mismo.
- *
- * La solución es una "sala de espera" de un lugar: peek() saca el token del
- * Sequence pero lo deja guardado ahí, así el próximo next() lo encuentra. Desde
- * afuera parece que el token nunca se movió.
- */
 
 
 class TokenStream(val tokens: Sequence<Result<Token, PrintScriptError>>) {

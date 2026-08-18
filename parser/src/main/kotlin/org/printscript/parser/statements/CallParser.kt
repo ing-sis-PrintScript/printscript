@@ -13,24 +13,9 @@ import org.printscript.parser.ExpressionParser
 import org.printscript.parser.TokenStream
 import org.printscript.token.TokenType
 
-/**
- * call = "println", "(", expression, ")", ";" ;
- *
- * Produce DOS nodos anidados, no uno:
- *
- *   ExpressionStatement        ← la línea del programa
- *   └── CallExpression         ← la llamada, que es una Expression
- *
- * Parece redundante para 1.0, donde println siempre aparece solo en su línea.
- * Pero en 1.1 llega readInput, que va a aparecer como "let x: string =
- * readInput(...)" — o sea, una CallExpression en posición de valor. Al tenerla
- * como Expression, ese caso entra sin tocar nada: cambia dónde cuelga, no qué es.
- *
- * El ExpressionStatement es el que dice "esta expresión va sola acá y su valor
- * no lo usa nadie".
- */
+
 class CallParser(
-    private val expressions: ExpressionParser = ExpressionParser(),
+    private val expressions: ExpressionParser,
 ) : StatementParser {
 
     override fun canHandle(type: TokenType): Boolean = type == TokenType.PRINTLN

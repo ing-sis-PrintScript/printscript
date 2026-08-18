@@ -27,7 +27,7 @@ import kotlin.test.assertTrue
  */
 class ExpressionParserTest {
 
-    private val parser = ExpressionParser()
+    private val parser = PrintScript10ExpressionParser()
 
     // ---- helpers ----
 

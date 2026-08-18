@@ -24,7 +24,7 @@ import org.printscript.token.TokenType
  * derecha sí, porque eso sí se evalúa.
  */
 class AssignmentParser(
-    private val expressions: ExpressionParser = ExpressionParser(),
+    private val expressions: ExpressionParser,
 ) : StatementParser {
 
     override fun canHandle(type: TokenType): Boolean = type == TokenType.IDENTIFIER
