@@ -4,6 +4,8 @@ import org.printscript.ast.ASTNode
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.parser.statements.StatementParser
+import org.printscript.parser.token.TokenStream
+import org.printscript.parser.token.describe
 import org.printscript.token.Token
 
 class Parser(
@@ -34,7 +36,7 @@ class Parser(
         val token = (peeked as Result.Success).value
         val parser = statementParsers.firstOrNull { it.canHandle(token.type) }
             ?: return Result.Failure(
-                SyntaxError("No se esperaba '${token.lexeme}' acá", token.range),
+                SyntaxError("No se esperaba ${token.type.describe()} acá", token.range),
             )
 
         return parser.parse(stream)

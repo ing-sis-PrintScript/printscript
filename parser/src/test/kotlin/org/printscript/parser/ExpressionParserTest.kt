@@ -10,6 +10,7 @@ import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.parser.token.TokenStream
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -276,6 +277,24 @@ class ExpressionParserTest {
         val error = errorOf(parse(op(TokenType.SEMICOLON, ";")))
 
         assertIs<SyntaxError>(error)
+    }
+
+    /**
+     * El texto del token es un String, así que convertirlo a número puede
+     * fallar. Antes esto era un toDouble() pelado: reventaba con
+     * NumberFormatException y era el único punto del módulo donde una falla
+     * NO volvía como Result. Que este test pase significa que el parser no
+     * tira excepciones, ni siquiera con un lexer que emita basura.
+     */
+    @Test
+    fun `un numero mal formado es un error, no una excepcion`() {
+        val error = errorOf(parse(num("12.3.4")))
+
+        assertIs<SyntaxError>(error)
+        assertTrue(
+            error.message.contains("12.3.4"),
+            "el mensaje debería mostrar el texto que no pudo convertir: ${error.message}",
+        )
     }
 
     @Test
