@@ -281,6 +281,27 @@ class ParserTest {
         assertIs<SyntaxError>(error)
     }
 
+    /**
+     * El mensaje describe el TIPO del token, no su texto. Antes salía el
+     * lexema crudo ("No se esperaba '"hola"' acá", con las comillas del
+     * literal adentro del mensaje); ahora el texto se deriva del TokenType,
+     * así que no depende de qué campos tenga Token.
+     */
+    @Test
+    fun `el error describe el tipo del token, no su texto`() {
+        val error = errorOf(str("hola"), semi())
+
+        assertIs<SyntaxError>(error)
+        assertTrue(
+            error.message.contains("un string"),
+            "el mensaje debería describir el tipo: ${error.message}",
+        )
+        assertTrue(
+            !error.message.contains("hola"),
+            "el mensaje no debería depender del texto del token: ${error.message}",
+        )
+    }
+
     /** El error del lexer se reenvía tal cual, sin envolverlo en un SyntaxError. */
     @Test
     fun `un error lexico se propaga`() {

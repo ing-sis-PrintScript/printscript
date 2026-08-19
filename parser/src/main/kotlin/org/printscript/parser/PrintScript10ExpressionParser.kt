@@ -10,6 +10,8 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.common.flatMap
+import org.printscript.parser.token.TokenStream
+import org.printscript.token.Token
 import org.printscript.token.TokenType
 
 class PrintScript10ExpressionParser : ExpressionParser {
@@ -49,7 +51,7 @@ class PrintScript10ExpressionParser : ExpressionParser {
 
         return when (token.type) {
             TokenType.NUMBER_LITERAL ->
-                stream.next().flatMap { Result.Success(NumberLiteral(it.value.toDouble(), it.range)) }
+                stream.next().flatMap { numberLiteral(it) }
 
             // token.value ya viene sin comillas: son delimitadores, no contenido.
             TokenType.STRING_LITERAL ->
@@ -64,6 +66,16 @@ class PrintScript10ExpressionParser : ExpressionParser {
                 SyntaxError("Se esperaba un valor, un identificador o '('", token.range),
             )
         }
+    }
+
+
+    private fun numberLiteral(token: Token): Result<Expression, PrintScriptError> {
+        val number = token.value.toDoubleOrNull()
+            ?: return Result.Failure(
+                SyntaxError("'${token.value}' no es un número válido", token.range),
+            )
+
+        return Result.Success(NumberLiteral(number, token.range))
     }
 
     private fun parenthesized(stream: TokenStream): Result<Expression, PrintScriptError> =

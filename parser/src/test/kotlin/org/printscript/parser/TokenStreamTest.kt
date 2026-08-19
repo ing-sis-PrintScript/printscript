@@ -4,6 +4,7 @@ import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.parser.token.TokenStream
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -98,11 +99,14 @@ class TokenStreamTest {
 
     @Test
     fun `expect con el tipo correcto devuelve el token`() {
-        val stream = streamOf(token(TokenType.LET, "let"))
+        val esperado = token(TokenType.LET, "let")
+        val stream = streamOf(esperado)
 
         val token = valueOf(stream.expect(TokenType.LET, "'let'"))
 
-        assertEquals("let", token.lexeme)
+        // Se compara el token entero, no un campo suelto: lo que promete expect
+        // es devolver ESE token, y así el test no depende de qué campos tenga.
+        assertEquals(esperado, token)
     }
 
     @Test

@@ -13,7 +13,7 @@ import org.printscript.common.flatMap
 import org.printscript.common.map
 import org.printscript.parser.ExpressionParser
 import org.printscript.parser.SyntaxError
-import org.printscript.parser.TokenStream
+import org.printscript.parser.token.TokenStream
 import org.printscript.token.TokenType
 
 

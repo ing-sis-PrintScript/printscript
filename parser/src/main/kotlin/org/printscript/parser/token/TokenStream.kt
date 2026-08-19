@@ -1,10 +1,11 @@
-package org.printscript.parser
+package org.printscript.parser.token
 
 
 import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.parser.SyntaxError
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
