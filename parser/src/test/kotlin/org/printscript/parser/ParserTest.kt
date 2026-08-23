@@ -32,7 +32,9 @@ import kotlin.test.assertTrue
  */
 class ParserTest {
 
-    private val parser = Parser(PrintScript10.statementParsers())
+    // Se pide la fábrica en vez de armar el Parser a mano: así el test usa el
+    // mismo cableado que va a usar el CLI, política de recuperación incluida.
+    private val parser = PrintScript10.parser()
 
     // ---- helpers ----
 

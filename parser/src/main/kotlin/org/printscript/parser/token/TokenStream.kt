@@ -1,99 +1,60 @@
 package org.printscript.parser.token
 
-
 import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
-import org.printscript.parser.SyntaxError
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
+interface TokenStream {
 
+    fun peek(): Result<Token, PrintScriptError>
 
-class TokenStream(val tokens: Sequence<Result<Token, PrintScriptError>>) {
+    fun advance(): TokenStream
 
-    private val iterator = tokens.iterator()
-    private var buffered: Result<Token, PrintScriptError>? = null
-    private var exhausted = false
-    private var lastRange = Range(Position(1, 1), Position(1, 1))
+    fun atEnd(): Boolean
 
-
-    fun peek(): Result<Token, PrintScriptError> {
-        val cached = buffered
-        if (cached != null) return cached
-
-        val next = readNext()
-        buffered = next
-        return next
+    companion object {
+        fun of(tokens: Sequence<Result<Token, PrintScriptError>>): TokenStream =
+            from(tokens.iterator(), START)
     }
+}
 
-    fun next(): Result<Token, PrintScriptError> {
-        val cached = buffered
-        if (cached != null) {
-            buffered = null
-            return cached
-        }
-        return readNext()
-    }
+private val START = Range(Position(1, 1), Position(1, 1))
 
-    /**
-     * Consume el próximo token verificando que sea del tipo esperado.
-     * Si no lo es, devuelve un SyntaxError apuntando al token que apareció.
-     */
-    fun expect(type: TokenType, what: String): Result<Token, PrintScriptError> {
-        val result = next()
-        return when (result) {
-            is Result.Failure -> result
-            is Result.Success -> {
-                val token = result.value
-                if (token.type == type) result
-                else Result.Failure(SyntaxError("Se esperaba $what", token.range))
-            }
-        }
-    }
+private fun from(
+    tokens: Iterator<Result<Token, PrintScriptError>>,
+    previous: Range,
+): TokenStream {
+    if (!tokens.hasNext()) return Exhausted(previous)
 
-    /** Consume tokens como el expect pero para datos que no aportan nada (":", ";", "="). */
-    fun skip(type: TokenType, what: String): Result<Unit, PrintScriptError> =
-        when (val result = expect(type, what)) {
-            is Result.Success -> Result.Success(Unit)
-            is Result.Failure -> result
-        }
+    val head = tokens.next()
+    return Node(head) { from(tokens, rangeOf(head, previous)) }
+}
 
-    /** Chequea que el siguiente es de ese tipo. No consume */
-    fun peekIs(type: TokenType): Boolean =
-        when (val result = peek()) {
-            is Result.Success -> result.value.type == type
-            is Result.Failure -> false
-        }
+private fun rangeOf(head: Result<Token, PrintScriptError>, previous: Range): Range =
+    if (head is Result.Success) head.value.range else previous
 
-    fun atEnd(): Boolean = peekIs(TokenType.EOF) || exhausted
+private class Node(
+    private val head: Result<Token, PrintScriptError>,
+    rest: () -> TokenStream,
+) : TokenStream {
 
-    /**
-     * Despues de un error, descarta tokens hasta llegar a un ";"
-     *
-     * Si no usamos esto, el parser sigue con un statement roto, y tiraria errores que son consecuencia
-     * del primero.
-     *
-     * Esto se puede cambiar chequeando despues de un error si es un statement ("LET", "PRINTLN"),
-     * chequear antes de codearlo.
-     */
-    fun synchronize() {
-        while (!atEnd()) {
-            val result = next()
-            if (result is Result.Success && result.value.type == TokenType.SEMICOLON) return
-        }
-    }
+    private val tail: TokenStream by lazy(rest)
 
+    override fun peek(): Result<Token, PrintScriptError> = head
 
-    private fun readNext(): Result<Token, PrintScriptError> {
-        if (!iterator.hasNext()) {
-            exhausted = true
-            return Result.Failure(SyntaxError("Fin de archivo inesperado", lastRange))
-        }
+    override fun advance(): TokenStream = tail
 
-        val next = iterator.next()
-        if (next is Result.Success) lastRange = next.value.range
-        return next
-    }
+    override fun atEnd(): Boolean = head is Result.Success && head.value.type == TokenType.EOF
+}
+
+private class Exhausted(private val previous: Range) : TokenStream {
+
+    override fun peek(): Result<Token, PrintScriptError> = Result.Failure(UnexpectedEndOfInput(previous))
+
+    override fun advance(): TokenStream = this
+
+    override fun atEnd(): Boolean = true
 }

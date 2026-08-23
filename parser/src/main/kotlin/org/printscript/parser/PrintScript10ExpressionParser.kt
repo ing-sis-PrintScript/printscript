@@ -10,63 +10,71 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.common.flatMap
+import org.printscript.common.map
+import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
+import org.printscript.parser.token.peekIs
+import org.printscript.parser.token.skip
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
 class PrintScript10ExpressionParser : ExpressionParser {
 
-    override fun parse(stream: TokenStream): Result<Expression, PrintScriptError> = parseExpression(stream)
+    override fun parse(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> = parseExpression(stream)
 
-    private fun parseExpression(stream: TokenStream): Result<Expression, PrintScriptError> {
-        var left = parseTerm(stream)
+    private fun parseExpression(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
+        parseTerm(stream).flatMap { term -> parseAdditions(term) }
 
-        while (left is Result.Success && (stream.peekIs(TokenType.PLUS) || stream.peekIs(TokenType.MINUS))) {
-            val operator = if (stream.peekIs(TokenType.PLUS)) BinaryOperator.PLUS else BinaryOperator.MINUS
-            stream.next()
 
-            left = combine(left.value, operator, parseTerm(stream))
+    private tailrec fun parseAdditions(left: Parsed<Expression>): Result<Parsed<Expression>, PrintScriptError> {
+        val operator = when {
+            left.rest.peekIs(TokenType.PLUS) -> BinaryOperator.PLUS
+            left.rest.peekIs(TokenType.MINUS) -> BinaryOperator.MINUS
+            else -> return Result.Success(left)
         }
 
-        return left
-    }
-
-    private fun parseTerm(stream: TokenStream): Result<Expression, PrintScriptError> {
-        var left = parseFactor(stream)
-
-        while (left is Result.Success && (stream.peekIs(TokenType.STAR) || stream.peekIs(TokenType.SLASH))) {
-            val operator = if (stream.peekIs(TokenType.STAR)) BinaryOperator.TIMES else BinaryOperator.DIVIDE
-            stream.next()
-
-            left = combine(left.value, operator, parseFactor(stream))
-        }
-
-        return left
-    }
-
-    private fun parseFactor(stream: TokenStream): Result<Expression, PrintScriptError> {
-        val peeked = stream.peek()
-        if (peeked is Result.Failure) return peeked
-        val token = (peeked as Result.Success).value
-
-        return when (token.type) {
-            TokenType.NUMBER_LITERAL ->
-                stream.next().flatMap { numberLiteral(it) }
-
-            // token.value ya viene sin comillas: son delimitadores, no contenido.
-            TokenType.STRING_LITERAL ->
-                stream.next().flatMap { Result.Success(StringLiteral(it.value, it.range)) }
-
-            TokenType.IDENTIFIER ->
-                stream.next().flatMap { Result.Success(Identifier(it.value, it.range)) }
-
-            TokenType.LPAREN -> parenthesized(stream)
-
-            else -> Result.Failure(
-                SyntaxError("Se esperaba un valor, un identificador o '('", token.range),
-            )
+        return when (val right = parseTerm(left.rest.advance())) {
+            is Result.Failure -> right
+            is Result.Success -> parseAdditions(combine(left.value, operator, right.value))
         }
     }
+
+    private fun parseTerm(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
+        parseFactor(stream).flatMap { factor -> parseMultiplications(factor) }
+
+    private tailrec fun parseMultiplications(left: Parsed<Expression>): Result<Parsed<Expression>, PrintScriptError> {
+        val operator = when {
+            left.rest.peekIs(TokenType.STAR) -> BinaryOperator.TIMES
+            left.rest.peekIs(TokenType.SLASH) -> BinaryOperator.DIVIDE
+            else -> return Result.Success(left)
+        }
+
+        return when (val right = parseFactor(left.rest.advance())) {
+            is Result.Failure -> right
+            is Result.Success -> parseMultiplications(combine(left.value, operator, right.value))
+        }
+    }
+
+    private fun parseFactor(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
+        stream.peek().flatMap { token ->
+            when (token.type) {
+                TokenType.NUMBER_LITERAL ->
+                    numberLiteral(token).map { Parsed(it, stream.advance()) }
+
+                // token.value ya viene sin comillas: son delimitadores, no contenido.
+                TokenType.STRING_LITERAL ->
+                    Result.Success(Parsed(StringLiteral(token.value, token.range), stream.advance()))
+
+                TokenType.IDENTIFIER ->
+                    Result.Success(Parsed(Identifier(token.value, token.range), stream.advance()))
+
+                TokenType.LPAREN -> parenthesized(stream)
+
+                else -> Result.Failure(
+                    SyntaxError("Se esperaba un valor, un identificador o '('", token.range),
+                )
+            }
+        }
 
 
     private fun numberLiteral(token: Token): Result<Expression, PrintScriptError> {
@@ -78,20 +86,22 @@ class PrintScript10ExpressionParser : ExpressionParser {
         return Result.Success(NumberLiteral(number, token.range))
     }
 
-    private fun parenthesized(stream: TokenStream): Result<Expression, PrintScriptError> =
-        stream.skip(TokenType.LPAREN, "'('").flatMap {
-            parseExpression(stream).flatMap { inner ->
-                stream.skip(TokenType.RPAREN, "')' para cerrar la expresión")
-                    .flatMap { Result.Success(inner) }
+
+    private fun parenthesized(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
+        stream.skip(TokenType.LPAREN).flatMap { afterOpen ->
+            parseExpression(afterOpen).flatMap { (inner, afterInner) ->
+                afterInner.skip(TokenType.RPAREN).map { afterClose -> Parsed(inner, afterClose) }
             }
         }
+
 
     private fun combine(
         left: Expression,
         operator: BinaryOperator,
-        right: Result<Expression, PrintScriptError>,
-    ): Result<Expression, PrintScriptError> =
-        right.flatMap {
-            Result.Success(BinaryExpression(operator, left, it, Range(left.range.start, it.range.end)))
-        }
+        right: Parsed<Expression>,
+    ): Parsed<Expression> =
+        Parsed(
+            BinaryExpression(operator, left, right.value, Range(left.range.start, right.value.range.end)),
+            right.rest,
+        )
 }
