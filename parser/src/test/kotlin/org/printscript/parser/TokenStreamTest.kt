@@ -24,7 +24,7 @@ class TokenStreamTest {
         val start = Position(1, column)
         val end = Position(1, column + text.length - 1)
         column += text.length + 1
-        return Token(type, text, text, Range(start, end))
+        return Token(type, text, Range(start, end))
     }
 
     private fun streamOf(vararg tokens: Token): TokenStream {

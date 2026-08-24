@@ -12,8 +12,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 /**
- * Tests del reconocedor solo: sin secuencias, sin streaming, sin líneas.
- * Le paso una línea y un índice, y verifico qué token sale.
+ * Tests del reconocedor solo: sin secuencias, sin streaming, sin lineas.
+ * Le paso una linea y un indice, y verifico que unidad lexica sale.
  */
 class TokenMatcherTest {
 
@@ -24,31 +24,50 @@ class TokenMatcherTest {
 
     @Test
     fun `reconoce una keyword`() {
-        val token = matchAt("let x = 5;", 0)
-        assertEquals(TokenType.LET, token.type)
-        assertEquals("let", token.lexeme)
+        val match = matchAt("let x = 5;", 0)
+        assertEquals(TokenType.LET, match.token.type)
+        assertEquals("let", match.token.value)
     }
 
     @Test
     fun `una palabra que no es keyword es identificador`() {
-        assertEquals(TokenType.IDENTIFIER, matchAt("letter", 0).type)
+        assertEquals(TokenType.IDENTIFIER, matchAt("letter", 0).token.type)
     }
 
     @Test
     fun `reconoce un decimal completo`() {
-        assertEquals("12.5", matchAt("12.5 / 4", 0).lexeme)
+        assertEquals("12.5", matchAt("12.5 / 4", 0).token.value)
     }
 
+    /**
+     * El valor de un string va sin comillas, pero el token igual OCUPO las dos
+     * posiciones extra en el fuente. Por eso se verifican las tres cosas: sin
+     * el range y el nextIndex, una regla que sacara bien las comillas pero
+     * midiera mal quedaria desfasada un caracter en todo lo que viene despues.
+     */
     @Test
-    fun `el lexema del string incluye las comillas`() {
-        assertEquals("\"Joe\"", matchAt("""nombre = "Joe";""", 9).lexeme)
+    fun `el string guarda el contenido sin comillas pero ocupa las dos posiciones extra`() {
+        val match = matchAt("""nombre = "Joe";""", 9)
+
+        assertEquals(TokenType.STRING_LITERAL, match.token.type)
+        assertEquals("Joe", match.token.value)
+        assertEquals(Position(1, 10), match.token.range.start)
+        assertEquals(Position(1, 14), match.token.range.end)
+        assertEquals(14, match.nextIndex)
     }
 
     @Test
     fun `arranca a matchear desde el indice que le paso`() {
-        val token = matchAt("let x = 5;", 8)
-        assertEquals(TokenType.NUMBER_LITERAL, token.type)
-        assertEquals("5", token.lexeme)
+        val match = matchAt("let x = 5;", 8)
+        assertEquals(TokenType.NUMBER_LITERAL, match.token.type)
+        assertEquals("5", match.token.value)
+    }
+
+    /** El nextIndex de una unidad comun es el primer caracter despues de ella. */
+    @Test
+    fun `el nextIndex apunta al caracter siguiente al token`() {
+        assertEquals(3, matchAt("let x = 5;", 0).nextIndex)
+        assertEquals(5, matchAt("let x = 5;", 4).nextIndex)
     }
 
     @Test
@@ -63,7 +82,10 @@ class TokenMatcherTest {
     @Test
     fun `se le puede cambiar el juego de reglas`() {
         val sinKeywords = TokenMatcher(listOf(WordRule(emptyMap())))
-        assertEquals(TokenType.IDENTIFIER, assertNotNull(sinKeywords.match("let x", 0, 1).getOrNull()).type)
+        assertEquals(
+            TokenType.IDENTIFIER,
+            assertNotNull(sinKeywords.match("let x", 0, 1).getOrNull()).token.type,
+        )
     }
 
     /** Una regla se puede testear sola, sin matcher ni lexer de por medio. */

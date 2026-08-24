@@ -3,19 +3,18 @@ package org.printscript.lexer
 import org.printscript.common.Result
 import org.printscript.lexer.rules.TokenRule
 import org.printscript.lexer.rules.errorOf
-import org.printscript.token.Token
 
 /**
- * Reconoce el token que empieza en una posición dada, preguntándole a cada regla
- * por orden hasta que una conteste.
+ * Reconoce la unidad lexica que empieza en una posicion dada, preguntandole a
+ * cada regla por orden hasta que una conteste.
  *
- * No sabe qué es un número ni qué es una keyword: eso lo saben las reglas. Y no
- * sabe de líneas ni de streaming: eso lo sabe el Lexer.
+ * No sabe que es un numero ni que es una keyword: eso lo saben las reglas. Y no
+ * sabe de lineas ni de streaming: eso lo sabe el Lexer.
  */
 class TokenMatcher(private val rules: List<TokenRule> = PrintScript10.RULES) {
 
-    /** No avanza nada: el que llama avanza usando el largo del lexema. */
-    fun match(line: String, from: Int, lineNumber: Int): Result<Token, LexicalError> {
+    /** No avanza nada: devuelve donde sigue, y el que llama decide que hacer. */
+    fun match(line: String, from: Int, lineNumber: Int): Result<TokenMatch, LexicalError> {
         for (rule in rules) {
             val result = rule.match(line, from, lineNumber)
             if (result != null) return result
