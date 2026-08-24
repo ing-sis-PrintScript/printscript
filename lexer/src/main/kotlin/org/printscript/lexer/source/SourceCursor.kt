@@ -2,39 +2,45 @@ package org.printscript.lexer.source
 
 import org.printscript.common.Position
 
-internal class SourceCursor(lines: Sequence<String>) {
-    private val iterator = lines.iterator()
-    private var currentLine: String = ""
-    private var lastEnd: Position = Position(1, 1)
+internal data class SourceCursor(
+    private val lines: SourceReader,
+    val line: String,
+    val lineNumber: Int,
+    val index: Int,
+    private val lastEnd: Position,
+) {
+    fun moveToNextToken(): ScanResult = scan(this)
 
-    var lineNumber: Int = 0
-        private set
+    fun advanceTo(nextIndex: Int): SourceCursor = copy(index = nextIndex)
 
-    var index: Int = 0
-        private set
+    private tailrec fun scan(cursor: SourceCursor): ScanResult {
+        val atToken = cursor.skippingSpaces()
+        if (atToken.index < atToken.line.length) return ScanResult.Found(atToken)
 
-    val line: String get() = currentLine
-
-    fun moveToNextToken(): Boolean {
-        while (true) {
-            while (index < currentLine.length) {
-                if (!currentLine[index].isWhitespace()) return true
-                index++
-            }
-
-            lastEnd = Position(maxOf(lineNumber, 1), currentLine.length + 1)
-
-            if (!iterator.hasNext()) return false
-
-            currentLine = iterator.next()
-            lineNumber++
-            index = 0
+        val closed = atToken.closingCurrentLine()
+        return when (val read = closed.lines.nextLine()) {
+            is LineReadResult.Success -> scan(closed.startingLine(read.line, read.remaining))
+            LineReadResult.EndOfInput -> ScanResult.Exhausted(closed.lastEnd)
         }
     }
 
-    fun advanceTo(nextIndex: Int) {
-        index = nextIndex
-    }
+    private fun skippingSpaces(): SourceCursor =
+        copy(index = (index until line.length).firstOrNull { !line[it].isWhitespace() } ?: line.length)
 
-    fun endPosition(): Position = lastEnd
+    private fun closingCurrentLine(): SourceCursor = copy(lastEnd = Position(maxOf(lineNumber, 1), line.length + 1))
+
+    private fun startingLine(
+        next: String,
+        rest: SourceReader,
+    ): SourceCursor = copy(lines = rest, line = next, lineNumber = lineNumber + 1, index = 0)
+
+    companion object {
+        fun from(lines: SourceReader): SourceCursor = SourceCursor(lines, "", 0, 0, Position(1, 1))
+    }
+}
+
+internal sealed interface ScanResult {
+    data class Found(val cursor: SourceCursor) : ScanResult
+
+    data class Exhausted(val endPosition: Position) : ScanResult
 }

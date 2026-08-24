@@ -11,6 +11,7 @@ import org.printscript.parser.token.expect
 import org.printscript.parser.token.next
 import org.printscript.parser.token.peekIs
 import org.printscript.parser.token.skip
+import org.printscript.token.ListTokenSource
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -40,10 +41,10 @@ class TokenStreamTest {
         return Token(type, text, Range(start, end))
     }
 
-    private fun streamOf(vararg tokens: Token): TokenStream {
-        val results = tokens.map { Result.Success(it) as Result<Token, PrintScriptError> }
-        return TokenStream.of(results.asSequence())
-    }
+    private fun streamOf(vararg tokens: Token): TokenStream = TokenStream(ListTokenSource(tokens.toList()))
+
+    private fun streamOfResults(vararg results: Result<Token, PrintScriptError>): TokenStream =
+        TokenStream(ResultTokenSource(results.toList()))
 
     /** Desempaqueta un Success o falla el test. */
     private fun valueOf(result: Result<Token, PrintScriptError>): Token {
@@ -232,7 +233,7 @@ class TokenStreamTest {
                 override val message = "Caracter inesperado '@'"
                 override val range = Range(Position(1, 5), Position(1, 5))
             }
-        val stream = TokenStream.of(sequenceOf(Result.Failure(lexico)))
+        val stream = streamOfResults(Result.Failure(lexico))
 
         val error = errorOf(stream.expect(TokenType.LET))
 
@@ -289,11 +290,9 @@ class TokenStreamTest {
                 override val range = Range(Position(1, 1), Position(1, 1))
             }
         val stream =
-            TokenStream.of(
-                sequenceOf(
-                    Result.Failure(lexico),
-                    Result.Success(token(TokenType.EOF)) as Result<Token, PrintScriptError>,
-                ),
+            streamOfResults(
+                Result.Failure(lexico),
+                Result.Success(token(TokenType.EOF)),
             )
 
         assertFalse(stream.atEnd(), "todavía queda el EOF por leer")
@@ -302,49 +301,69 @@ class TokenStreamTest {
 
     // ---- PEREZA ----
 
-    /**
-     * La inmutabilidad no puede costar la pereza: sin memorizar por nodo, cada
-     * stream derivado volvería a tirar del iterator y habría que leer todo por
-     * adelantado. Con `by lazy` cada token se produce una sola vez y solo si
-     * alguien lo pide.
-     */
+    private fun fuentePerezosa(contador: ContadorDeTokens): FuentePerezosa =
+        FuentePerezosa(
+            listOf(
+                token(TokenType.LET, "let"),
+                token(TokenType.IDENTIFIER, "a"),
+                token(TokenType.EOF),
+            ),
+            contador,
+        )
+
     @Test
     fun `el stream no consume mas tokens de los pedidos`() {
-        var producidos = 0
-        val perezosa =
-            sequence {
-                producidos++
-                yield(Result.Success(token(TokenType.LET, "let")) as Result<Token, PrintScriptError>)
-                producidos++
-                yield(Result.Success(token(TokenType.IDENTIFIER, "a")))
-                producidos++
-                yield(Result.Success(token(TokenType.EOF)))
-            }
-        val stream = TokenStream.of(perezosa)
+        val leidos = ContadorDeTokens()
+        val stream = TokenStream(fuentePerezosa(leidos))
 
         stream.peek()
         stream.peek()
 
-        assertEquals(1, producidos, "mirar el primer token no debería producir los siguientes")
+        assertEquals(1, leidos.total(), "mirar el primer token no debería producir los siguientes")
     }
 
     @Test
-    fun `releer el mismo nodo no vuelve a tirar del iterator`() {
-        var producidos = 0
-        val perezosa =
-            sequence {
-                producidos++
-                yield(Result.Success(token(TokenType.LET, "let")) as Result<Token, PrintScriptError>)
-                producidos++
-                yield(Result.Success(token(TokenType.EOF)))
-            }
-        val stream = TokenStream.of(perezosa)
+    fun `el lookahead es de exactamente un token por paso`() {
+        val leidos = ContadorDeTokens()
+        val stream = TokenStream(fuentePerezosa(leidos))
 
         val avanzado = stream.advance()
         avanzado.peek()
         avanzado.peek()
         stream.peek()
 
-        assertEquals(2, producidos, "cada nodo memoriza su token: dos nodos, dos lecturas")
+        assertEquals(2, leidos.total(), "construir lee uno, avanzar lee el siguiente y nada más")
+    }
+
+    // ---- PERSISTENCIA Y BACKTRACKING ----
+
+    @Test
+    fun `peek dos veces sobre el mismo stream devuelve lo mismo`() {
+        val stream = streamOf(token(TokenType.LET, "let"), token(TokenType.IDENTIFIER, "a"))
+
+        assertEquals(stream.peek(), stream.peek())
+    }
+
+    @Test
+    fun `advance dos veces sobre el mismo stream da streams equivalentes`() {
+        val stream = streamOf(token(TokenType.LET, "let"), token(TokenType.IDENTIFIER, "a"))
+
+        assertEquals(stream.advance(), stream.advance())
+    }
+
+    @Test
+    fun `volver a un stream guardado reproduce la misma secuencia`() {
+        val guardado =
+            streamOf(
+                token(TokenType.LET, "let"),
+                token(TokenType.IDENTIFIER, "a"),
+                token(TokenType.COLON, ":"),
+                token(TokenType.EOF),
+            )
+
+        val primerRecorrido = walk(guardado)
+        walk(guardado.advance().advance())
+
+        assertEquals(primerRecorrido, walk(guardado))
     }
 }

@@ -7,14 +7,14 @@ import org.printscript.parser.statements.StatementParser
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.describe
-import org.printscript.token.Token
+import org.printscript.token.TokenSource
 
 class Parser(
     private val statementParsers: List<StatementParser>,
     private val recovery: RecoveryStrategy,
 ) {
-    fun parse(tokens: Sequence<Result<Token, PrintScriptError>>): Sequence<Result<ASTNode, PrintScriptError>> =
-        generateSequence({ step(TokenStream.of(tokens)) }) { previous -> step(previous.rest) }
+    fun parse(source: TokenSource): Sequence<Result<ASTNode, PrintScriptError>> =
+        generateSequence({ step(TokenStream(source)) }) { previous -> step(previous.rest) }
             .map { it.value }
 
     private fun step(stream: TokenStream): Parsed<Result<ASTNode, PrintScriptError>>? {

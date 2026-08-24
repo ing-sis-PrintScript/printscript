@@ -49,7 +49,7 @@ class ExpressionParserTest {
         val results =
             tokens.map { Result.Success(it) as Result<Token, PrintScriptError> } +
                 Result.Success(Token(TokenType.EOF, "", Range(Position(1, 99), Position(1, 99))))
-        return parser.parse(TokenStream.of(results.asSequence()))
+        return parser.parse(TokenStream(ResultTokenSource(results)))
     }
 
     private fun expressionOf(result: Result<Parsed<Expression>, PrintScriptError>): Expression {
@@ -334,7 +334,7 @@ class ExpressionParserTest {
                 override val message = "Caracter inesperado '@'"
                 override val range = Range(Position(1, 1), Position(1, 1))
             }
-        val stream = TokenStream.of(sequenceOf(Result.Failure(lexico)))
+        val stream = TokenStream(ResultTokenSource(listOf(Result.Failure(lexico))))
 
         val error = errorOf(parser.parse(stream))
 

@@ -2,28 +2,54 @@ package org.printscript.lexer
 
 import org.printscript.common.Position
 import org.printscript.common.Range
-import org.printscript.common.Result
-import org.printscript.common.collectResults
-import org.printscript.common.errorOrNull
-import org.printscript.common.getOrNull
+import org.printscript.lexer.source.ContadorDeLineas
+import org.printscript.lexer.source.FuenteInfinita
+import org.printscript.token.Token
+import org.printscript.token.TokenReadResult
+import org.printscript.token.TokenSource
 import org.printscript.token.TokenType
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class LexerTest {
     private val lexer = Lexer()
 
-    private fun typesOf(source: String): List<TokenType> {
-        val tokens = lexer.tokenize(source).collectResults().getOrNull()
-        assertNotNull(tokens, "esperaba que funcione y falló")
-        return tokens.map { it.type }
+    private fun drain(source: TokenSource): List<TokenReadResult> =
+        when (val result = source.nextToken()) {
+            is TokenReadResult.Success -> listOf(result) + drain(result.remaining)
+            is TokenReadResult.Failure -> listOf(result) + drain(result.remaining)
+            TokenReadResult.EndOfInput -> emptyList()
+        }
+
+    private fun take(
+        source: TokenSource,
+        count: Int,
+    ): List<TokenReadResult> =
+        if (count == 0) {
+            emptyList()
+        } else {
+            when (val result = source.nextToken()) {
+                is TokenReadResult.Success -> listOf(result) + take(result.remaining, count - 1)
+                is TokenReadResult.Failure -> listOf(result)
+                TokenReadResult.EndOfInput -> emptyList()
+            }
+        }
+
+    private fun tokensOf(source: String): List<Token> {
+        val resultados = drain(lexer.tokenize(source))
+        assertTrue(resultados.all { it is TokenReadResult.Success }, "esperaba que funcione y falló")
+        return resultados.filterIsInstance<TokenReadResult.Success>().map { it.token }
     }
 
+    private fun typesOf(source: String): List<TokenType> = tokensOf(source).map { it.type }
+
     private fun errorOf(source: String): LexicalError {
-        val error = lexer.tokenize(source).collectResults().errorOrNull()
-        return assertNotNull(error, "esperaba un error léxico")
+        val failure = drain(lexer.tokenize(source)).filterIsInstance<TokenReadResult.Failure>().firstOrNull()
+        assertNotNull(failure, "esperaba un error léxico")
+        return assertIs<LexicalError>(failure.error)
     }
 
     @Test
@@ -87,7 +113,7 @@ class LexerTest {
 
     @Test
     fun `el valor y la posicion son correctos`() {
-        val tokens = lexer.tokenize("let x = 5;").collectResults().getOrNull()!!
+        val tokens = tokensOf("let x = 5;")
         assertEquals("let", tokens[0].value)
         assertEquals(Range(Position(1, 1), Position(1, 3)), tokens[0].range)
         assertEquals("x", tokens[1].value)
@@ -96,9 +122,7 @@ class LexerTest {
 
     @Test
     fun `cuenta bien el numero de linea`() {
-        val tokens =
-            lexer.tokenize("let a: number = 1;\nlet b: number = 2;")
-                .collectResults().getOrNull()!!
+        val tokens = tokensOf("let a: number = 1;\nlet b: number = 2;")
         val segundoLet = tokens.first { it.range.start.line == 2 }
         assertEquals(TokenType.LET, segundoLet.type)
         assertEquals(Position(2, 1), segundoLet.range.start)
@@ -125,26 +149,54 @@ class LexerTest {
 
     @Test
     fun `corta en el primer error y no sigue tokenizando`() {
-        val resultados = lexer.tokenize("let a = 1;\n@\nlet b = 2;").toList()
-        assertTrue(resultados.last() is Result.Failure)
-        assertTrue(resultados.none { it.getOrNull()?.type == TokenType.EOF })
+        val resultados = drain(lexer.tokenize("let a = 1;\n@\nlet b = 2;"))
+        assertTrue(resultados.last() is TokenReadResult.Failure)
+        assertTrue(resultados.none { it is TokenReadResult.Success && it.token.type == TokenType.EOF })
     }
 
     @Test
     fun `es perezoso y no lee de mas`() {
-        var lineasLeidas = 0
-        val infinitas =
-            sequence {
-                while (true) {
-                    lineasLeidas++
-                    yield("let a: number = 1;")
-                }
-            }
+        val leidas = ContadorDeLineas()
 
-        val primeros = lexer.tokenize(infinitas).take(3).toList()
+        val primeros = take(lexer.tokenize(FuenteInfinita("let a: number = 1;", leidas)), 3)
 
         assertEquals(3, primeros.size)
-        assertTrue(primeros.all { it is Result.Success })
-        assertEquals(1, lineasLeidas)
+        assertTrue(primeros.all { it is TokenReadResult.Success })
+        assertEquals(1, leidas.total())
+    }
+
+    @Test
+    fun `recorrer dos veces la misma fuente da la misma secuencia`() {
+        val source = lexer.tokenize("let x = 5;")
+
+        assertEquals(drain(source), drain(source))
+    }
+
+    @Test
+    fun `un remaining guardado a mitad de camino da el mismo resto`() {
+        val source = lexer.tokenize("let x = 5;")
+        val guardado = assertIs<TokenReadResult.Success>(source.nextToken()).remaining
+
+        val primerRecorrido = drain(guardado)
+        drain(source)
+
+        assertEquals(primerRecorrido, drain(guardado))
+    }
+
+    @Test
+    fun `despues del EOF la lectura siguiente devuelve EndOfInput`() {
+        val ultimo = drain(lexer.tokenize("let x = 5;")).last()
+
+        val eof = assertIs<TokenReadResult.Success>(ultimo)
+        assertEquals(TokenType.EOF, eof.token.type)
+        assertEquals(TokenReadResult.EndOfInput, eof.remaining.nextToken())
+    }
+
+    @Test
+    fun `despues de un Failure la lectura siguiente devuelve EndOfInput`() {
+        val ultimo = drain(lexer.tokenize("let a = 1;\n@\nlet b = 2;")).last()
+
+        val failure = assertIs<TokenReadResult.Failure>(ultimo)
+        assertEquals(TokenReadResult.EndOfInput, failure.remaining.nextToken())
     }
 }

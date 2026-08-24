@@ -5,6 +5,7 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.parser.token.TokenStream
+import org.printscript.token.ListTokenSource
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -32,10 +33,7 @@ class SkipToSemicolonTest {
         return Token(type, text, Range(start, end))
     }
 
-    private fun streamOf(vararg tokens: Token): TokenStream {
-        val results = tokens.map { Result.Success(it) as Result<Token, PrintScriptError> }
-        return TokenStream.of(results.asSequence())
-    }
+    private fun streamOf(vararg tokens: Token): TokenStream = TokenStream(ListTokenSource(tokens.toList()))
 
     private fun typeAt(stream: TokenStream): TokenType {
         val peeked = stream.peek()
@@ -104,12 +102,14 @@ class SkipToSemicolonTest {
                 override val range = Range(Position(1, 1), Position(1, 1))
             }
         val stream =
-            TokenStream.of(
-                sequenceOf(
-                    Result.Failure(lexico),
-                    Result.Success(token(TokenType.SEMICOLON, ";")) as Result<Token, PrintScriptError>,
-                    Result.Success(token(TokenType.LET, "let")),
-                    Result.Success(token(TokenType.EOF)),
+            TokenStream(
+                ResultTokenSource(
+                    listOf(
+                        Result.Failure(lexico),
+                        Result.Success(token(TokenType.SEMICOLON, ";")),
+                        Result.Success(token(TokenType.LET, "let")),
+                        Result.Success(token(TokenType.EOF)),
+                    ),
                 ),
             )
 
