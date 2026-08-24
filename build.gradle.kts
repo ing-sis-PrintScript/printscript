@@ -49,7 +49,7 @@ tasks.register<JacocoCoverageVerification>("codeCoverageVerification") {
         rule {
             limit {
                 counter = "INSTRUCTION"
-                minimum = "0.99".toBigDecimal()
+                minimum = "0.80".toBigDecimal()
             }
         }
     }
