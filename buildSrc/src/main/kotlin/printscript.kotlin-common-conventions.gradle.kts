@@ -1,8 +1,7 @@
+// Como se compila y testea un modulo de PrintScript. Nada de analisis estatico
+// ni de coverage: eso vive en sus propias convenciones.
 plugins {
     kotlin("jvm")
-    id("org.jlleitschuh.gradle.ktlint")
-    id("io.gitlab.arturbosch.detekt")
-    jacoco
 }
 
 group = "printscript"
@@ -28,12 +27,4 @@ dependencies {
 
 tasks.named<Test>("test") {
     useJUnitPlatform()
-}
-
-detekt {
-    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-}
-tasks.test {
-    finalizedBy(tasks.jacocoTestReport)
 }
