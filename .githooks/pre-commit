@@ -36,7 +36,7 @@ if ! ./gradlew ktlintCheck detekt --daemon --console=plain; then
     echo "  Formato        ->  ./gradlew ktlintFormat"
     echo "  Reglas detekt  ->  hay que arreglarlo a mano, no se autocorrige"
     echo ""
-    echo "  Si necesitas commitear igual:  git commit --no-verify"
+    echo "  Si necesitas commitear igual:  git commit --no-verify NO RECOMENDADO!!"
     echo "-------------------------------------------------------------"
     echo ""
     exit 1

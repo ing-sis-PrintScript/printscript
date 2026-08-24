@@ -15,7 +15,6 @@ import kotlin.test.assertTrue
 class LexerTest {
     private val lexer = Lexer()
 
-    /** Atajo: junta la secuencia y devuelve solo los tipos, para comparar más cómodo. */
     private fun typesOf(source: String): List<TokenType> {
         val tokens = lexer.tokenize(source).collectResults().getOrNull()
         assertNotNull(tokens, "esperaba que funcione y falló")
@@ -131,10 +130,6 @@ class LexerTest {
         assertTrue(resultados.none { it.getOrNull()?.type == TokenType.EOF })
     }
 
-    /**
-     * La prueba de que es realmente perezoso: una secuencia infinita de líneas.
-     * Si el lexer leyera todo antes de devolver, este test colgaría para siempre.
-     */
     @Test
     fun `es perezoso y no lee de mas`() {
         var lineasLeidas = 0
@@ -150,6 +145,6 @@ class LexerTest {
 
         assertEquals(3, primeros.size)
         assertTrue(primeros.all { it is Result.Success })
-        assertEquals(1, lineasLeidas) // solo hizo falta la primera línea
+        assertEquals(1, lineasLeidas)
     }
 }
