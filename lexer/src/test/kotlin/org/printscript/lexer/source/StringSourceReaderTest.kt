@@ -104,6 +104,22 @@ class StringSourceReaderTest {
     }
 
     @Test
+    fun `un reader parado en el centinela ya no tiene lineas`() {
+        val texto = "una\ndos"
+
+        assertEquals(LineReadResult.EndOfInput, StringSourceReader(texto, texto.length + 1).nextLine())
+    }
+
+    @Test
+    fun `parado en el largo del texto todavia queda la ultima linea`() {
+        val texto = "una\ndos"
+
+        val ultima = successOf(StringSourceReader(texto, texto.length).nextLine())
+
+        assertEquals("", ultima.line, "desde length se emite la línea vacía final, no EndOfInput")
+    }
+
+    @Test
     fun `un offset fuera de rango no construye el reader`() {
         assertFailsWith<IllegalArgumentException> { StringSourceReader("abc", 5) }
         assertFailsWith<IllegalArgumentException> { StringSourceReader("abc", -1) }

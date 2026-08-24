@@ -7,6 +7,8 @@ data class StringSourceReader(
     private val text: String,
     private val offset: Int = 0,
 ) : SourceReader {
+    // length + 1 y no length: desde length todavía queda por emitir la última línea
+    // (por eso "" da una línea vacía), así que hace falta un valor extra para "no hay más".
     private val endOfInputOffset: Int get() = text.length + 1
 
     init {
