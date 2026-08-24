@@ -1,21 +1,22 @@
 package org.printscript.token
 
-data class ListTokenSource(
+@ConsistentCopyVisibility
+data class ListTokenSource private constructor(
     private val tokens: List<Token>,
-    private val offset: Int = 0,
+    private val offset: Int,
 ) : TokenSource {
-    private val snapshot: List<Token> = tokens.toList()
+    constructor(tokens: List<Token>) : this(tokens.toList(), 0)
 
     init {
-        require(offset in 0..snapshot.size) {
-            "offset $offset fuera de rango para ${snapshot.size} tokens"
+        require(offset in 0..tokens.size) {
+            "offset $offset fuera de rango para ${tokens.size} tokens"
         }
     }
 
     override fun nextToken(): TokenReadResult =
-        if (offset == snapshot.size) {
+        if (offset == tokens.size) {
             TokenReadResult.EndOfInput
         } else {
-            TokenReadResult.Success(snapshot[offset], ListTokenSource(snapshot, offset + 1))
+            TokenReadResult.Success(tokens[offset], ListTokenSource(tokens, offset + 1))
         }
 }

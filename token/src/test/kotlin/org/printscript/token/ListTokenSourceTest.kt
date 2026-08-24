@@ -4,7 +4,6 @@ import org.printscript.common.Position
 import org.printscript.common.Range
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 class ListTokenSourceTest {
@@ -76,20 +75,17 @@ class ListTokenSourceTest {
     }
 
     @Test
-    fun `mutar la lista original no cambia lo que entrega la fuente`() {
+    fun `mutar la lista original no cambia ni el comportamiento ni la igualdad`() {
         val original = declaracion().toMutableList()
         val esperados = original.toList()
         val source = ListTokenSource(original)
+        val gemela = ListTokenSource(esperados)
 
         original.clear()
         original.add(token(TokenType.PRINTLN, "println"))
 
-        assertEquals(esperados, source.allTokens())
-    }
-
-    @Test
-    fun `un offset fuera de rango no construye la fuente`() {
-        assertFailsWith<IllegalArgumentException> { ListTokenSource(declaracion(), 4) }
-        assertFailsWith<IllegalArgumentException> { ListTokenSource(emptyList(), -1) }
+        assertEquals(esperados, source.allTokens(), "el comportamiento no puede depender de la lista de afuera")
+        assertEquals(gemela, source, "la igualdad tampoco")
+        assertEquals(gemela.hashCode(), source.hashCode())
     }
 }
