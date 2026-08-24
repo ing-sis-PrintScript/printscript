@@ -11,10 +11,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-/**
- * Tests del reconocedor solo: sin secuencias, sin streaming, sin lineas.
- * Le paso una linea y un indice, y verifico que unidad lexica sale.
- */
 class TokenMatcherTest {
     private val matcher = TokenMatcher()
 
@@ -40,12 +36,6 @@ class TokenMatcherTest {
         assertEquals("12.5", matchAt("12.5 / 4", 0).token.value)
     }
 
-    /**
-     * El valor de un string va sin comillas, pero el token igual OCUPO las dos
-     * posiciones extra en el fuente. Por eso se verifican las tres cosas: sin
-     * el range y el nextIndex, una regla que sacara bien las comillas pero
-     * midiera mal quedaria desfasada un caracter en todo lo que viene despues.
-     */
     @Test
     fun `el string guarda el contenido sin comillas pero ocupa las dos posiciones extra`() {
         val match = matchAt("""nombre = "Joe";""", 9)
@@ -64,7 +54,6 @@ class TokenMatcherTest {
         assertEquals("5", match.token.value)
     }
 
-    /** El nextIndex de una unidad comun es el primer caracter despues de ella. */
     @Test
     fun `el nextIndex apunta al caracter siguiente al token`() {
         assertEquals(3, matchAt("let x = 5;", 0).nextIndex)
@@ -79,7 +68,6 @@ class TokenMatcherTest {
         assertEquals(Position(1, 9), error.range.start)
     }
 
-    /** Las reglas entran por constructor: cambiando la lista cambia el lenguaje. */
     @Test
     fun `se le puede cambiar el juego de reglas`() {
         val sinKeywords = TokenMatcher(listOf(WordRule(emptyMap())))
@@ -89,7 +77,6 @@ class TokenMatcherTest {
         )
     }
 
-    /** Una regla se puede testear sola, sin matcher ni lexer de por medio. */
     @Test
     fun `NumberRule contesta null si no arranca con digito`() {
         assertNull(NumberRule.match("let x", 0, 1))
