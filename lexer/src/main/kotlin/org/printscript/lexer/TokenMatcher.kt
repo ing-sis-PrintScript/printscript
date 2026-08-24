@@ -12,9 +12,12 @@ import org.printscript.lexer.rules.errorOf
  * sabe de lineas ni de streaming: eso lo sabe el Lexer.
  */
 class TokenMatcher(private val rules: List<TokenRule> = PrintScript10.RULES) {
-
     /** No avanza nada: devuelve donde sigue, y el que llama decide que hacer. */
-    fun match(line: String, from: Int, lineNumber: Int): Result<TokenMatch, LexicalError> {
+    fun match(
+        line: String,
+        from: Int,
+        lineNumber: Int,
+    ): Result<TokenMatch, LexicalError> {
         for (rule in rules) {
             val result = rule.match(line, from, lineNumber)
             if (result != null) return result

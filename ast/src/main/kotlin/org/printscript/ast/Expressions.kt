@@ -7,18 +7,15 @@ data class NumberLiteral(
     override val range: Range,
 ) : Expression
 
-
 data class StringLiteral(
     val value: String,
     override val range: Range,
 ) : Expression
 
-
 data class Identifier(
     val name: String,
     override val range: Range,
 ) : Expression
-
 
 data class BinaryExpression(
     val operator: BinaryOperator,
@@ -26,7 +23,6 @@ data class BinaryExpression(
     val right: Expression,
     override val range: Range,
 ) : Expression
-
 
 data class CallExpression(
     val callee: Identifier,

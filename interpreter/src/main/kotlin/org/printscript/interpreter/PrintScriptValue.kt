@@ -2,7 +2,6 @@ package org.printscript.interpreter
 
 sealed interface PrintScriptValue {
     data class NumberValue(val value: Double) : PrintScriptValue {
-
         override fun toString(): String {
             return if (value % 1 == 0.0) {
                 value.toLong().toString()

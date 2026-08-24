@@ -7,8 +7,11 @@ import org.printscript.token.TokenType
 
 /** Enteros y decimales: 12, 3.5 */
 object NumberRule : TokenRule {
-
-    override fun match(line: String, from: Int, lineNumber: Int): Result<TokenMatch, LexicalError>? {
+    override fun match(
+        line: String,
+        from: Int,
+        lineNumber: Int,
+    ): Result<TokenMatch, LexicalError>? {
         if (!line[from].isDigit()) return null
 
         var i = from

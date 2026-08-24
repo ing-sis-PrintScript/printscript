@@ -6,7 +6,6 @@ import org.printscript.parser.statements.DeclarationParser
 import org.printscript.parser.statements.StatementParser
 
 object PrintScript10 {
-
     fun statementParsers(): List<StatementParser> {
         val expressions = PrintScript10ExpressionParser()
         return listOf(

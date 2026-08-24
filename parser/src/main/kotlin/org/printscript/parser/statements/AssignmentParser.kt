@@ -26,7 +26,6 @@ import org.printscript.token.TokenType
 class AssignmentParser(
     private val expressions: ExpressionParser,
 ) : StatementParser {
-
     override fun canHandle(type: TokenType): Boolean = type == TokenType.IDENTIFIER
 
     override fun parse(stream: TokenStream): Result<Statement, PrintScriptError> =

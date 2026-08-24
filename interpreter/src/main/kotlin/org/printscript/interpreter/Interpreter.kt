@@ -1,15 +1,18 @@
 package org.printscript.interpreter
 
-import org.printscript.ast.*
+import org.printscript.ast.AssignmentStatement
+import org.printscript.ast.CallExpression
+import org.printscript.ast.ExpressionStatement
+import org.printscript.ast.Statement
+import org.printscript.ast.VariableDeclaration
 import org.printscript.common.Result
 import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.io.StandardIO
 
 class Interpreter(
     private var env: Environment = Environment(),
-    private val io: PrintScriptIO = StandardIO()
+    private val io: PrintScriptIO = StandardIO(),
 ) : PrintScriptInterpreter {
-
     private val evaluator = ExpressionEvaluator()
 
     override fun execute(statement: Statement): Result<Unit, InterpreterError> {
@@ -58,8 +61,9 @@ class Interpreter(
     private fun executeExpressionStatement(node: ExpressionStatement): Result<Unit, InterpreterError> {
         val expr = node.expression
         if (expr is CallExpression && expr.callee.name == "println") {
-            val arg = expr.arguments.firstOrNull()
-                ?: return Result.Failure(InterpreterError("println requiere al menos un argumento.", node.range))
+            val arg =
+                expr.arguments.firstOrNull()
+                    ?: return Result.Failure(InterpreterError("println requiere al menos un argumento.", node.range))
 
             val evalResult = evaluator.evaluate(arg, env)
             if (evalResult is Result.Failure) return evalResult

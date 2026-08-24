@@ -12,8 +12,11 @@ import org.printscript.token.TokenType
  * sale IDENTIFIER y no LET + ter.
  */
 class WordRule(private val keywords: Map<String, TokenType>) : TokenRule {
-
-    override fun match(line: String, from: Int, lineNumber: Int): Result<TokenMatch, LexicalError>? {
+    override fun match(
+        line: String,
+        from: Int,
+        lineNumber: Int,
+    ): Result<TokenMatch, LexicalError>? {
         val first = line[from]
         if (!first.isLetter() && first != '_') return null
 
