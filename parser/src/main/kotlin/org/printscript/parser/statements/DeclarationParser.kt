@@ -31,7 +31,6 @@ import org.printscript.token.TokenType
 class DeclarationParser(
     private val expressions: ExpressionParser,
 ) : StatementParser {
-
     override fun canHandle(type: TokenType): Boolean = type == TokenType.LET
 
     override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> =
@@ -67,9 +66,10 @@ class DeclarationParser(
                 when (token.type) {
                     TokenType.TYPE_NUMBER -> Result.Success(Parsed(DeclaredType.NUMBER, afterType))
                     TokenType.TYPE_STRING -> Result.Success(Parsed(DeclaredType.STRING, afterType))
-                    else -> Result.Failure(
-                        SyntaxError("Se esperaba 'number' o 'string'", token.range),
-                    )
+                    else ->
+                        Result.Failure(
+                            SyntaxError("Se esperaba 'number' o 'string'", token.range),
+                        )
                 }
             }
         }
@@ -86,5 +86,8 @@ class DeclarationParser(
         }
     }
 
-    private fun spanOf(start: Position, end: Position) = Range(start, end)
+    private fun spanOf(
+        start: Position,
+        end: Position,
+    ) = Range(start, end)
 }

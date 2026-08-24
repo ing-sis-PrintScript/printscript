@@ -31,7 +31,6 @@ import kotlin.test.assertTrue
  * ninguno de estos se rompe.
  */
 class ParserTest {
-
     // Se pide la fábrica en vez de armar el Parser a mano: así el test usa el
     // mismo cableado que va a usar el CLI, política de recuperación incluida.
     private val parser = PrintScript10.parser()
@@ -40,15 +39,18 @@ class ParserTest {
 
     private var column = 1
 
-    private fun token(type: TokenType, text: String): Token {
+    private fun token(
+        type: TokenType,
+        text: String,
+    ): Token {
         val start = Position(1, column)
         val end = Position(1, column + text.length - 1)
         column += text.length + 1
         val value = if (type == TokenType.STRING_LITERAL) text.trim('"') else text
-        return Token(type, text, value, Range(start, end))
+        return Token(type, value, Range(start, end))
     }
 
-    private fun eof() = Token(TokenType.EOF, "", "", Range(Position(1, column), Position(1, column)))
+    private fun eof() = Token(TokenType.EOF, "", Range(Position(1, column), Position(1, column)))
 
     private fun parse(vararg tokens: Token): List<Result<ASTNode, PrintScriptError>> {
         val all = (tokens.toList() + eof()).map { Result.Success(it) as Result<Token, PrintScriptError> }
@@ -71,18 +73,31 @@ class ParserTest {
 
     // atajos
     private fun let() = token(TokenType.LET, "let")
+
     private fun id(name: String) = token(TokenType.IDENTIFIER, name)
+
     private fun colon() = token(TokenType.COLON, ":")
+
     private fun assign() = token(TokenType.ASSIGN, "=")
+
     private fun semi() = token(TokenType.SEMICOLON, ";")
+
     private fun num(text: String) = token(TokenType.NUMBER_LITERAL, text)
+
     private fun str(text: String) = token(TokenType.STRING_LITERAL, "\"$text\"")
+
     private fun typeNumber() = token(TokenType.TYPE_NUMBER, "number")
+
     private fun typeString() = token(TokenType.TYPE_STRING, "string")
+
     private fun println_() = token(TokenType.PRINTLN, "println")
+
     private fun lparen() = token(TokenType.LPAREN, "(")
+
     private fun rparen() = token(TokenType.RPAREN, ")")
+
     private fun plus() = token(TokenType.PLUS, "+")
+
     private fun slash() = token(TokenType.SLASH, "/")
 
     // ---- DECLARACIÓN ----
@@ -202,11 +217,12 @@ class ParserTest {
      */
     @Test
     fun `ejemplo 1 de la consigna`() {
-        val results = parse(
-            let(), id("name"), colon(), typeString(), assign(), str("Joe"), semi(),
-            let(), id("lastName"), colon(), typeString(), assign(), str("Doe"), semi(),
-            println_(), lparen(), id("name"), plus(), str(" "), plus(), id("lastName"), rparen(), semi(),
-        )
+        val results =
+            parse(
+                let(), id("name"), colon(), typeString(), assign(), str("Joe"), semi(),
+                let(), id("lastName"), colon(), typeString(), assign(), str("Doe"), semi(),
+                println_(), lparen(), id("name"), plus(), str(" "), plus(), id("lastName"), rparen(), semi(),
+            )
 
         assertEquals(3, results.size)
         assertTrue(results.all { it is Result.Success }, "los tres statements tienen que parsear")
@@ -225,12 +241,13 @@ class ParserTest {
      */
     @Test
     fun `ejemplo 2 de la consigna`() {
-        val results = parse(
-            let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-            let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
-            let(), id("c"), colon(), typeNumber(), assign(), id("a"), slash(), id("b"), semi(),
-            println_(), lparen(), str("Result: "), plus(), id("c"), rparen(), semi(),
-        )
+        val results =
+            parse(
+                let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
+                let(), id("c"), colon(), typeNumber(), assign(), id("a"), slash(), id("b"), semi(),
+                println_(), lparen(), str("Result: "), plus(), id("c"), rparen(), semi(),
+            )
 
         assertEquals(4, results.size)
         assertTrue(results.all { it is Result.Success })
@@ -244,12 +261,13 @@ class ParserTest {
      */
     @Test
     fun `ejemplo 3 de la consigna`() {
-        val results = parse(
-            let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-            let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
-            id("a"), assign(), id("a"), slash(), id("b"), semi(),
-            println_(), lparen(), str("Result: "), plus(), id("a"), rparen(), semi(),
-        )
+        val results =
+            parse(
+                let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
+                id("a"), assign(), id("a"), slash(), id("b"), semi(),
+                println_(), lparen(), str("Result: "), plus(), id("a"), rparen(), semi(),
+            )
 
         assertEquals(4, results.size)
         assertTrue(results.all { it is Result.Success })
@@ -307,16 +325,18 @@ class ParserTest {
     /** El error del lexer se reenvía tal cual, sin envolverlo en un SyntaxError. */
     @Test
     fun `un error lexico se propaga`() {
-        val lexico = object : PrintScriptError {
-            override val message = "Caracter inesperado '@'"
-            override val range = Range(Position(1, 1), Position(1, 1))
-        }
-        val results = parser.parse(
-            sequenceOf(
-                Result.Failure(lexico),
-                Result.Success(eof()),
-            ),
-        ).toList()
+        val lexico =
+            object : PrintScriptError {
+                override val message = "Caracter inesperado '@'"
+                override val range = Range(Position(1, 1), Position(1, 1))
+            }
+        val results =
+            parser.parse(
+                sequenceOf(
+                    Result.Failure(lexico),
+                    Result.Success(eof()),
+                ),
+            ).toList()
 
         val failure = assertIs<Result.Failure<PrintScriptError>>(results.first())
         assertEquals(lexico, failure.error)
@@ -334,11 +354,12 @@ class ParserTest {
         // let a: number = 12;   ← ok
         // let b: number = ;     ← roto (falta el valor)
         // let c: number = 3;    ← ok, tiene que parsear igual
-        val results = parse(
-            let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-            let(), id("b"), colon(), typeNumber(), assign(), semi(),
-            let(), id("c"), colon(), typeNumber(), assign(), num("3"), semi(),
-        )
+        val results =
+            parse(
+                let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                let(), id("b"), colon(), typeNumber(), assign(), semi(),
+                let(), id("c"), colon(), typeNumber(), assign(), num("3"), semi(),
+            )
 
         assertEquals(3, results.size)
         assertIs<Result.Success<ASTNode>>(results[0])
@@ -392,17 +413,19 @@ class ParserTest {
     @Test
     fun `el parser no consume mas tokens de los necesarios`() {
         var producidos = 0
-        val perezosa = sequence {
-            val tokens = listOf(
-                let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-                let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
-                eof(),
-            )
-            for (t in tokens) {
-                producidos++
-                yield(Result.Success(t) as Result<Token, PrintScriptError>)
+        val perezosa =
+            sequence {
+                val tokens =
+                    listOf(
+                        let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                        let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
+                        eof(),
+                    )
+                for (t in tokens) {
+                    producidos++
+                    yield(Result.Success(t) as Result<Token, PrintScriptError>)
+                }
             }
-        }
 
         // pido SOLO el primer statement
         parser.parse(perezosa).first()

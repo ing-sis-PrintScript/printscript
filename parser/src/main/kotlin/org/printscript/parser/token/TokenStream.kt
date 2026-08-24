@@ -8,7 +8,6 @@ import org.printscript.token.Token
 import org.printscript.token.TokenType
 
 interface TokenStream {
-
     fun peek(): Result<Token, PrintScriptError>
 
     fun advance(): TokenStream
@@ -16,8 +15,7 @@ interface TokenStream {
     fun atEnd(): Boolean
 
     companion object {
-        fun of(tokens: Sequence<Result<Token, PrintScriptError>>): TokenStream =
-            from(tokens.iterator(), START)
+        fun of(tokens: Sequence<Result<Token, PrintScriptError>>): TokenStream = from(tokens.iterator(), START)
     }
 }
 
@@ -33,14 +31,15 @@ private fun from(
     return Node(head) { from(tokens, rangeOf(head, previous)) }
 }
 
-private fun rangeOf(head: Result<Token, PrintScriptError>, previous: Range): Range =
-    if (head is Result.Success) head.value.range else previous
+private fun rangeOf(
+    head: Result<Token, PrintScriptError>,
+    previous: Range,
+): Range = if (head is Result.Success) head.value.range else previous
 
 private class Node(
     private val head: Result<Token, PrintScriptError>,
     rest: () -> TokenStream,
 ) : TokenStream {
-
     private val tail: TokenStream by lazy(rest)
 
     override fun peek(): Result<Token, PrintScriptError> = head
@@ -51,7 +50,6 @@ private class Node(
 }
 
 private class Exhausted(private val previous: Range) : TokenStream {
-
     override fun peek(): Result<Token, PrintScriptError> = Result.Failure(UnexpectedEndOfInput(previous))
 
     override fun advance(): TokenStream = this

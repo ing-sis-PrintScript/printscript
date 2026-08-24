@@ -19,19 +19,18 @@ import org.printscript.token.Token
 import org.printscript.token.TokenType
 
 class PrintScript10ExpressionParser : ExpressionParser {
-
     override fun parse(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> = parseExpression(stream)
 
     private fun parseExpression(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
         parseTerm(stream).flatMap { term -> parseAdditions(term) }
 
-
     private tailrec fun parseAdditions(left: Parsed<Expression>): Result<Parsed<Expression>, PrintScriptError> {
-        val operator = when {
-            left.rest.peekIs(TokenType.PLUS) -> BinaryOperator.PLUS
-            left.rest.peekIs(TokenType.MINUS) -> BinaryOperator.MINUS
-            else -> return Result.Success(left)
-        }
+        val operator =
+            when {
+                left.rest.peekIs(TokenType.PLUS) -> BinaryOperator.PLUS
+                left.rest.peekIs(TokenType.MINUS) -> BinaryOperator.MINUS
+                else -> return Result.Success(left)
+            }
 
         return when (val right = parseTerm(left.rest.advance())) {
             is Result.Failure -> right
@@ -43,11 +42,12 @@ class PrintScript10ExpressionParser : ExpressionParser {
         parseFactor(stream).flatMap { factor -> parseMultiplications(factor) }
 
     private tailrec fun parseMultiplications(left: Parsed<Expression>): Result<Parsed<Expression>, PrintScriptError> {
-        val operator = when {
-            left.rest.peekIs(TokenType.STAR) -> BinaryOperator.TIMES
-            left.rest.peekIs(TokenType.SLASH) -> BinaryOperator.DIVIDE
-            else -> return Result.Success(left)
-        }
+        val operator =
+            when {
+                left.rest.peekIs(TokenType.STAR) -> BinaryOperator.TIMES
+                left.rest.peekIs(TokenType.SLASH) -> BinaryOperator.DIVIDE
+                else -> return Result.Success(left)
+            }
 
         return when (val right = parseFactor(left.rest.advance())) {
             is Result.Failure -> right
@@ -70,22 +70,22 @@ class PrintScript10ExpressionParser : ExpressionParser {
 
                 TokenType.LPAREN -> parenthesized(stream)
 
-                else -> Result.Failure(
-                    SyntaxError("Se esperaba un valor, un identificador o '('", token.range),
-                )
+                else ->
+                    Result.Failure(
+                        SyntaxError("Se esperaba un valor, un identificador o '('", token.range),
+                    )
             }
         }
 
-
     private fun numberLiteral(token: Token): Result<Expression, PrintScriptError> {
-        val number = token.value.toDoubleOrNull()
-            ?: return Result.Failure(
-                SyntaxError("'${token.value}' no es un número válido", token.range),
-            )
+        val number =
+            token.value.toDoubleOrNull()
+                ?: return Result.Failure(
+                    SyntaxError("'${token.value}' no es un número válido", token.range),
+                )
 
         return Result.Success(NumberLiteral(number, token.range))
     }
-
 
     private fun parenthesized(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
         stream.skip(TokenType.LPAREN).flatMap { afterOpen ->
@@ -93,7 +93,6 @@ class PrintScript10ExpressionParser : ExpressionParser {
                 afterInner.skip(TokenType.RPAREN).map { afterClose -> Parsed(inner, afterClose) }
             }
         }
-
 
     private fun combine(
         left: Expression,

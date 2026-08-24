@@ -13,7 +13,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class LexerTest {
-
     private val lexer = Lexer()
 
     /** Atajo: junta la secuencia y devuelve solo los tipos, para comparar más cómodo. */
@@ -32,8 +31,14 @@ class LexerTest {
     fun `declaracion con asignacion`() {
         assertEquals(
             listOf(
-                TokenType.LET, TokenType.IDENTIFIER, TokenType.COLON, TokenType.TYPE_STRING,
-                TokenType.ASSIGN, TokenType.STRING_LITERAL, TokenType.SEMICOLON, TokenType.EOF,
+                TokenType.LET,
+                TokenType.IDENTIFIER,
+                TokenType.COLON,
+                TokenType.TYPE_STRING,
+                TokenType.ASSIGN,
+                TokenType.STRING_LITERAL,
+                TokenType.SEMICOLON,
+                TokenType.EOF,
             ),
             typesOf("""let name: string = "Joe";"""),
         )
@@ -43,8 +48,14 @@ class LexerTest {
     fun `println con concatenacion`() {
         assertEquals(
             listOf(
-                TokenType.PRINTLN, TokenType.LPAREN, TokenType.IDENTIFIER, TokenType.PLUS,
-                TokenType.STRING_LITERAL, TokenType.RPAREN, TokenType.SEMICOLON, TokenType.EOF,
+                TokenType.PRINTLN,
+                TokenType.LPAREN,
+                TokenType.IDENTIFIER,
+                TokenType.PLUS,
+                TokenType.STRING_LITERAL,
+                TokenType.RPAREN,
+                TokenType.SEMICOLON,
+                TokenType.EOF,
             ),
             typesOf("""println(name + " ");"""),
         )
@@ -54,8 +65,12 @@ class LexerTest {
     fun `operaciones y decimales`() {
         assertEquals(
             listOf(
-                TokenType.NUMBER_LITERAL, TokenType.SLASH, TokenType.NUMBER_LITERAL,
-                TokenType.MINUS, TokenType.NUMBER_LITERAL, TokenType.EOF,
+                TokenType.NUMBER_LITERAL,
+                TokenType.SLASH,
+                TokenType.NUMBER_LITERAL,
+                TokenType.MINUS,
+                TokenType.NUMBER_LITERAL,
+                TokenType.EOF,
             ),
             typesOf("12.5 / 4 - 1"),
         )
@@ -72,18 +87,19 @@ class LexerTest {
     }
 
     @Test
-    fun `el lexema y la posicion son correctos`() {
+    fun `el valor y la posicion son correctos`() {
         val tokens = lexer.tokenize("let x = 5;").collectResults().getOrNull()!!
-        assertEquals("let", tokens[0].lexeme)
+        assertEquals("let", tokens[0].value)
         assertEquals(Range(Position(1, 1), Position(1, 3)), tokens[0].range)
-        assertEquals("x", tokens[1].lexeme)
+        assertEquals("x", tokens[1].value)
         assertEquals(Range(Position(1, 5), Position(1, 5)), tokens[1].range)
     }
 
     @Test
     fun `cuenta bien el numero de linea`() {
-        val tokens = lexer.tokenize("let a: number = 1;\nlet b: number = 2;")
-            .collectResults().getOrNull()!!
+        val tokens =
+            lexer.tokenize("let a: number = 1;\nlet b: number = 2;")
+                .collectResults().getOrNull()!!
         val segundoLet = tokens.first { it.range.start.line == 2 }
         assertEquals(TokenType.LET, segundoLet.type)
         assertEquals(Position(2, 1), segundoLet.range.start)
@@ -122,12 +138,13 @@ class LexerTest {
     @Test
     fun `es perezoso y no lee de mas`() {
         var lineasLeidas = 0
-        val infinitas = sequence {
-            while (true) {
-                lineasLeidas++
-                yield("let a: number = 1;")
+        val infinitas =
+            sequence {
+                while (true) {
+                    lineasLeidas++
+                    yield("let a: number = 1;")
+                }
             }
-        }
 
         val primeros = lexer.tokenize(infinitas).take(3).toList()
 

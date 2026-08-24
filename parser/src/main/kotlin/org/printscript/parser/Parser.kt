@@ -13,12 +13,9 @@ class Parser(
     private val statementParsers: List<StatementParser>,
     private val recovery: RecoveryStrategy,
 ) {
-
-
     fun parse(tokens: Sequence<Result<Token, PrintScriptError>>): Sequence<Result<ASTNode, PrintScriptError>> =
         generateSequence({ step(TokenStream.of(tokens)) }) { previous -> step(previous.rest) }
             .map { it.value }
-
 
     private fun step(stream: TokenStream): Parsed<Result<ASTNode, PrintScriptError>>? {
         if (stream.atEnd()) return null
@@ -34,10 +31,11 @@ class Parser(
         if (peeked is Result.Failure) return peeked
 
         val token = (peeked as Result.Success).value
-        val parser = statementParsers.firstOrNull { it.canHandle(token.type) }
-            ?: return Result.Failure(
-                SyntaxError("No se esperaba ${token.type.describe()} acá", token.range),
-            )
+        val parser =
+            statementParsers.firstOrNull { it.canHandle(token.type) }
+                ?: return Result.Failure(
+                    SyntaxError("No se esperaba ${token.type.describe()} acá", token.range),
+                )
 
         return parser.parse(stream)
     }

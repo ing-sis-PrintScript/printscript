@@ -1,21 +1,35 @@
 package org.printscript.interpreter
 
-import org.printscript.ast.*
+import org.printscript.ast.BinaryExpression
+import org.printscript.ast.BinaryOperator
+import org.printscript.ast.CallExpression
+import org.printscript.ast.Expression
+import org.printscript.ast.Identifier
+import org.printscript.ast.NumberLiteral
+import org.printscript.ast.StringLiteral
 import org.printscript.common.Result
 
 class ExpressionEvaluator {
-
-    fun evaluate(expression: Expression, env: Environment): Result<PrintScriptValue, InterpreterError> {
+    fun evaluate(
+        expression: Expression,
+        env: Environment,
+    ): Result<PrintScriptValue, InterpreterError> {
         return when (expression) {
             is NumberLiteral -> Result.Success(PrintScriptValue.NumberValue(expression.value))
             is StringLiteral -> Result.Success(PrintScriptValue.StringValue(expression.value))
             is Identifier -> env.get(expression.name, expression.range)
             is BinaryExpression -> evaluateBinary(expression, env)
-            is CallExpression -> Result.Failure(InterpreterError("Solo se soporta la llamada a 'println'.", expression.range))
+            is CallExpression ->
+                Result.Failure(
+                    InterpreterError("Solo se soporta la llamada a 'println'.", expression.range),
+                )
         }
     }
 
-    private fun evaluateBinary(node: BinaryExpression, env: Environment): Result<PrintScriptValue, InterpreterError> {
+    private fun evaluateBinary(
+        node: BinaryExpression,
+        env: Environment,
+    ): Result<PrintScriptValue, InterpreterError> {
         val leftResult = evaluate(node.left, env)
         if (leftResult is Result.Failure) return leftResult
 
@@ -25,7 +39,11 @@ class ExpressionEvaluator {
         val left = (leftResult as Result.Success).value
         val right = (rightResult as Result.Success).value
 
-        if (node.operator == BinaryOperator.PLUS && (left is PrintScriptValue.StringValue || right is PrintScriptValue.StringValue)) {
+        if (node.operator == BinaryOperator.PLUS && (
+                left is PrintScriptValue.StringValue ||
+                    right is PrintScriptValue.StringValue
+            )
+        ) {
             return Result.Success(PrintScriptValue.StringValue(left.toString() + right.toString()))
         }
 
@@ -37,8 +55,11 @@ class ExpressionEvaluator {
                 BinaryOperator.MINUS -> Result.Success(PrintScriptValue.NumberValue(l - r))
                 BinaryOperator.TIMES -> Result.Success(PrintScriptValue.NumberValue(l * r))
                 BinaryOperator.DIVIDE -> {
-                    if (r == 0.0) Result.Failure(InterpreterError("División por cero.", node.range))
-                    else Result.Success(PrintScriptValue.NumberValue(l / r))
+                    if (r == 0.0) {
+                        Result.Failure(InterpreterError("División por cero.", node.range))
+                    } else {
+                        Result.Success(PrintScriptValue.NumberValue(l / r))
+                    }
                 }
             }
         }

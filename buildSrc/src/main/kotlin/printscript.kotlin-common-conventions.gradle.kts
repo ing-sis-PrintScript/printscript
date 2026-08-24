@@ -1,3 +1,5 @@
+// Como se compila y testea un modulo de PrintScript. Nada de analisis estatico
+// ni de coverage: eso vive en sus propias convenciones.
 plugins {
     kotlin("jvm")
 }

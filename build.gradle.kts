@@ -1,3 +1,6 @@
-// Sin allprojects {} ni subprojects {}: la configuracion compartida vive en los
-// convention plugins de buildSrc/src/main/kotlin/printscript.*-conventions.gradle.kts
-// y cada modulo la aplica explicitamente en su bloque plugins {}.
+// Sin allprojects {} ni subprojects {}: cada modulo aplica explicitamente la
+// convencion que necesita, y la raiz solo suma lo que es del proyecto entero.
+plugins {
+    id("printscript.coverage-aggregation")
+    id("printscript.git-hooks")
+}

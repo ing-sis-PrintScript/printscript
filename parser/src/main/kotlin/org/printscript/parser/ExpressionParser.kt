@@ -7,7 +7,5 @@ import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 
 interface ExpressionParser {
-
-
     fun parse(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError>
 }

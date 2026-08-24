@@ -20,14 +20,16 @@ import kotlin.test.assertTrue
  * Parser ni el stream.
  */
 class SkipToSemicolonTest {
-
     private var column = 1
 
-    private fun token(type: TokenType, text: String = ""): Token {
+    private fun token(
+        type: TokenType,
+        text: String = "",
+    ): Token {
         val start = Position(1, column)
         val end = Position(1, column + text.length - 1)
         column += text.length + 1
-        return Token(type, text, text, Range(start, end))
+        return Token(type, text, Range(start, end))
     }
 
     private fun streamOf(vararg tokens: Token): TokenStream {
@@ -44,28 +46,30 @@ class SkipToSemicolonTest {
     @Test
     fun `deja el stream despues del punto y coma`() {
         // descarta: println ( "hola" ) ;  → retoma en el let siguiente
-        val stream = streamOf(
-            token(TokenType.PRINTLN, "println"),
-            token(TokenType.LPAREN, "("),
-            token(TokenType.STRING_LITERAL, "\"hola\""),
-            token(TokenType.RPAREN, ")"),
-            token(TokenType.SEMICOLON, ";"),
-            token(TokenType.LET, "let"),
-            token(TokenType.EOF),
-        )
+        val stream =
+            streamOf(
+                token(TokenType.PRINTLN, "println"),
+                token(TokenType.LPAREN, "("),
+                token(TokenType.STRING_LITERAL, "\"hola\""),
+                token(TokenType.RPAREN, ")"),
+                token(TokenType.SEMICOLON, ";"),
+                token(TokenType.LET, "let"),
+                token(TokenType.EOF),
+            )
 
         assertEquals(TokenType.LET, typeAt(SkipToSemicolon.recover(stream)))
     }
 
     @Test
     fun `corta en el primer punto y coma, no en el ultimo`() {
-        val stream = streamOf(
-            token(TokenType.IDENTIFIER, "a"),
-            token(TokenType.SEMICOLON, ";"),
-            token(TokenType.LET, "let"),
-            token(TokenType.SEMICOLON, ";"),
-            token(TokenType.EOF),
-        )
+        val stream =
+            streamOf(
+                token(TokenType.IDENTIFIER, "a"),
+                token(TokenType.SEMICOLON, ";"),
+                token(TokenType.LET, "let"),
+                token(TokenType.SEMICOLON, ";"),
+                token(TokenType.EOF),
+            )
 
         assertEquals(TokenType.LET, typeAt(SkipToSemicolon.recover(stream)))
     }
@@ -73,12 +77,13 @@ class SkipToSemicolonTest {
     /** El que protege del loop infinito: sin ";" tiene que frenar en el EOF. */
     @Test
     fun `sin punto y coma llega al EOF y termina`() {
-        val stream = streamOf(
-            token(TokenType.IDENTIFIER, "a"),
-            token(TokenType.PLUS, "+"),
-            token(TokenType.NUMBER_LITERAL, "5"),
-            token(TokenType.EOF),
-        )
+        val stream =
+            streamOf(
+                token(TokenType.IDENTIFIER, "a"),
+                token(TokenType.PLUS, "+"),
+                token(TokenType.NUMBER_LITERAL, "5"),
+                token(TokenType.EOF),
+            )
 
         assertTrue(SkipToSemicolon.recover(stream).atEnd())
     }
@@ -93,18 +98,20 @@ class SkipToSemicolonTest {
     /** Un error léxico no frena la recuperación: se descarta como cualquier token. */
     @Test
     fun `descarta tambien los errores lexicos`() {
-        val lexico = object : PrintScriptError {
-            override val message = "Caracter inesperado '@'"
-            override val range = Range(Position(1, 1), Position(1, 1))
-        }
-        val stream = TokenStream.of(
-            sequenceOf(
-                Result.Failure(lexico),
-                Result.Success(token(TokenType.SEMICOLON, ";")) as Result<Token, PrintScriptError>,
-                Result.Success(token(TokenType.LET, "let")),
-                Result.Success(token(TokenType.EOF)),
-            ),
-        )
+        val lexico =
+            object : PrintScriptError {
+                override val message = "Caracter inesperado '@'"
+                override val range = Range(Position(1, 1), Position(1, 1))
+            }
+        val stream =
+            TokenStream.of(
+                sequenceOf(
+                    Result.Failure(lexico),
+                    Result.Success(token(TokenType.SEMICOLON, ";")) as Result<Token, PrintScriptError>,
+                    Result.Success(token(TokenType.LET, "let")),
+                    Result.Success(token(TokenType.EOF)),
+                ),
+            )
 
         assertEquals(TokenType.LET, typeAt(SkipToSemicolon.recover(stream)))
     }
@@ -112,12 +119,13 @@ class SkipToSemicolonTest {
     /** No muta lo que recibe: el stream original sigue en su lugar. */
     @Test
     fun `no toca el stream que recibe`() {
-        val stream = streamOf(
-            token(TokenType.IDENTIFIER, "a"),
-            token(TokenType.SEMICOLON, ";"),
-            token(TokenType.LET, "let"),
-            token(TokenType.EOF),
-        )
+        val stream =
+            streamOf(
+                token(TokenType.IDENTIFIER, "a"),
+                token(TokenType.SEMICOLON, ";"),
+                token(TokenType.LET, "let"),
+                token(TokenType.EOF),
+            )
 
         SkipToSemicolon.recover(stream)
 

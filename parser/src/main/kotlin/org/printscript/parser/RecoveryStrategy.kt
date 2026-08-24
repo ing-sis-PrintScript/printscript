@@ -4,17 +4,12 @@ import org.printscript.common.Result
 import org.printscript.parser.token.TokenStream
 import org.printscript.token.TokenType
 
-
 fun interface RecoveryStrategy {
-
     fun recover(stream: TokenStream): TokenStream
 }
 
-
 object SkipToSemicolon : RecoveryStrategy {
-
     override fun recover(stream: TokenStream): TokenStream = skipPastSemicolon(stream)
-
 
     private tailrec fun skipPastSemicolon(stream: TokenStream): TokenStream {
         if (stream.atEnd()) return stream

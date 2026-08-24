@@ -27,15 +27,17 @@ import kotlin.test.assertTrue
  * descartar un parseo fallido sin dejar el stream corrupto.
  */
 class TokenStreamTest {
-
     private var column = 1
 
     /** Arma un token con un range plausible y consecutivo, para no escribirlos a mano. */
-    private fun token(type: TokenType, text: String = ""): Token {
+    private fun token(
+        type: TokenType,
+        text: String = "",
+    ): Token {
         val start = Position(1, column)
         val end = Position(1, column + text.length - 1)
         column += text.length + 1
-        return Token(type, text, text, Range(start, end))
+        return Token(type, text, Range(start, end))
     }
 
     private fun streamOf(vararg tokens: Token): TokenStream {
@@ -94,12 +96,13 @@ class TokenStreamTest {
      */
     @Test
     fun `el mismo stream se puede recorrer dos veces con igual resultado`() {
-        val stream = streamOf(
-            token(TokenType.LET, "let"),
-            token(TokenType.IDENTIFIER, "a"),
-            token(TokenType.SEMICOLON, ";"),
-            token(TokenType.EOF),
-        )
+        val stream =
+            streamOf(
+                token(TokenType.LET, "let"),
+                token(TokenType.IDENTIFIER, "a"),
+                token(TokenType.SEMICOLON, ";"),
+                token(TokenType.EOF),
+            )
 
         assertEquals(walk(stream), walk(stream))
     }
@@ -111,12 +114,13 @@ class TokenStreamTest {
      */
     @Test
     fun `dos streams derivados del mismo punto son independientes`() {
-        val stream = streamOf(
-            token(TokenType.LET, "let"),
-            token(TokenType.IDENTIFIER, "a"),
-            token(TokenType.COLON, ":"),
-            token(TokenType.EOF),
-        )
+        val stream =
+            streamOf(
+                token(TokenType.LET, "let"),
+                token(TokenType.IDENTIFIER, "a"),
+                token(TokenType.COLON, ":"),
+                token(TokenType.EOF),
+            )
 
         val ramaA = stream.advance()
         val ramaB = stream.advance().advance()
@@ -139,12 +143,13 @@ class TokenStreamTest {
 
     @Test
     fun `advance encadenado recorre la secuencia completa`() {
-        val stream = streamOf(
-            token(TokenType.LET, "let"),
-            token(TokenType.IDENTIFIER, "a"),
-            token(TokenType.SEMICOLON, ";"),
-            token(TokenType.EOF),
-        )
+        val stream =
+            streamOf(
+                token(TokenType.LET, "let"),
+                token(TokenType.IDENTIFIER, "a"),
+                token(TokenType.SEMICOLON, ";"),
+                token(TokenType.EOF),
+            )
 
         assertEquals(
             listOf(TokenType.LET, TokenType.IDENTIFIER, TokenType.SEMICOLON),
@@ -222,10 +227,11 @@ class TokenStreamTest {
 
     @Test
     fun `expect propaga un error lexico sin transformarlo`() {
-        val lexico = object : PrintScriptError {
-            override val message = "Caracter inesperado '@'"
-            override val range = Range(Position(1, 5), Position(1, 5))
-        }
+        val lexico =
+            object : PrintScriptError {
+                override val message = "Caracter inesperado '@'"
+                override val range = Range(Position(1, 5), Position(1, 5))
+            }
         val stream = TokenStream.of(sequenceOf(Result.Failure(lexico)))
 
         val error = errorOf(stream.expect(TokenType.LET))
@@ -277,16 +283,18 @@ class TokenStreamTest {
     /** Un error léxico no es el final: hay que reportarlo y seguir leyendo. */
     @Test
     fun `un error lexico no cuenta como final del stream`() {
-        val lexico = object : PrintScriptError {
-            override val message = "Caracter inesperado '@'"
-            override val range = Range(Position(1, 1), Position(1, 1))
-        }
-        val stream = TokenStream.of(
-            sequenceOf(
-                Result.Failure(lexico),
-                Result.Success(token(TokenType.EOF)) as Result<Token, PrintScriptError>,
-            ),
-        )
+        val lexico =
+            object : PrintScriptError {
+                override val message = "Caracter inesperado '@'"
+                override val range = Range(Position(1, 1), Position(1, 1))
+            }
+        val stream =
+            TokenStream.of(
+                sequenceOf(
+                    Result.Failure(lexico),
+                    Result.Success(token(TokenType.EOF)) as Result<Token, PrintScriptError>,
+                ),
+            )
 
         assertFalse(stream.atEnd(), "todavía queda el EOF por leer")
         assertTrue(stream.advance().atEnd())
@@ -303,14 +311,15 @@ class TokenStreamTest {
     @Test
     fun `el stream no consume mas tokens de los pedidos`() {
         var producidos = 0
-        val perezosa = sequence {
-            producidos++
-            yield(Result.Success(token(TokenType.LET, "let")) as Result<Token, PrintScriptError>)
-            producidos++
-            yield(Result.Success(token(TokenType.IDENTIFIER, "a")))
-            producidos++
-            yield(Result.Success(token(TokenType.EOF)))
-        }
+        val perezosa =
+            sequence {
+                producidos++
+                yield(Result.Success(token(TokenType.LET, "let")) as Result<Token, PrintScriptError>)
+                producidos++
+                yield(Result.Success(token(TokenType.IDENTIFIER, "a")))
+                producidos++
+                yield(Result.Success(token(TokenType.EOF)))
+            }
         val stream = TokenStream.of(perezosa)
 
         stream.peek()
@@ -322,12 +331,13 @@ class TokenStreamTest {
     @Test
     fun `releer el mismo nodo no vuelve a tirar del iterator`() {
         var producidos = 0
-        val perezosa = sequence {
-            producidos++
-            yield(Result.Success(token(TokenType.LET, "let")) as Result<Token, PrintScriptError>)
-            producidos++
-            yield(Result.Success(token(TokenType.EOF)))
-        }
+        val perezosa =
+            sequence {
+                producidos++
+                yield(Result.Success(token(TokenType.LET, "let")) as Result<Token, PrintScriptError>)
+                producidos++
+                yield(Result.Success(token(TokenType.EOF)))
+            }
         val stream = TokenStream.of(perezosa)
 
         val avanzado = stream.advance()

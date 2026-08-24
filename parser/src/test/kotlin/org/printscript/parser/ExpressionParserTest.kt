@@ -28,24 +28,27 @@ import kotlin.test.assertTrue
  * hay que escribir posiciones exactas en cada árbol esperado.
  */
 class ExpressionParserTest {
-
     private val parser = PrintScript10ExpressionParser()
 
     // ---- helpers ----
 
     private var column = 1
 
-    private fun token(type: TokenType, text: String): Token {
+    private fun token(
+        type: TokenType,
+        text: String,
+    ): Token {
         val start = Position(1, column)
         val end = Position(1, column + text.length - 1)
         column += text.length + 1
         val value = if (type == TokenType.STRING_LITERAL) text.trim('"') else text
-        return Token(type, text, value, Range(start, end))
+        return Token(type, value, Range(start, end))
     }
 
     private fun parse(vararg tokens: Token): Result<Parsed<Expression>, PrintScriptError> {
-        val results = tokens.map { Result.Success(it) as Result<Token, PrintScriptError> } +
-                Result.Success(Token(TokenType.EOF, "", "", Range(Position(1, 99), Position(1, 99))))
+        val results =
+            tokens.map { Result.Success(it) as Result<Token, PrintScriptError> } +
+                Result.Success(Token(TokenType.EOF, "", Range(Position(1, 99), Position(1, 99))))
         return parser.parse(TokenStream.of(results.asSequence()))
     }
 
@@ -60,9 +63,15 @@ class ExpressionParserTest {
     }
 
     private fun num(text: String) = token(TokenType.NUMBER_LITERAL, text)
+
     private fun id(name: String) = token(TokenType.IDENTIFIER, name)
+
     private fun str(text: String) = token(TokenType.STRING_LITERAL, "\"$text\"")
-    private fun op(type: TokenType, text: String) = token(type, text)
+
+    private fun op(
+        type: TokenType,
+        text: String,
+    ) = token(type, text)
 
     // ---- hojas ----
 
@@ -109,12 +118,13 @@ class ExpressionParserTest {
 
     @Test
     fun `los cuatro operadores se traducen al enum del AST`() {
-        val casos = listOf(
-            TokenType.PLUS to BinaryOperator.PLUS,
-            TokenType.MINUS to BinaryOperator.MINUS,
-            TokenType.STAR to BinaryOperator.TIMES,
-            TokenType.SLASH to BinaryOperator.DIVIDE,
-        )
+        val casos =
+            listOf(
+                TokenType.PLUS to BinaryOperator.PLUS,
+                TokenType.MINUS to BinaryOperator.MINUS,
+                TokenType.STAR to BinaryOperator.TIMES,
+                TokenType.SLASH to BinaryOperator.DIVIDE,
+            )
 
         for ((tokenType, expected) in casos) {
             column = 1
@@ -132,9 +142,10 @@ class ExpressionParserTest {
      */
     @Test
     fun `la multiplicacion agrupa antes que la suma`() {
-        val expression = expressionOf(
-            parse(num("2"), op(TokenType.PLUS, "+"), num("3"), op(TokenType.STAR, "*"), num("4")),
-        )
+        val expression =
+            expressionOf(
+                parse(num("2"), op(TokenType.PLUS, "+"), num("3"), op(TokenType.STAR, "*"), num("4")),
+            )
 
         val root = assertIs<BinaryExpression>(expression)
         assertEquals(BinaryOperator.PLUS, root.operator, "arriba tiene que quedar el +")
@@ -147,9 +158,10 @@ class ExpressionParserTest {
     @Test
     fun `la multiplicacion agrupa antes aunque venga primero`() {
         // 2 * 3 + 4  →  (2 * 3) + 4
-        val expression = expressionOf(
-            parse(num("2"), op(TokenType.STAR, "*"), num("3"), op(TokenType.PLUS, "+"), num("4")),
-        )
+        val expression =
+            expressionOf(
+                parse(num("2"), op(TokenType.STAR, "*"), num("3"), op(TokenType.PLUS, "+"), num("4")),
+            )
 
         val root = assertIs<BinaryExpression>(expression)
         assertEquals(BinaryOperator.PLUS, root.operator)
@@ -162,9 +174,10 @@ class ExpressionParserTest {
     @Test
     fun `division y multiplicacion estan en el mismo nivel`() {
         // 12 / 4 * 2  →  (12 / 4) * 2, izquierda a derecha
-        val expression = expressionOf(
-            parse(num("12"), op(TokenType.SLASH, "/"), num("4"), op(TokenType.STAR, "*"), num("2")),
-        )
+        val expression =
+            expressionOf(
+                parse(num("12"), op(TokenType.SLASH, "/"), num("4"), op(TokenType.STAR, "*"), num("2")),
+            )
 
         val root = assertIs<BinaryExpression>(expression)
         assertEquals(BinaryOperator.TIMES, root.operator)
@@ -180,9 +193,10 @@ class ExpressionParserTest {
      */
     @Test
     fun `la resta asocia a la izquierda`() {
-        val expression = expressionOf(
-            parse(num("10"), op(TokenType.MINUS, "-"), num("3"), op(TokenType.MINUS, "-"), num("2")),
-        )
+        val expression =
+            expressionOf(
+                parse(num("10"), op(TokenType.MINUS, "-"), num("3"), op(TokenType.MINUS, "-"), num("2")),
+            )
 
         val root = assertIs<BinaryExpression>(expression)
         assertEquals(2.0, (root.right as NumberLiteral).value, "el último operando va a la derecha de la raíz")
@@ -196,12 +210,16 @@ class ExpressionParserTest {
     @Test
     fun `concatenacion encadenada asocia a la izquierda`() {
         // name + " " + lastName  →  (name + " ") + lastName, el ejemplo 1 de la consigna
-        val expression = expressionOf(
-            parse(
-                id("name"), op(TokenType.PLUS, "+"), str(" "),
-                op(TokenType.PLUS, "+"), id("lastName"),
-            ),
-        )
+        val expression =
+            expressionOf(
+                parse(
+                    id("name"),
+                    op(TokenType.PLUS, "+"),
+                    str(" "),
+                    op(TokenType.PLUS, "+"),
+                    id("lastName"),
+                ),
+            )
 
         val root = assertIs<BinaryExpression>(expression)
         assertEquals("lastName", (root.right as Identifier).name)
@@ -221,12 +239,18 @@ class ExpressionParserTest {
     @Test
     fun `los parentesis cambian el agrupamiento sin dejar nodo`() {
         // (2 + 3) * 4  →  el * arriba, el + abajo (al revés que sin paréntesis)
-        val expression = expressionOf(
-            parse(
-                op(TokenType.LPAREN, "("), num("2"), op(TokenType.PLUS, "+"), num("3"),
-                op(TokenType.RPAREN, ")"), op(TokenType.STAR, "*"), num("4"),
-            ),
-        )
+        val expression =
+            expressionOf(
+                parse(
+                    op(TokenType.LPAREN, "("),
+                    num("2"),
+                    op(TokenType.PLUS, "+"),
+                    num("3"),
+                    op(TokenType.RPAREN, ")"),
+                    op(TokenType.STAR, "*"),
+                    num("4"),
+                ),
+            )
 
         val root = assertIs<BinaryExpression>(expression)
         assertEquals(BinaryOperator.TIMES, root.operator)
@@ -236,9 +260,10 @@ class ExpressionParserTest {
 
     @Test
     fun `parentesis redundantes no cambian el arbol`() {
-        val conParentesis = expressionOf(
-            parse(op(TokenType.LPAREN, "("), num("5"), op(TokenType.RPAREN, ")")),
-        )
+        val conParentesis =
+            expressionOf(
+                parse(op(TokenType.LPAREN, "("), num("5"), op(TokenType.RPAREN, ")")),
+            )
 
         assertEquals(5.0, assertIs<NumberLiteral>(conParentesis).value)
     }
@@ -246,12 +271,16 @@ class ExpressionParserTest {
     @Test
     fun `parentesis anidados`() {
         // ((2))
-        val expression = expressionOf(
-            parse(
-                op(TokenType.LPAREN, "("), op(TokenType.LPAREN, "("), num("2"),
-                op(TokenType.RPAREN, ")"), op(TokenType.RPAREN, ")"),
-            ),
-        )
+        val expression =
+            expressionOf(
+                parse(
+                    op(TokenType.LPAREN, "("),
+                    op(TokenType.LPAREN, "("),
+                    num("2"),
+                    op(TokenType.RPAREN, ")"),
+                    op(TokenType.RPAREN, ")"),
+                ),
+            )
 
         assertEquals(2.0, assertIs<NumberLiteral>(expression).value)
     }
@@ -300,10 +329,11 @@ class ExpressionParserTest {
 
     @Test
     fun `un error lexico se propaga tal cual`() {
-        val lexico = object : PrintScriptError {
-            override val message = "Caracter inesperado '@'"
-            override val range = Range(Position(1, 1), Position(1, 1))
-        }
+        val lexico =
+            object : PrintScriptError {
+                override val message = "Caracter inesperado '@'"
+                override val range = Range(Position(1, 1), Position(1, 1))
+            }
         val stream = TokenStream.of(sequenceOf(Result.Failure(lexico)))
 
         val error = errorOf(parser.parse(stream))
@@ -337,9 +367,10 @@ class ExpressionParserTest {
     @Test
     fun `el range de un binario anidado abarca toda la expresion`() {
         // "2 + 3 * 4": del 2 (col 1) al 4 (col 9)
-        val expression = expressionOf(
-            parse(num("2"), op(TokenType.PLUS, "+"), num("3"), op(TokenType.STAR, "*"), num("4")),
-        )
+        val expression =
+            expressionOf(
+                parse(num("2"), op(TokenType.PLUS, "+"), num("3"), op(TokenType.STAR, "*"), num("4")),
+            )
 
         assertEquals(Position(1, 1), expression.range.start)
         assertEquals(Position(1, 9), expression.range.end)

@@ -8,11 +8,7 @@ import org.printscript.parser.SyntaxError
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-
-
-fun TokenStream.next(): Result<Parsed<Token>, PrintScriptError> =
-    peek().map { Parsed(it, advance()) }
-
+fun TokenStream.next(): Result<Parsed<Token>, PrintScriptError> = peek().map { Parsed(it, advance()) }
 
 fun TokenStream.expect(type: TokenType): Result<Parsed<Token>, PrintScriptError> =
     peek().flatMap { token ->
@@ -23,10 +19,7 @@ fun TokenStream.expect(type: TokenType): Result<Parsed<Token>, PrintScriptError>
         }
     }
 
-
-fun TokenStream.skip(type: TokenType): Result<TokenStream, PrintScriptError> =
-    expect(type).map { it.rest }
-
+fun TokenStream.skip(type: TokenType): Result<TokenStream, PrintScriptError> = expect(type).map { it.rest }
 
 fun TokenStream.peekIs(type: TokenType): Boolean =
     when (val result = peek()) {
