@@ -5,7 +5,6 @@ import org.printscript.common.Result
 import org.printscript.token.Token
 import org.printscript.token.TokenReadResult
 import org.printscript.token.TokenSource
-import java.util.concurrent.atomic.AtomicInteger
 
 class ResultTokenSource(
     private val results: List<Result<Token, PrintScriptError>>,
@@ -22,25 +21,24 @@ class ResultTokenSource(
     }
 }
 
-class ContadorDeTokens {
-    private val leidos = AtomicInteger(0)
+class TokenReadCounter {
+    var total: Int = 0
+        private set
 
-    fun registrarLectura() {
-        leidos.incrementAndGet()
+    fun countRead() {
+        total++
     }
-
-    fun total(): Int = leidos.get()
 }
 
-class FuentePerezosa(
+class CountingTokenSource(
     private val tokens: List<Token>,
-    private val contador: ContadorDeTokens,
+    private val counter: TokenReadCounter,
     private val offset: Int = 0,
 ) : TokenSource {
     override fun nextToken(): TokenReadResult {
         if (offset == tokens.size) return TokenReadResult.EndOfInput
 
-        contador.registrarLectura()
-        return TokenReadResult.Success(tokens[offset], FuentePerezosa(tokens, contador, offset + 1))
+        counter.countRead()
+        return TokenReadResult.Success(tokens[offset], CountingTokenSource(tokens, counter, offset + 1))
     }
 }

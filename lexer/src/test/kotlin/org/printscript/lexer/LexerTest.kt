@@ -2,8 +2,8 @@ package org.printscript.lexer
 
 import org.printscript.common.Position
 import org.printscript.common.Range
-import org.printscript.lexer.source.ContadorDeLineas
-import org.printscript.lexer.source.FuenteInfinita
+import org.printscript.lexer.source.InfiniteSourceReader
+import org.printscript.lexer.source.LineReadCounter
 import org.printscript.token.Token
 import org.printscript.token.TokenReadResult
 import org.printscript.token.TokenSource
@@ -11,6 +11,7 @@ import org.printscript.token.TokenType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -156,13 +157,13 @@ class LexerTest {
 
     @Test
     fun `es perezoso y no lee de mas`() {
-        val leidas = ContadorDeLineas()
+        val leidas = LineReadCounter()
 
-        val primeros = take(lexer.tokenize(FuenteInfinita("let a: number = 1;", leidas)), 3)
+        val primeros = take(lexer.tokenize(InfiniteSourceReader("let a: number = 1;", leidas)), 3)
 
         assertEquals(3, primeros.size)
         assertTrue(primeros.all { it is TokenReadResult.Success })
-        assertEquals(1, leidas.total())
+        assertEquals(1, leidas.total)
     }
 
     @Test
@@ -198,5 +199,17 @@ class LexerTest {
 
         val failure = assertIs<TokenReadResult.Failure>(ultimo)
         assertEquals(TokenReadResult.EndOfInput, failure.remaining.nextToken())
+    }
+
+    @Test
+    fun `dos lexers distintos sobre el mismo fuente producen fuentes iguales`() {
+        val fuente = "let x: number = 5;\nprintln(x);"
+
+        assertEquals(Lexer().tokenize(fuente), Lexer().tokenize(fuente))
+    }
+
+    @Test
+    fun `dos lexers distintos sobre fuentes distintas producen fuentes distintas`() {
+        assertNotEquals(Lexer().tokenize("let x = 1;"), Lexer().tokenize("let y = 2;"))
     }
 }

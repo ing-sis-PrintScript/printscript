@@ -413,9 +413,9 @@ class ParserTest {
      */
     @Test
     fun `el parser no consume mas tokens de los necesarios`() {
-        val leidos = ContadorDeTokens()
+        val leidos = TokenReadCounter()
         val perezosa =
-            FuentePerezosa(
+            CountingTokenSource(
                 listOf(
                     let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
                     let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
@@ -428,8 +428,8 @@ class ParserTest {
         parser.parse(perezosa).first()
 
         assertTrue(
-            leidos.total() <= 8,
-            "para el primer statement no deberían leerse los tokens del segundo (leyó ${leidos.total()})",
+            leidos.total <= 8,
+            "para el primer statement no deberían leerse los tokens del segundo (leyó ${leidos.total})",
         )
     }
 }

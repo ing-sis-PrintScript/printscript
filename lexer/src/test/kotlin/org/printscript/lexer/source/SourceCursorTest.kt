@@ -90,10 +90,10 @@ class SourceCursorTest {
 
     @Test
     fun `no lee mas lineas de las que necesita`() {
-        val leidas = ContadorDeLineas()
+        val leidas = LineReadCounter()
 
-        SourceCursor.from(FuenteInfinita("x", leidas)).moveToNextToken()
+        SourceCursor.from(InfiniteSourceReader("x", leidas)).moveToNextToken()
 
-        assertEquals(1, leidas.total())
+        assertEquals(1, leidas.total)
     }
 }

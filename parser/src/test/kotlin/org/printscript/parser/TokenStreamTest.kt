@@ -301,8 +301,8 @@ class TokenStreamTest {
 
     // ---- PEREZA ----
 
-    private fun fuentePerezosa(contador: ContadorDeTokens): FuentePerezosa =
-        FuentePerezosa(
+    private fun fuentePerezosa(contador: TokenReadCounter): CountingTokenSource =
+        CountingTokenSource(
             listOf(
                 token(TokenType.LET, "let"),
                 token(TokenType.IDENTIFIER, "a"),
@@ -313,18 +313,18 @@ class TokenStreamTest {
 
     @Test
     fun `el stream no consume mas tokens de los pedidos`() {
-        val leidos = ContadorDeTokens()
+        val leidos = TokenReadCounter()
         val stream = TokenStream(fuentePerezosa(leidos))
 
         stream.peek()
         stream.peek()
 
-        assertEquals(1, leidos.total(), "mirar el primer token no debería producir los siguientes")
+        assertEquals(1, leidos.total, "mirar el primer token no debería producir los siguientes")
     }
 
     @Test
     fun `el lookahead es de exactamente un token por paso`() {
-        val leidos = ContadorDeTokens()
+        val leidos = TokenReadCounter()
         val stream = TokenStream(fuentePerezosa(leidos))
 
         val avanzado = stream.advance()
@@ -332,7 +332,7 @@ class TokenStreamTest {
         avanzado.peek()
         stream.peek()
 
-        assertEquals(2, leidos.total(), "construir lee uno, avanzar lee el siguiente y nada más")
+        assertEquals(2, leidos.total, "construir lee uno, avanzar lee el siguiente y nada más")
     }
 
     // ---- PERSISTENCIA Y BACKTRACKING ----
