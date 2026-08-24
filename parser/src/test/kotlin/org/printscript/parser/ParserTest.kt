@@ -43,10 +43,10 @@ class ParserTest {
         val end = Position(1, column + text.length - 1)
         column += text.length + 1
         val value = if (type == TokenType.STRING_LITERAL) text.trim('"') else text
-        return Token(type, text, value, Range(start, end))
+        return Token(type, value, Range(start, end))
     }
 
-    private fun eof() = Token(TokenType.EOF, "", "", Range(Position(1, column), Position(1, column)))
+    private fun eof() = Token(TokenType.EOF, "", Range(Position(1, column), Position(1, column)))
 
     private fun parse(vararg tokens: Token): List<Result<ASTNode, PrintScriptError>> {
         val all = (tokens.toList() + eof()).map { Result.Success(it) as Result<Token, PrintScriptError> }

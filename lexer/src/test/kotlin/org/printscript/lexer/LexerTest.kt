@@ -72,11 +72,11 @@ class LexerTest {
     }
 
     @Test
-    fun `el lexema y la posicion son correctos`() {
+    fun `el valor y la posicion son correctos`() {
         val tokens = lexer.tokenize("let x = 5;").collectResults().getOrNull()!!
-        assertEquals("let", tokens[0].lexeme)
+        assertEquals("let", tokens[0].value)
         assertEquals(Range(Position(1, 1), Position(1, 3)), tokens[0].range)
-        assertEquals("x", tokens[1].lexeme)
+        assertEquals("x", tokens[1].value)
         assertEquals(Range(Position(1, 5), Position(1, 5)), tokens[1].range)
     }
 

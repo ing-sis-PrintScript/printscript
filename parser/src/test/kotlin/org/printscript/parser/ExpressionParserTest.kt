@@ -39,12 +39,12 @@ class ExpressionParserTest {
         val end = Position(1, column + text.length - 1)
         column += text.length + 1
         val value = if (type == TokenType.STRING_LITERAL) text.trim('"') else text
-        return Token(type, text, value, Range(start, end))
+        return Token(type, value, Range(start, end))
     }
 
     private fun parse(vararg tokens: Token): Result<Expression, PrintScriptError> {
         val results = tokens.map { Result.Success(it) as Result<Token, PrintScriptError> } +
-                Result.Success(Token(TokenType.EOF, "", "", Range(Position(1, 99), Position(1, 99))))
+                Result.Success(Token(TokenType.EOF, "", Range(Position(1, 99), Position(1, 99))))
         return parser.parse(TokenStream(results.asSequence()))
     }
 
