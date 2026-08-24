@@ -1,29 +1,12 @@
 package org.printscript.lexer
 
-import org.printscript.common.Range
-import org.printscript.common.Result
-import org.printscript.common.getOrNull
-import org.printscript.common.map
 import org.printscript.lexer.source.SourceCursor
-import org.printscript.token.Token
-import org.printscript.token.TokenType
+import org.printscript.lexer.source.SourceReader
+import org.printscript.lexer.source.StringSourceReader
+import org.printscript.token.TokenSource
 
 class Lexer(private val matcher: TokenMatcher = TokenMatcher()) {
-    fun tokenize(lines: Sequence<String>): Sequence<Result<Token, LexicalError>> =
-        sequence {
-            val cursor = SourceCursor(lines)
+    fun tokenize(source: SourceReader): TokenSource = LexingTokenSource(matcher, SourceCursor.from(source))
 
-            while (cursor.moveToNextToken()) {
-                val result = matcher.match(cursor.line, cursor.index, cursor.lineNumber)
-                yield(result.map { it.token })
-
-                val match = result.getOrNull() ?: return@sequence
-                cursor.advanceTo(match.nextIndex)
-            }
-
-            val end = cursor.endPosition()
-            yield(Result.Success(Token(TokenType.EOF, "", Range(end, end))))
-        }
-
-    fun tokenize(source: String): Sequence<Result<Token, LexicalError>> = tokenize(source.lineSequence())
+    fun tokenize(source: String): TokenSource = tokenize(StringSourceReader(source))
 }

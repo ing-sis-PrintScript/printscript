@@ -4,7 +4,7 @@ import org.printscript.common.Result
 import org.printscript.lexer.rules.TokenRule
 import org.printscript.lexer.rules.errorOf
 
-class TokenMatcher(private val rules: List<TokenRule> = PrintScript10.RULES) {
+data class TokenMatcher(private val rules: List<TokenRule> = PrintScript10.RULES) {
     fun match(
         line: String,
         from: Int,
