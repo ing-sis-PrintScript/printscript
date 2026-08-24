@@ -20,5 +20,9 @@ import org.printscript.lexer.TokenMatch
  * nada del lenguaje: no tiene que deducir cuanto avanzar, se lo dicen.
  */
 interface TokenRule {
-    fun match(line: String, from: Int, lineNumber: Int): Result<TokenMatch, LexicalError>?
+    fun match(
+        line: String,
+        from: Int,
+        lineNumber: Int,
+    ): Result<TokenMatch, LexicalError>?
 }

@@ -15,7 +15,6 @@ import org.printscript.token.Token
 import org.printscript.token.TokenType
 
 class PrintScript10ExpressionParser : ExpressionParser {
-
     override fun parse(stream: TokenStream): Result<Expression, PrintScriptError> = parseExpression(stream)
 
     private fun parseExpression(stream: TokenStream): Result<Expression, PrintScriptError> {
@@ -62,18 +61,19 @@ class PrintScript10ExpressionParser : ExpressionParser {
 
             TokenType.LPAREN -> parenthesized(stream)
 
-            else -> Result.Failure(
-                SyntaxError("Se esperaba un valor, un identificador o '('", token.range),
-            )
+            else ->
+                Result.Failure(
+                    SyntaxError("Se esperaba un valor, un identificador o '('", token.range),
+                )
         }
     }
 
-
     private fun numberLiteral(token: Token): Result<Expression, PrintScriptError> {
-        val number = token.value.toDoubleOrNull()
-            ?: return Result.Failure(
-                SyntaxError("'${token.value}' no es un número válido", token.range),
-            )
+        val number =
+            token.value.toDoubleOrNull()
+                ?: return Result.Failure(
+                    SyntaxError("'${token.value}' no es un número válido", token.range),
+                )
 
         return Result.Success(NumberLiteral(number, token.range))
     }

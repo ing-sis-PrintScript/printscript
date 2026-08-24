@@ -16,11 +16,9 @@ import org.printscript.parser.SyntaxError
 import org.printscript.parser.token.TokenStream
 import org.printscript.token.TokenType
 
-
 class DeclarationParser(
     private val expressions: ExpressionParser,
 ) : StatementParser {
-
     override fun canHandle(type: TokenType): Boolean = type == TokenType.LET
 
     override fun parse(stream: TokenStream): Result<Statement, PrintScriptError> =
@@ -47,20 +45,19 @@ class DeclarationParser(
         stream.expect(TokenType.IDENTIFIER, "el nombre de la variable")
             .map { Identifier(it.value, it.range) }
 
-
     private fun parseTypeAnnotation(stream: TokenStream): Result<DeclaredType, PrintScriptError> =
         stream.skip(TokenType.COLON, "':' antes del tipo").flatMap {
             stream.next().flatMap { token ->
                 when (token.type) {
                     TokenType.TYPE_NUMBER -> Result.Success(DeclaredType.NUMBER)
                     TokenType.TYPE_STRING -> Result.Success(DeclaredType.STRING)
-                    else -> Result.Failure(
-                        SyntaxError("Se esperaba 'number' o 'string'", token.range),
-                    )
+                    else ->
+                        Result.Failure(
+                            SyntaxError("Se esperaba 'number' o 'string'", token.range),
+                        )
                 }
             }
         }
-
 
     private fun parseInitializer(stream: TokenStream): Result<Expression?, PrintScriptError> {
         if (!stream.peekIs(TokenType.ASSIGN)) return Result.Success(null)
@@ -70,5 +67,8 @@ class DeclarationParser(
         }
     }
 
-    private fun spanOf(start: Position, end: Position) = Range(start, end)
+    private fun spanOf(
+        start: Position,
+        end: Position,
+    ) = Range(start, end)
 }

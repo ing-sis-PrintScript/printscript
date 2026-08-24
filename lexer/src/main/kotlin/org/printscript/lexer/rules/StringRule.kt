@@ -13,8 +13,11 @@ import org.printscript.token.TokenType
  * el contenido y la extension real.
  */
 object StringRule : TokenRule {
-
-    override fun match(line: String, from: Int, lineNumber: Int): Result<TokenMatch, LexicalError>? {
+    override fun match(
+        line: String,
+        from: Int,
+        lineNumber: Int,
+    ): Result<TokenMatch, LexicalError>? {
         val quote = line[from]
         if (quote != '"' && quote != '\'') return null
 

@@ -16,11 +16,12 @@ import kotlin.test.assertNull
  * Le paso una linea y un indice, y verifico que unidad lexica sale.
  */
 class TokenMatcherTest {
-
     private val matcher = TokenMatcher()
 
-    private fun matchAt(line: String, from: Int) =
-        assertNotNull(matcher.match(line, from, 1).getOrNull(), "esperaba un token")
+    private fun matchAt(
+        line: String,
+        from: Int,
+    ) = assertNotNull(matcher.match(line, from, 1).getOrNull(), "esperaba un token")
 
     @Test
     fun `reconoce una keyword`() {

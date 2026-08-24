@@ -1,6 +1,5 @@
 package org.printscript.parser.token
 
-
 import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
@@ -9,15 +8,11 @@ import org.printscript.parser.SyntaxError
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-
-
 class TokenStream(val tokens: Sequence<Result<Token, PrintScriptError>>) {
-
     private val iterator = tokens.iterator()
     private var buffered: Result<Token, PrintScriptError>? = null
     private var exhausted = false
     private var lastRange = Range(Position(1, 1), Position(1, 1))
-
 
     fun peek(): Result<Token, PrintScriptError> {
         val cached = buffered
@@ -41,20 +36,29 @@ class TokenStream(val tokens: Sequence<Result<Token, PrintScriptError>>) {
      * Consume el próximo token verificando que sea del tipo esperado.
      * Si no lo es, devuelve un SyntaxError apuntando al token que apareció.
      */
-    fun expect(type: TokenType, what: String): Result<Token, PrintScriptError> {
+    fun expect(
+        type: TokenType,
+        what: String,
+    ): Result<Token, PrintScriptError> {
         val result = next()
         return when (result) {
             is Result.Failure -> result
             is Result.Success -> {
                 val token = result.value
-                if (token.type == type) result
-                else Result.Failure(SyntaxError("Se esperaba $what", token.range))
+                if (token.type == type) {
+                    result
+                } else {
+                    Result.Failure(SyntaxError("Se esperaba $what", token.range))
+                }
             }
         }
     }
 
     /** Consume tokens como el expect pero para datos que no aportan nada (":", ";", "="). */
-    fun skip(type: TokenType, what: String): Result<Unit, PrintScriptError> =
+    fun skip(
+        type: TokenType,
+        what: String,
+    ): Result<Unit, PrintScriptError> =
         when (val result = expect(type, what)) {
             is Result.Success -> Result.Success(Unit)
             is Result.Failure -> result
@@ -84,7 +88,6 @@ class TokenStream(val tokens: Sequence<Result<Token, PrintScriptError>>) {
             if (result is Result.Success && result.value.type == TokenType.SEMICOLON) return
         }
     }
-
 
     private fun readNext(): Result<Token, PrintScriptError> {
         if (!iterator.hasNext()) {

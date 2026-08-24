@@ -13,11 +13,9 @@ import org.printscript.parser.ExpressionParser
 import org.printscript.parser.token.TokenStream
 import org.printscript.token.TokenType
 
-
 class CallParser(
     private val expressions: ExpressionParser,
 ) : StatementParser {
-
     override fun canHandle(type: TokenType): Boolean = type == TokenType.PRINTLN
 
     override fun parse(stream: TokenStream): Result<Statement, PrintScriptError> =
@@ -27,15 +25,16 @@ class CallParser(
                     stream.expect(TokenType.RPAREN, "')' para cerrar la llamada").flatMap { rparen ->
                         stream.expect(TokenType.SEMICOLON, "';' al final de la sentencia")
                             .map { semicolon ->
-                                val call = CallExpression(
-                                    // El lexer emite PRINTLN como keyword propio, pero el AST
-                                    // habla de conceptos del lenguaje: acá es un nombre invocado.
-                                    // El nombre sale de `value`, igual que en DeclarationParser y
-                                    // AssignmentParser: un solo campo para leer texto de un token.
-                                    callee = Identifier(callee.value, callee.range),
-                                    arguments = listOf(argument),
-                                    range = Range(callee.range.start, rparen.range.end),
-                                )
+                                val call =
+                                    CallExpression(
+                                        // El lexer emite PRINTLN como keyword propio, pero el AST
+                                        // habla de conceptos del lenguaje: acá es un nombre invocado.
+                                        // El nombre sale de `value`, igual que en DeclarationParser y
+                                        // AssignmentParser: un solo campo para leer texto de un token.
+                                        callee = Identifier(callee.value, callee.range),
+                                        arguments = listOf(argument),
+                                        range = Range(callee.range.start, rparen.range.end),
+                                    )
                                 ExpressionStatement(
                                     expression = call,
                                     range = Range(callee.range.start, semicolon.range.end),
