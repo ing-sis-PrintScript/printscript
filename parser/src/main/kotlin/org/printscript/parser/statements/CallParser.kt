@@ -23,30 +23,29 @@ class CallParser(
 
     override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> =
         stream.expect(TokenType.PRINTLN).flatMap { (callee, afterCallee) ->
-            afterCallee.skip(TokenType.LPAREN).flatMap { afterOpen ->
+            afterCallee.skip(TokenType.LPAREN, "después de println").flatMap { afterOpen ->
                 expressions.parse(afterOpen).flatMap { (argument, afterArgument) ->
-                    afterArgument.expect(TokenType.RPAREN).flatMap { (rparen, afterClose) ->
-                        afterClose.expect(TokenType.SEMICOLON).map { (semicolon, afterSemicolon) ->
-                            val call =
-                                CallExpression(
-                                    // El lexer emite PRINTLN como keyword propio, pero el AST
-                                    // habla de conceptos del lenguaje: acá es un nombre invocado.
-                                    // El nombre sale de `value`, igual que en DeclarationParser y
-                                    // AssignmentParser: un solo campo para leer texto de un token.
-                                    callee = Identifier(callee.value, callee.range),
-                                    arguments = listOf(argument),
-                                    range = Range(callee.range.start, rparen.range.end),
-                                )
-                            Parsed(
-                                ExpressionStatement(
-                                    expression = call,
-                                    // El statement incluye el ";", la llamada no.
-                                    range = Range(callee.range.start, semicolon.range.end),
-                                ),
-                                afterSemicolon,
-                            )
+                    afterArgument.expect(TokenType.RPAREN, "para cerrar la llamada")
+                        .flatMap { (rparen, afterClose) ->
+                            afterClose.expect(TokenType.SEMICOLON, "al final de la sentencia")
+                                .map { (semicolon, afterSemicolon) ->
+                                    val call =
+                                        CallExpression(
+                                            // El nombre sale de `value`, igual que en los otros parsers.
+                                            callee = Identifier(callee.value, callee.range),
+                                            arguments = listOf(argument),
+                                            range = Range(callee.range.start, rparen.range.end),
+                                        )
+                                    Parsed(
+                                        ExpressionStatement(
+                                            expression = call,
+                                            // El statement incluye el ";", la llamada no.
+                                            range = Range(callee.range.start, semicolon.range.end),
+                                        ),
+                                        afterSemicolon,
+                                    )
+                                }
                         }
-                    }
                 }
             }
         }

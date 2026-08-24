@@ -10,16 +10,27 @@ import org.printscript.token.TokenType
 
 fun TokenStream.next(): Result<Parsed<Token>, PrintScriptError> = peek().map { Parsed(it, advance()) }
 
-fun TokenStream.expect(type: TokenType): Result<Parsed<Token>, PrintScriptError> =
+fun TokenStream.expect(
+    type: TokenType,
+    context: String? = null,
+): Result<Parsed<Token>, PrintScriptError> =
     peek().flatMap { token ->
         if (token.type == type) {
             Result.Success(Parsed(token, advance()))
         } else {
-            Result.Failure(SyntaxError("Se esperaba ${type.describe()}", token.range))
+            Result.Failure(SyntaxError(expectedMessage(type, context), token.range))
         }
     }
 
-fun TokenStream.skip(type: TokenType): Result<TokenStream, PrintScriptError> = expect(type).map { it.rest }
+fun TokenStream.skip(
+    type: TokenType,
+    context: String? = null,
+): Result<TokenStream, PrintScriptError> = expect(type, context).map { it.rest }
+
+private fun expectedMessage(
+    type: TokenType,
+    context: String?,
+): String = if (context == null) "Se esperaba ${type.describe()}" else "Se esperaba ${type.describe()} $context"
 
 fun TokenStream.peekIs(type: TokenType): Boolean =
     when (val result = peek()) {

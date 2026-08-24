@@ -32,19 +32,20 @@ class AssignmentParser(
     override fun canHandle(type: TokenType): Boolean = type == TokenType.IDENTIFIER
 
     override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> =
-        stream.expect(TokenType.IDENTIFIER).flatMap { (name, afterName) ->
-            afterName.skip(TokenType.ASSIGN).flatMap { afterAssign ->
+        stream.expect(TokenType.IDENTIFIER, "como nombre de la variable").flatMap { (name, afterName) ->
+            afterName.skip(TokenType.ASSIGN, "en la asignación").flatMap { afterAssign ->
                 expressions.parse(afterAssign).flatMap { (value, afterValue) ->
-                    afterValue.expect(TokenType.SEMICOLON).map { (semicolon, afterSemicolon) ->
-                        Parsed(
-                            AssignmentStatement(
-                                target = Identifier(name.value, name.range),
-                                value = value,
-                                range = Range(name.range.start, semicolon.range.end),
-                            ),
-                            afterSemicolon,
-                        )
-                    }
+                    afterValue.expect(TokenType.SEMICOLON, "al final de la asignación")
+                        .map { (semicolon, afterSemicolon) ->
+                            Parsed(
+                                AssignmentStatement(
+                                    target = Identifier(name.value, name.range),
+                                    value = value,
+                                    range = Range(name.range.start, semicolon.range.end),
+                                ),
+                                afterSemicolon,
+                            )
+                        }
                 }
             }
         }

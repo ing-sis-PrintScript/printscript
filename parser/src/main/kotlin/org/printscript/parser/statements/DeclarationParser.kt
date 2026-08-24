@@ -38,30 +38,31 @@ class DeclarationParser(
             parseIdentifier(afterLet).flatMap { (identifier, afterIdentifier) ->
                 parseTypeAnnotation(afterIdentifier).flatMap { (declaredType, afterType) ->
                     parseInitializer(afterType).flatMap { (initializer, afterInitializer) ->
-                        afterInitializer.expect(TokenType.SEMICOLON).map { (semicolon, afterSemicolon) ->
-                            Parsed(
-                                VariableDeclaration(
-                                    identifier = identifier,
-                                    declaredType = declaredType,
-                                    initializer = initializer,
-                                    // De punta a punta: del "let" al ";".
-                                    range = spanOf(letToken.range.start, semicolon.range.end),
-                                ),
-                                afterSemicolon,
-                            )
-                        }
+                        afterInitializer.expect(TokenType.SEMICOLON, "al final de la declaración")
+                            .map { (semicolon, afterSemicolon) ->
+                                Parsed(
+                                    VariableDeclaration(
+                                        identifier = identifier,
+                                        declaredType = declaredType,
+                                        initializer = initializer,
+                                        // De punta a punta: del "let" al ";".
+                                        range = spanOf(letToken.range.start, semicolon.range.end),
+                                    ),
+                                    afterSemicolon,
+                                )
+                            }
                     }
                 }
             }
         }
 
     private fun parseIdentifier(stream: TokenStream): Result<Parsed<Identifier>, PrintScriptError> =
-        stream.expect(TokenType.IDENTIFIER).map { (token, rest) ->
+        stream.expect(TokenType.IDENTIFIER, "como nombre de la variable").map { (token, rest) ->
             Parsed(Identifier(token.value, token.range), rest)
         }
 
     private fun parseTypeAnnotation(stream: TokenStream): Result<Parsed<DeclaredType>, PrintScriptError> =
-        stream.skip(TokenType.COLON).flatMap { afterColon ->
+        stream.skip(TokenType.COLON, "antes del tipo").flatMap { afterColon ->
             afterColon.next().flatMap { (token, afterType) ->
                 when (token.type) {
                     TokenType.TYPE_NUMBER -> Result.Success(Parsed(DeclaredType.NUMBER, afterType))
