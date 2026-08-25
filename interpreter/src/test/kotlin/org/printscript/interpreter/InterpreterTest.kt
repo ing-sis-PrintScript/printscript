@@ -1,5 +1,6 @@
 package org.printscript.interpreter
 
+import org.printscript.ast.AssignmentStatement
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.CallExpression
@@ -15,6 +16,7 @@ import org.printscript.common.Result
 import org.printscript.interpreter.io.PrintScriptIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class InterpreterTest {
@@ -30,28 +32,42 @@ class InterpreterTest {
         override fun read(prompt: String): String = ""
     }
 
+    /** Desempaqueta un Success o falla el test — el paso previo de una cadena que sigue. */
+    private fun envAfter(result: Result<Environment, InterpreterError>): Environment {
+        assertIs<Result.Success<Environment>>(result, "esperaba Success y vino Failure")
+        return result.value
+    }
+
     @Test
     fun shouldResolveMathTest() {
         val mockIO = MockIO()
         val interpreter: PrintScriptInterpreter = Interpreter(io = mockIO)
 
-        interpreter.execute(
-            VariableDeclaration(
-                identifier = Identifier("a", dummyRange),
-                declaredType = DeclaredType.NUMBER,
-                initializer = NumberLiteral(10.0, dummyRange),
-                range = dummyRange,
-            ),
-        )
+        val afterA =
+            envAfter(
+                interpreter.execute(
+                    VariableDeclaration(
+                        identifier = Identifier("a", dummyRange),
+                        declaredType = DeclaredType.NUMBER,
+                        initializer = NumberLiteral(10.0, dummyRange),
+                        range = dummyRange,
+                    ),
+                    Environment(),
+                ),
+            )
 
-        interpreter.execute(
-            VariableDeclaration(
-                identifier = Identifier("b", dummyRange),
-                declaredType = DeclaredType.NUMBER,
-                initializer = NumberLiteral(2.0, dummyRange),
-                range = dummyRange,
-            ),
-        )
+        val afterB =
+            envAfter(
+                interpreter.execute(
+                    VariableDeclaration(
+                        identifier = Identifier("b", dummyRange),
+                        declaredType = DeclaredType.NUMBER,
+                        initializer = NumberLiteral(2.0, dummyRange),
+                        range = dummyRange,
+                    ),
+                    afterA,
+                ),
+            )
 
         val division =
             BinaryExpression(
@@ -78,7 +94,7 @@ class InterpreterTest {
                 range = dummyRange,
             )
 
-        val result = interpreter.execute(printlnCall)
+        val result = interpreter.execute(printlnCall, afterB)
 
         assertTrue(result is Result.Success, "La ejecución debería ser un éxito")
         assertEquals(listOf("Resultado: 5"), mockIO.outputs)
@@ -106,10 +122,115 @@ class InterpreterTest {
                 range = dummyRange,
             )
 
-        val result = interpreter.execute(printlnCall)
+        val result = interpreter.execute(printlnCall, Environment())
 
         assertTrue(result is Result.Failure, "Debería haber fallado")
         val error = (result as Result.Failure).error
         assertEquals("División por cero.", error.message)
+    }
+
+    @Test
+    fun `declarar sin inicializador y despues asignar deja la variable lista para leerse`() {
+        val mockIO = MockIO()
+        val interpreter: PrintScriptInterpreter = Interpreter(io = mockIO)
+
+        val afterDeclaration =
+            envAfter(
+                interpreter.execute(
+                    VariableDeclaration(
+                        identifier = Identifier("a", dummyRange),
+                        declaredType = DeclaredType.STRING,
+                        initializer = null,
+                        range = dummyRange,
+                    ),
+                    Environment(),
+                ),
+            )
+        val afterAssignment =
+            envAfter(
+                interpreter.execute(
+                    AssignmentStatement(
+                        target = Identifier("a", dummyRange),
+                        value = StringLiteral("hola", dummyRange),
+                        range = dummyRange,
+                    ),
+                    afterDeclaration,
+                ),
+            )
+
+        val result =
+            interpreter.execute(
+                ExpressionStatement(
+                    expression =
+                        CallExpression(
+                            callee = Identifier("println", dummyRange),
+                            arguments = listOf(Identifier("a", dummyRange)),
+                            range = dummyRange,
+                        ),
+                    range = dummyRange,
+                ),
+                afterAssignment,
+            )
+
+        assertTrue(result is Result.Success, "La ejecución debería ser un éxito")
+        assertEquals(listOf("hola"), mockIO.outputs)
+    }
+
+    @Test
+    fun `redeclarar la misma variable propaga el error de Environment a traves del Interpreter`() {
+        val interpreter: PrintScriptInterpreter = Interpreter(io = MockIO())
+        val declaration =
+            VariableDeclaration(
+                identifier = Identifier("a", dummyRange),
+                declaredType = DeclaredType.NUMBER,
+                initializer = NumberLiteral(1.0, dummyRange),
+                range = dummyRange,
+            )
+
+        val afterFirst = envAfter(interpreter.execute(declaration, Environment()))
+        val result = interpreter.execute(declaration, afterFirst)
+
+        assertIs<Result.Failure<InterpreterError>>(result)
+        assertEquals("La variable 'a' ya fue declarada.", result.error.message)
+    }
+
+    @Test
+    fun `asignar a una variable no declarada propaga el error de Environment a traves del Interpreter`() {
+        val interpreter: PrintScriptInterpreter = Interpreter(io = MockIO())
+
+        val result =
+            interpreter.execute(
+                AssignmentStatement(
+                    target = Identifier("noExiste", dummyRange),
+                    value = NumberLiteral(1.0, dummyRange),
+                    range = dummyRange,
+                ),
+                Environment(),
+            )
+
+        assertIs<Result.Failure<InterpreterError>>(result)
+        assertEquals("La variable 'noExiste' no ha sido declarada.", result.error.message)
+    }
+
+    @Test
+    fun `llamar a una funcion desconocida propaga el error a traves del Interpreter`() {
+        val interpreter: PrintScriptInterpreter = Interpreter(io = MockIO())
+
+        val result =
+            interpreter.execute(
+                ExpressionStatement(
+                    expression =
+                        CallExpression(
+                            callee = Identifier("saludar", dummyRange),
+                            arguments = listOf(NumberLiteral(1.0, dummyRange)),
+                            range = dummyRange,
+                        ),
+                    range = dummyRange,
+                ),
+                Environment(),
+            )
+
+        assertIs<Result.Failure<InterpreterError>>(result)
+        assertEquals("No existe la función 'saludar'.", result.error.message)
     }
 }
