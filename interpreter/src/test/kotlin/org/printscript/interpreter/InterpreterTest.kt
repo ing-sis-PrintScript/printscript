@@ -1,5 +1,6 @@
 package org.printscript.interpreter
 
+import org.printscript.ast.AssignmentStatement
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.CallExpression
@@ -15,6 +16,7 @@ import org.printscript.common.Result
 import org.printscript.interpreter.io.PrintScriptIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class InterpreterTest {
@@ -111,5 +113,99 @@ class InterpreterTest {
         assertTrue(result is Result.Failure, "Debería haber fallado")
         val error = (result as Result.Failure).error
         assertEquals("División por cero.", error.message)
+    }
+
+    @Test
+    fun `declarar sin inicializador y despues asignar deja la variable lista para leerse`() {
+        val mockIO = MockIO()
+        val interpreter: PrintScriptInterpreter = Interpreter(io = mockIO)
+
+        interpreter.execute(
+            VariableDeclaration(
+                identifier = Identifier("a", dummyRange),
+                declaredType = DeclaredType.STRING,
+                initializer = null,
+                range = dummyRange,
+            ),
+        )
+        interpreter.execute(
+            AssignmentStatement(
+                target = Identifier("a", dummyRange),
+                value = StringLiteral("hola", dummyRange),
+                range = dummyRange,
+            ),
+        )
+
+        val result =
+            interpreter.execute(
+                ExpressionStatement(
+                    expression =
+                        CallExpression(
+                            callee = Identifier("println", dummyRange),
+                            arguments = listOf(Identifier("a", dummyRange)),
+                            range = dummyRange,
+                        ),
+                    range = dummyRange,
+                ),
+            )
+
+        assertTrue(result is Result.Success, "La ejecución debería ser un éxito")
+        assertEquals(listOf("hola"), mockIO.outputs)
+    }
+
+    @Test
+    fun `redeclarar la misma variable propaga el error de Environment a traves del Interpreter`() {
+        val interpreter: PrintScriptInterpreter = Interpreter(io = MockIO())
+        val declaration =
+            VariableDeclaration(
+                identifier = Identifier("a", dummyRange),
+                declaredType = DeclaredType.NUMBER,
+                initializer = NumberLiteral(1.0, dummyRange),
+                range = dummyRange,
+            )
+
+        interpreter.execute(declaration)
+        val result = interpreter.execute(declaration)
+
+        assertIs<Result.Failure<InterpreterError>>(result)
+        assertEquals("La variable 'a' ya fue declarada.", result.error.message)
+    }
+
+    @Test
+    fun `asignar a una variable no declarada propaga el error de Environment a traves del Interpreter`() {
+        val interpreter: PrintScriptInterpreter = Interpreter(io = MockIO())
+
+        val result =
+            interpreter.execute(
+                AssignmentStatement(
+                    target = Identifier("noExiste", dummyRange),
+                    value = NumberLiteral(1.0, dummyRange),
+                    range = dummyRange,
+                ),
+            )
+
+        assertIs<Result.Failure<InterpreterError>>(result)
+        assertEquals("La variable 'noExiste' no ha sido declarada.", result.error.message)
+    }
+
+    @Test
+    fun `llamar a una funcion desconocida propaga el error a traves del Interpreter`() {
+        val interpreter: PrintScriptInterpreter = Interpreter(io = MockIO())
+
+        val result =
+            interpreter.execute(
+                ExpressionStatement(
+                    expression =
+                        CallExpression(
+                            callee = Identifier("saludar", dummyRange),
+                            arguments = listOf(NumberLiteral(1.0, dummyRange)),
+                            range = dummyRange,
+                        ),
+                    range = dummyRange,
+                ),
+            )
+
+        assertIs<Result.Failure<InterpreterError>>(result)
+        assertEquals("No existe la función 'saludar'.", result.error.message)
     }
 }
