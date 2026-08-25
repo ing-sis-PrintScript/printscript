@@ -1,0 +1,120 @@
+@startuml lexer-estructura
+title Modulo lexer - estructura
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "token (vocabulario compartido)" #F0F4F4 {
+  interface TokenSource {
+    +nextToken(): TokenReadResult
+  }
+  class ListTokenSource
+  class Token {
+    +type: TokenType
+    +value: String
+    +range: Range
+  }
+}
+
+package "lexer" {
+
+  class Lexer {
+    +tokenize(SourceReader): TokenSource
+    +tokenize(String): TokenSource
+  }
+
+  class LexingTokenSource {
+    -matcher: TokenMatcher
+    -cursor: SourceCursor
+    +nextToken(): TokenReadResult
+  }
+
+  class TokenMatcher {
+    -rules: List<TokenRule>
+    +match(line, from, lineNumber): Result<TokenMatch, LexicalError>
+  }
+
+  class TokenMatch {
+    +token: Token
+    +nextIndex: Int
+  }
+
+  class LexicalError {
+    +message: String
+    +range: Range
+  }
+
+  object PrintScript10 {
+    KEYWORDS
+    SYMBOLS
+    RULES
+  }
+
+  package "source" {
+    interface SourceReader {
+      +nextLine(): LineReadResult
+    }
+    class StringSourceReader
+    class SourceCursor {
+      +line: String
+      +lineNumber: Int
+      +index: Int
+      +moveToNextToken(): ScanResult
+      +advanceTo(Int): SourceCursor
+    }
+    interface ScanResult
+    class Found
+    class Exhausted
+  }
+
+  package "rules" {
+    interface TokenRule {
+      +match(line, from, lineNumber): Result<TokenMatch, LexicalError>?
+    }
+    class NumberRule <<object>>
+    class StringRule <<object>>
+    class WordRule
+    class SymbolRule
+  }
+}
+
+' --- implementaciones ---
+LexingTokenSource ..|> TokenSource
+ListTokenSource ..|> TokenSource
+StringSourceReader ..|> SourceReader
+Found ..|> ScanResult
+Exhausted ..|> ScanResult
+NumberRule ..|> TokenRule
+StringRule ..|> TokenRule
+WordRule ..|> TokenRule
+SymbolRule ..|> TokenRule
+
+' --- composicion ---
+Lexer --> TokenMatcher
+Lexer ..> LexingTokenSource : crea
+LexingTokenSource --> TokenMatcher
+LexingTokenSource --> SourceCursor
+LexingTokenSource ..> ListTokenSource : "vacia, al terminar"
+SourceCursor --> SourceReader
+SourceCursor ..> ScanResult : devuelve
+TokenMatcher --> "1..*" TokenRule
+TokenRule ..> TokenMatch : devuelve
+TokenRule ..> LexicalError : devuelve
+TokenMatch --> Token
+PrintScript10 ..> WordRule : configura
+PrintScript10 ..> SymbolRule : configura
+
+note right of PrintScript10
+  Lo unico que cambia
+  entre versiones del lenguaje
+end note
+
+note bottom of TokenRule
+  Tres respuestas:
+  null     = "no es lo mio"
+  Success  = token + nextIndex
+  Failure  = "es mio pero esta mal"
+end note
+
+@enduml
