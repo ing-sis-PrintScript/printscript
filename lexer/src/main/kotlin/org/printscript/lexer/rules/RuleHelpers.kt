@@ -8,9 +8,6 @@ import org.printscript.lexer.TokenMatch
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-// Armado de matches y errores, compartido por todas las reglas.
-
-/** Para tokens cuyo valor es identico al texto del fuente. */
 internal fun matchOf(
     type: TokenType,
     text: String,
@@ -18,10 +15,6 @@ internal fun matchOf(
     index: Int,
 ): Result<TokenMatch, LexicalError> = matchOf(type, text, text.length, line, index)
 
-/**
- * Para tokens donde el valor y el texto del fuente difieren, como los strings:
- * [value] es el contenido y [rawLength] cuantos caracteres ocupo realmente.
- */
 internal fun matchOf(
     type: TokenType,
     value: String,
@@ -43,7 +36,6 @@ internal fun errorOf(
     length: Int,
 ): Result<TokenMatch, LexicalError> = Result.Failure(LexicalError(message, rangeOf(line, index, length)))
 
-/** Traduce indice 0-based + largo a un Range de columnas 1-based, con el fin incluido. */
 internal fun rangeOf(
     line: Int,
     index: Int,

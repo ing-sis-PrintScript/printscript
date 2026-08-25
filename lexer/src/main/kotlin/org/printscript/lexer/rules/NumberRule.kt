@@ -5,7 +5,6 @@ import org.printscript.lexer.LexicalError
 import org.printscript.lexer.TokenMatch
 import org.printscript.token.TokenType
 
-/** Enteros y decimales: 12, 3.5 */
 object NumberRule : TokenRule {
     override fun match(
         line: String,

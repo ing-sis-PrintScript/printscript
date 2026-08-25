@@ -4,31 +4,31 @@ import org.printscript.ast.ASTNode
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.parser.statements.StatementParser
+import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.describe
-import org.printscript.token.Token
+import org.printscript.token.TokenSource
 
 class Parser(
     private val statementParsers: List<StatementParser>,
+    private val recovery: RecoveryStrategy,
 ) {
-    fun parse(tokens: Sequence<Result<Token, PrintScriptError>>): Sequence<Result<ASTNode, PrintScriptError>> =
-        sequence {
-            val stream = TokenStream(tokens)
+    fun parse(source: TokenSource): Sequence<Result<ASTNode, PrintScriptError>> =
+        generateSequence({ step(TokenStream(source)) }) { previous -> step(previous.rest) }
+            .map { it.value }
 
-            while (!stream.atEnd()) {
-                val result = parseStatement(stream)
-                yield(result)
+    private fun step(stream: TokenStream): Parsed<Result<ASTNode, PrintScriptError>>? {
+        if (stream.atEnd()) return null
 
-                if (result is Result.Failure) stream.synchronize()
-            }
+        return when (val result = parseStatement(stream)) {
+            is Result.Success -> Parsed(Result.Success(result.value.value), result.value.rest)
+            is Result.Failure -> Parsed(result, recovery.recover(stream))
         }
+    }
 
-    private fun parseStatement(stream: TokenStream): Result<ASTNode, PrintScriptError> {
+    private fun parseStatement(stream: TokenStream): Result<Parsed<ASTNode>, PrintScriptError> {
         val peeked = stream.peek()
-        if (peeked is Result.Failure) {
-            stream.next() // consumirlo, para que synchronize no lo vuelva a leer
-            return peeked
-        }
+        if (peeked is Result.Failure) return peeked
 
         val token = (peeked as Result.Success).value
         val parser =

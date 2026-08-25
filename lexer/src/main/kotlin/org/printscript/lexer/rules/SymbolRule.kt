@@ -5,8 +5,7 @@ import org.printscript.lexer.LexicalError
 import org.printscript.lexer.TokenMatch
 import org.printscript.token.TokenType
 
-/** Simbolos de un solo caracter: : ; = ( ) + - * / */
-class SymbolRule(private val symbols: Map<Char, TokenType>) : TokenRule {
+data class SymbolRule(private val symbols: Map<Char, TokenType>) : TokenRule {
     override fun match(
         line: String,
         from: Int,
