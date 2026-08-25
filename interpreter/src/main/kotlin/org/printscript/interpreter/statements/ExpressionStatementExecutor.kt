@@ -25,14 +25,12 @@ class ExpressionStatementExecutor(
     private val evaluator: ExpressionEvaluator = ExpressionEvaluator(),
     private val builtIns: Map<String, BuiltInFunction> = BuiltInFunctions.REGISTRY,
 ) : StatementExecutor {
-    override fun canHandle(statement: Statement): Boolean = statement is ExpressionStatement
-
     override fun execute(
         statement: Statement,
         env: Environment,
         io: PrintScriptIO,
-    ): Result<Environment, InterpreterError> {
-        val expression = (statement as ExpressionStatement).expression
+    ): Result<Environment, InterpreterError>? {
+        val expression = (statement as? ExpressionStatement)?.expression ?: return null
 
         return if (expression is CallExpression) {
             executeCall(expression, env, io)
@@ -57,6 +55,11 @@ class ExpressionStatementExecutor(
         // un InterpreterError si no había argumentos, un camino que ningún
         // programa real podía disparar. Si algún día hay funciones variádicas,
         // esta garantía deja de valer y hay que volver a validar el tamaño acá.
+        // Mientras tanto, si esta garantía se rompiera igual (un CallExpression
+        // armado a mano fuera del parser, por ejemplo), el síntoma no sería un
+        // Result.Failure como en el resto del sistema: sería una
+        // NoSuchElementException sin capturar — la única excepción de todo
+        // el pipeline, que no respeta la convención de Result de common.
         val argument = call.arguments.first()
 
         return evaluator.evaluate(argument, env).flatMap { value ->

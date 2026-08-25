@@ -2,6 +2,7 @@ package org.printscript.interpreter.statements
 
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
+import org.printscript.ast.ExpressionStatement
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.VariableDeclaration
@@ -32,21 +33,21 @@ class DeclarationExecutorTest {
         initializer: Expression?,
     ) = VariableDeclaration(Identifier(name, dummyRange), type, initializer, dummyRange)
 
-    private fun valueOf(result: Result<Environment, InterpreterError>): Environment {
-        assertIs<Result.Success<Environment>>(result, "esperaba Success y vino Failure")
+    private fun valueOf(result: Result<Environment, InterpreterError>?): Environment {
+        assertIs<Result.Success<Environment>>(result, "esperaba Success y vino Failure o null")
         return result.value
     }
 
-    private fun errorOf(result: Result<Environment, InterpreterError>): InterpreterError {
-        assertIs<Result.Failure<InterpreterError>>(result, "esperaba Failure y vino Success")
+    private fun errorOf(result: Result<Environment, InterpreterError>?): InterpreterError {
+        assertIs<Result.Failure<InterpreterError>>(result, "esperaba Failure y vino Success o null")
         return result.error
     }
 
     @Test
-    fun `solo maneja VariableDeclaration`() {
-        val declaration = declaration("x", DeclaredType.NUMBER, NumberLiteral(1.0, dummyRange))
+    fun `devuelve null si el statement no es una VariableDeclaration`() {
+        val notADeclaration = ExpressionStatement(NumberLiteral(1.0, dummyRange), dummyRange)
 
-        assertEquals(true, executor.canHandle(declaration))
+        assertEquals(null, executor.execute(notADeclaration, Environment(), NoOpIO))
     }
 
     @Test

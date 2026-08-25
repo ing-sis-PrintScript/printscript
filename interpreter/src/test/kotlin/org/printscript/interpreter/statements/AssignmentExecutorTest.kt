@@ -3,6 +3,7 @@ package org.printscript.interpreter.statements
 import org.printscript.ast.AssignmentStatement
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
+import org.printscript.ast.ExpressionStatement
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
@@ -38,19 +39,21 @@ class AssignmentExecutorTest {
         value: Expression,
     ) = AssignmentStatement(Identifier(name, dummyRange), value, dummyRange)
 
-    private fun valueOf(result: Result<Environment, InterpreterError>): Environment {
-        assertIs<Result.Success<Environment>>(result, "esperaba Success y vino Failure")
+    private fun valueOf(result: Result<Environment, InterpreterError>?): Environment {
+        assertIs<Result.Success<Environment>>(result, "esperaba Success y vino Failure o null")
         return result.value
     }
 
-    private fun errorOf(result: Result<Environment, InterpreterError>): InterpreterError {
-        assertIs<Result.Failure<InterpreterError>>(result, "esperaba Failure y vino Success")
+    private fun errorOf(result: Result<Environment, InterpreterError>?): InterpreterError {
+        assertIs<Result.Failure<InterpreterError>>(result, "esperaba Failure y vino Success o null")
         return result.error
     }
 
     @Test
-    fun `solo maneja AssignmentStatement`() {
-        assertEquals(true, executor.canHandle(assignment("x", NumberLiteral(1.0, dummyRange))))
+    fun `devuelve null si el statement no es un AssignmentStatement`() {
+        val notAnAssignment = ExpressionStatement(NumberLiteral(1.0, dummyRange), dummyRange)
+
+        assertEquals(null, executor.execute(notAnAssignment, Environment(), NoOpIO))
     }
 
     @Test

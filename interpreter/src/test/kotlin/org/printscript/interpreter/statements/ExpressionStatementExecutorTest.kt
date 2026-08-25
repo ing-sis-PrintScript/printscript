@@ -1,5 +1,6 @@
 package org.printscript.interpreter.statements
 
+import org.printscript.ast.AssignmentStatement
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.CallExpression
@@ -31,8 +32,8 @@ class ExpressionStatementExecutorTest {
         override fun read(prompt: String): String = ""
     }
 
-    private fun errorOf(result: Result<Environment, InterpreterError>): InterpreterError {
-        assertIs<Result.Failure<InterpreterError>>(result, "esperaba Failure y vino Success")
+    private fun errorOf(result: Result<Environment, InterpreterError>?): InterpreterError {
+        assertIs<Result.Failure<InterpreterError>>(result, "esperaba Failure y vino Success o null")
         return result.error
     }
 
@@ -50,10 +51,10 @@ class ExpressionStatementExecutorTest {
     ) = CallExpression(Identifier(name, dummyRange), listOf(argument), dummyRange)
 
     @Test
-    fun `solo maneja ExpressionStatement`() {
-        val statement = ExpressionStatement(number(1.0), dummyRange)
+    fun `devuelve null si el statement no es un ExpressionStatement`() {
+        val notAnExpressionStatement = AssignmentStatement(Identifier("x", dummyRange), number(1.0), dummyRange)
 
-        assertEquals(true, executor.canHandle(statement))
+        assertEquals(null, executor.execute(notAnExpressionStatement, Environment(), RecordingIO()))
     }
 
     @Test

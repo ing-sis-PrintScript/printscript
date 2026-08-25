@@ -19,14 +19,12 @@ import org.printscript.interpreter.io.PrintScriptIO
 class DeclarationExecutor(
     private val evaluator: ExpressionEvaluator = ExpressionEvaluator(),
 ) : StatementExecutor {
-    override fun canHandle(statement: Statement): Boolean = statement is VariableDeclaration
-
     override fun execute(
         statement: Statement,
         env: Environment,
         io: PrintScriptIO,
-    ): Result<Environment, InterpreterError> {
-        val declaration = statement as VariableDeclaration
+    ): Result<Environment, InterpreterError>? {
+        val declaration = statement as? VariableDeclaration ?: return null
 
         val initialValue: Result<PrintScriptValue?, InterpreterError> =
             declaration.initializer?.let { evaluator.evaluate(it, env) } ?: Result.Success(null)

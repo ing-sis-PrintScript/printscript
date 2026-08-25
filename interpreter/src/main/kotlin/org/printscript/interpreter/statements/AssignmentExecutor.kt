@@ -18,14 +18,12 @@ import org.printscript.interpreter.io.PrintScriptIO
 class AssignmentExecutor(
     private val evaluator: ExpressionEvaluator = ExpressionEvaluator(),
 ) : StatementExecutor {
-    override fun canHandle(statement: Statement): Boolean = statement is AssignmentStatement
-
     override fun execute(
         statement: Statement,
         env: Environment,
         io: PrintScriptIO,
-    ): Result<Environment, InterpreterError> {
-        val assignment = statement as AssignmentStatement
+    ): Result<Environment, InterpreterError>? {
+        val assignment = statement as? AssignmentStatement ?: return null
 
         return evaluator.evaluate(assignment.value, env).flatMap { value ->
             env.assign(assignment.target.name, value, assignment.range)

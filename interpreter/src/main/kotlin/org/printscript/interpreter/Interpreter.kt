@@ -8,12 +8,14 @@ import org.printscript.interpreter.io.StandardIO
 import org.printscript.interpreter.statements.StatementExecutor
 
 /**
- * Coordina la ejecución: por cada Statement, elige quién lo sabe ejecutar y
- * aplica el Environment resultante.
+ * Coordina la ejecución: por cada Statement, prueba los executors en orden
+ * hasta que uno lo reconoce, y aplica el Environment resultante.
  *
  * No sabe qué es una declaración ni cómo se imprime: eso lo saben los
- * StatementExecutor en statements/. Acá solo se elige uno por canHandle y se
- * lo deja actuar — el mismo patrón que ya usa Parser con StatementParser.
+ * StatementExecutor en statements/. Como cada executor devuelve null cuando el
+ * statement no es el suyo (ver StatementExecutor), firstNotNullOfOrNull prueba
+ * uno por uno y se queda con el primero que sí contesta — nadie castea nada
+ * acá, y el que sí matchea es quien decide con un `as?` propio.
  */
 class Interpreter(
     private var env: Environment = Environment(),
@@ -21,12 +23,12 @@ class Interpreter(
     private val executors: List<StatementExecutor> = PrintScript10.statementExecutors(),
 ) : PrintScriptInterpreter {
     override fun execute(statement: Statement): Result<Unit, InterpreterError> {
-        val executor =
-            executors.firstOrNull { it.canHandle(statement) }
+        val result =
+            executors.firstNotNullOfOrNull { it.execute(statement, env, io) }
                 ?: return Result.Failure(
                     InterpreterError("No se sabe cómo ejecutar este statement.", statement.range),
                 )
 
-        return executor.execute(statement, env, io).map { newEnv -> env = newEnv }
+        return result.map { newEnv -> env = newEnv }
     }
 }
