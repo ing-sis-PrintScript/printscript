@@ -7,5 +7,6 @@ include(
     "token",
     "ast",
     "parser",
-    "interpreter"
+    "interpreter",
+    "formatter"
 )
