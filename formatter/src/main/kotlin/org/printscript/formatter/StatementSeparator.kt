@@ -2,7 +2,9 @@ package org.printscript.formatter
 
 import org.printscript.ast.ASTNode
 
-class StatementSeparator(private val println: PrintlnRecognizer = PrintlnRecognizer()) {
+class StatementSeparator {
+    private val println = PrintlnRecognizer()
+
     fun before(
         isFirst: Boolean,
         node: ASTNode,

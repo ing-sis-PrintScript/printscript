@@ -1,5 +1,6 @@
 package org.printscript.formatter
 
+import org.printscript.ast.ASTNode
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.expressions.PrintScript10ExpressionFormatter
 import org.printscript.formatter.statements.AssignmentFormatter
@@ -8,14 +9,17 @@ import org.printscript.formatter.statements.ExpressionStatementFormatter
 import org.printscript.formatter.statements.PrintScript10StatementDispatcher
 
 object PrintScript10 {
-    fun formatter(config: FormatterConfig): Formatter {
+    fun nodeFormatters(): List<PartialNodeFormatter<ASTNode>> {
         val expressions = PrintScript10ExpressionFormatter()
-        val statements =
+        return listOf(
             PrintScript10StatementDispatcher(
                 declarations = DeclarationFormatter(expressions),
                 assignments = AssignmentFormatter(expressions),
                 expressionStatements = ExpressionStatementFormatter(expressions),
-            )
-        return PrintScriptFormatter(statements, expressions, StatementSeparator(), config)
+            ),
+        )
     }
+
+    fun formatter(config: FormatterConfig): Formatter =
+        PrintScriptFormatter(nodeFormatters(), StatementSeparator(), config)
 }

@@ -1,16 +1,13 @@
 package org.printscript.formatter
 
 import org.printscript.ast.ASTNode
-import org.printscript.ast.Expression
-import org.printscript.ast.Statement
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
-import org.printscript.common.map
+import org.printscript.common.flatMap
 import org.printscript.formatter.config.FormatterConfig
 
 class PrintScriptFormatter(
-    private val statements: NodeFormatter<Statement>,
-    private val expressions: NodeFormatter<Expression>,
+    private val nodes: List<PartialNodeFormatter<ASTNode>>,
     private val separator: StatementSeparator,
     private val config: FormatterConfig,
 ) : Formatter {
@@ -19,24 +16,24 @@ class PrintScriptFormatter(
     ): Sequence<Result<FormattedCode, PrintScriptError>> {
         val context = FormatterContext(config)
         return program
+            .mapIndexed { index, element -> element.flatMap { node -> emit(node, index == 0, context) } }
             .takeThrough { it is Result.Success }
-            .mapIndexed { index, element -> element.map { node -> emit(node, index == 0, context) } }
     }
 
     private fun emit(
         node: ASTNode,
         isFirst: Boolean,
         context: FormatterContext,
-    ): FormattedCode = separator.before(isFirst, node, context) + formatNode(node, context) + separator.after()
+    ): Result<FormattedCode, PrintScriptError> =
+        when (val formatted = formatNode(node, context)) {
+            null -> Result.Failure(UnsupportedNode(node))
+            else -> Result.Success(separator.before(isFirst, node, context) + formatted + separator.after())
+        }
 
     private fun formatNode(
         node: ASTNode,
         context: FormatterContext,
-    ): FormattedCode =
-        when (node) {
-            is Statement -> statements.format(node, context)
-            is Expression -> expressions.format(node, context)
-        }
+    ): FormattedCode? = nodes.firstNotNullOfOrNull { it.formatOrNull(node, context) }
 }
 
 private fun <T> Sequence<T>.takeThrough(predicate: (T) -> Boolean): Sequence<T> =

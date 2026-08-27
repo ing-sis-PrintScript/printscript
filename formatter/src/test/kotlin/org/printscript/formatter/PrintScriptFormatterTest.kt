@@ -35,16 +35,19 @@ private data class BrokenSource(
 ) : PrintScriptError
 
 class PrintScriptFormatterTest {
-    private fun formatter(config: FormatterConfig): PrintScriptFormatter {
+    private fun printScript10Formatters(): List<PartialNodeFormatter<ASTNode>> {
         val expressions = PrintScript10ExpressionFormatter()
-        val statements =
+        return listOf(
             PrintScript10StatementDispatcher(
                 declarations = DeclarationFormatter(expressions),
                 assignments = AssignmentFormatter(expressions),
                 expressionStatements = ExpressionStatementFormatter(expressions),
-            )
-        return PrintScriptFormatter(statements, expressions, StatementSeparator(), config)
+            ),
+        )
     }
+
+    private fun formatter(config: FormatterConfig): PrintScriptFormatter =
+        PrintScriptFormatter(printScript10Formatters(), StatementSeparator(), config)
 
     private fun format(
         program: Sequence<Result<ASTNode, PrintScriptError>>,
@@ -114,10 +117,38 @@ class PrintScriptFormatterTest {
     }
 
     @Test
-    fun `un nodo de expresion suelto se formatea con el formatter de expresiones`() {
-        val program = sequenceOf(ok(binary(PLUS, id("a"), id("b"))))
+    fun `un nodo que ningun formatter reconoce se reporta como no soportado`() {
+        val node = binary(PLUS, id("a"), id("b"))
 
-        assertEquals("a + b\n", textOf(format(program)))
+        val results = format(sequenceOf(ok(node)))
+
+        assertEquals(1, results.size)
+        assertEquals(UnsupportedNode(node), results.single().errorOrNull())
+    }
+
+    @Test
+    fun `el primer formatter que reconoce el nodo gana`() {
+        val extension = PartialNodeFormatter<ASTNode> { _, _ -> FormattedCode("de otra version") }
+        val nodes = listOf(extension) + printScript10Formatters()
+        val formatter = PrintScriptFormatter(nodes, StatementSeparator(), FormatterConfig())
+        val program = sequenceOf(ok(declaration("x", NUMBER, number(1.0))))
+
+        assertEquals("de otra version\n", textOf(formatter.format(program).toList()))
+    }
+
+    @Test
+    fun `un nodo no soportado corta la secuencia`() {
+        val program =
+            sequenceOf(
+                ok(declaration("x", NUMBER, number(1.0))),
+                ok(binary(PLUS, id("a"), id("b"))),
+                ok(assignment("x", number(2.0))),
+            )
+
+        val results = format(program)
+
+        assertEquals(2, results.size)
+        assertEquals("let x: number = 1;\n", textOf(results))
     }
 
     @Test

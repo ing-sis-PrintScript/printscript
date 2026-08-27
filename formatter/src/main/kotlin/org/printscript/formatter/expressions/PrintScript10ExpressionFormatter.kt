@@ -12,11 +12,11 @@ import org.printscript.formatter.FormatterContext
 import org.printscript.formatter.NodeFormatter
 import org.printscript.formatter.Syntax
 
-class PrintScript10ExpressionFormatter(
-    private val parenthesizer: Parenthesizer = Parenthesizer(),
-    private val numbers: NumberRenderer = NumberRenderer(),
-    private val strings: StringRenderer = StringRenderer(),
-) : NodeFormatter<Expression> {
+class PrintScript10ExpressionFormatter : NodeFormatter<Expression> {
+    private val parenthesizer = Parenthesizer()
+    private val numbers = NumberRenderer()
+    private val strings = StringRenderer()
+
     override fun format(
         node: Expression,
         context: FormatterContext,
