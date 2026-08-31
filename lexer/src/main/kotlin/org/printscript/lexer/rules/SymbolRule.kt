@@ -19,7 +19,7 @@ class SymbolRule(private val symbols: Map<String, TokenType>) : TokenRule {
             val type = symbols[candidate]
             if (type != null) {
                 return matchOf(type, candidate, lineNumber, from)
-            }g
+            }
             length--
         }
         return null
