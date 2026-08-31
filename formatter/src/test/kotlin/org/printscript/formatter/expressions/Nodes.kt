@@ -7,6 +7,8 @@ import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
+import org.printscript.ast.UnaryExpression
+import org.printscript.ast.UnaryOperator
 import org.printscript.common.Position
 import org.printscript.common.Range
 
@@ -23,6 +25,8 @@ internal fun binary(
     left: Expression,
     right: Expression,
 ) = BinaryExpression(operator, left, right, ANY_RANGE)
+
+internal fun negated(operand: Expression) = UnaryExpression(UnaryOperator.MINUS, operand, ANY_RANGE)
 
 internal fun call(
     callee: String,

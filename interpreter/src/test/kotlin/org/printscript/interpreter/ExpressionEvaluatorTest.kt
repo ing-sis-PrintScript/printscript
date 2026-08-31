@@ -8,6 +8,8 @@ import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
+import org.printscript.ast.UnaryExpression
+import org.printscript.ast.UnaryOperator
 import org.printscript.common.Position
 import org.printscript.common.Range
 import org.printscript.common.Result
@@ -123,6 +125,22 @@ class ExpressionEvaluatorTest {
         val error = errorOf(eval(binary(BinaryOperator.MINUS, string("a"), string("b"))))
 
         assertEquals("Operación inválida entre 'a' y 'b'.", error.message)
+    }
+
+    @Test
+    fun `el menos unario niega un numero`() {
+        val negated = UnaryExpression(UnaryOperator.MINUS, number(5.0), dummyRange)
+
+        assertEquals(PrintScriptValue.NumberValue(-5.0), valueOf(eval(negated)))
+    }
+
+    @Test
+    fun `el menos unario sobre un string falla`() {
+        val negated = UnaryExpression(UnaryOperator.MINUS, string("hola"), dummyRange)
+
+        val error = errorOf(eval(negated))
+
+        assertEquals("No se puede negar 'hola'.", error.message)
     }
 
     @Test

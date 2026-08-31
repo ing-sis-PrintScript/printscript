@@ -7,6 +7,7 @@ import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
+import org.printscript.ast.UnaryExpression
 import org.printscript.formatter.FormattedCode
 import org.printscript.formatter.FormatterContext
 import org.printscript.formatter.NodeFormatter
@@ -26,8 +27,22 @@ class PrintScript10ExpressionFormatter : NodeFormatter<Expression> {
             is StringLiteral -> FormattedCode(strings.render(node.value))
             is Identifier -> FormattedCode(node.name)
             is BinaryExpression -> formatBinary(node, context)
+            is UnaryExpression -> formatUnary(node, context)
             is CallExpression -> formatCall(node, context)
         }
+
+    private fun formatUnary(
+        node: UnaryExpression,
+        context: FormatterContext,
+    ): FormattedCode {
+        val operand = format(node.operand, context)
+        val wrapped =
+            when (parenthesizer.needsParenthesesUnderNegation(node.operand)) {
+                true -> FormattedCode(Syntax.OPEN_PAREN) + operand + FormattedCode(Syntax.CLOSE_PAREN)
+                false -> operand
+            }
+        return FormattedCode(node.operator.symbol()) + wrapped
+    }
 
     private fun formatBinary(
         node: BinaryExpression,
