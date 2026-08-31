@@ -1,5 +1,7 @@
-package org.printscript.formatter
+package org.printscript.formatter.syntax
 
+import org.printscript.ast.BinaryOperator
+import org.printscript.ast.DeclaredType
 import org.printscript.formatter.config.Spacing
 
 internal object Syntax {
@@ -16,3 +18,17 @@ internal object Syntax {
     val OPERATOR_SPACING: Spacing = Spacing.SINGLE
     val KEYWORD_SPACING: Spacing = Spacing.SINGLE
 }
+
+internal fun BinaryOperator.symbol(): String =
+    when (this) {
+        BinaryOperator.PLUS -> "+"
+        BinaryOperator.MINUS -> "-"
+        BinaryOperator.TIMES -> "*"
+        BinaryOperator.DIVIDE -> "/"
+    }
+
+internal fun DeclaredType.symbol(): String =
+    when (this) {
+        DeclaredType.NUMBER -> "number"
+        DeclaredType.STRING -> "string"
+    }

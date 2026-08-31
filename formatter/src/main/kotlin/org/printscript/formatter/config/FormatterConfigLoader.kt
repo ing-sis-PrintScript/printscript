@@ -4,6 +4,35 @@ import org.printscript.common.Result
 import org.printscript.common.flatMap
 import org.printscript.common.map
 
+sealed interface ConfigValue {
+    data class BooleanValue(val value: Boolean) : ConfigValue
+
+    data class IntValue(val value: Int) : ConfigValue
+}
+
+sealed interface ConfigError {
+    val message: String
+
+    data class UnknownRule(val key: String) : ConfigError {
+        override val message: String = "Unknown formatting rule: '$key'"
+    }
+
+    data class WrongType(
+        val key: String,
+        val expected: String,
+    ) : ConfigError {
+        override val message: String = "Rule '$key' expects a $expected value"
+    }
+
+    data class OutOfRange(
+        val key: String,
+        val value: Int,
+        val allowed: IntRange,
+    ) : ConfigError {
+        override val message: String = "Rule '$key' expects a value within $allowed, got $value"
+    }
+}
+
 class FormatterConfigLoader {
     fun load(values: Map<String, ConfigValue>): Result<FormatterConfig, ConfigError> {
         val defaults: Result<FormatterConfig, ConfigError> = Result.Success(FormatterConfig())

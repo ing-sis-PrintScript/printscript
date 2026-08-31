@@ -4,8 +4,9 @@ import org.printscript.ast.Expression
 import org.printscript.ast.VariableDeclaration
 import org.printscript.formatter.FormattedCode
 import org.printscript.formatter.FormatterContext
-import org.printscript.formatter.NodeFormatter
-import org.printscript.formatter.Syntax
+import org.printscript.formatter.engine.NodeFormatter
+import org.printscript.formatter.syntax.Syntax
+import org.printscript.formatter.syntax.symbol
 
 class DeclarationFormatter(
     private val expressions: NodeFormatter<Expression>,

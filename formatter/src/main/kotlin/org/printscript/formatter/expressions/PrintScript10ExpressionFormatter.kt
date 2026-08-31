@@ -9,21 +9,21 @@ import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
 import org.printscript.formatter.FormattedCode
 import org.printscript.formatter.FormatterContext
-import org.printscript.formatter.NodeFormatter
-import org.printscript.formatter.Syntax
+import org.printscript.formatter.engine.NodeFormatter
+import org.printscript.formatter.syntax.Syntax
+import org.printscript.formatter.syntax.symbol
+import java.math.BigDecimal
 
 class PrintScript10ExpressionFormatter : NodeFormatter<Expression> {
     private val parenthesizer = Parenthesizer()
-    private val numbers = NumberRenderer()
-    private val strings = StringRenderer()
 
     override fun format(
         node: Expression,
         context: FormatterContext,
     ): FormattedCode =
         when (node) {
-            is NumberLiteral -> FormattedCode(numbers.render(node.value))
-            is StringLiteral -> FormattedCode(strings.render(node.value))
+            is NumberLiteral -> FormattedCode(renderNumber(node.value))
+            is StringLiteral -> FormattedCode(renderString(node.value))
             is Identifier -> FormattedCode(node.name)
             is BinaryExpression -> formatBinary(node, context)
             is CallExpression -> formatCall(node, context)
@@ -69,3 +69,25 @@ class PrintScript10ExpressionFormatter : NodeFormatter<Expression> {
         separator: FormattedCode,
     ): FormattedCode = parts.reduceOrNull { left, right -> left + separator + right } ?: FormattedCode.EMPTY
 }
+
+internal fun renderNumber(value: Double): String =
+    when (value.isFinite()) {
+        true -> BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
+        false -> value.toString()
+    }
+
+internal fun renderString(value: String): String {
+    val quote = quoteFor(value)
+    return quote + value + quote
+}
+
+// Un contenido con los dos tipos de comilla no es representable en PrintScript 1.0.
+private fun quoteFor(value: String): String =
+    when {
+        DOUBLE_QUOTE !in value -> DOUBLE_QUOTE
+        SINGLE_QUOTE in value -> DOUBLE_QUOTE
+        else -> SINGLE_QUOTE
+    }
+
+private const val DOUBLE_QUOTE = "\""
+private const val SINGLE_QUOTE = "'"

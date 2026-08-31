@@ -1,6 +1,7 @@
-package org.printscript.formatter
+package org.printscript.formatter.engine
 
 import org.printscript.ast.ASTNode
+import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator.PLUS
 import org.printscript.ast.DeclaredType.NUMBER
 import org.printscript.ast.DeclaredType.STRING
@@ -9,6 +10,8 @@ import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.common.errorOrNull
 import org.printscript.common.getOrNull
+import org.printscript.formatter.FormattedCode
+import org.printscript.formatter.FormatterContext
 import org.printscript.formatter.config.BlankLines
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.expressions.ANY_RANGE
@@ -18,13 +21,12 @@ import org.printscript.formatter.expressions.call
 import org.printscript.formatter.expressions.id
 import org.printscript.formatter.expressions.number
 import org.printscript.formatter.expressions.string
-import org.printscript.formatter.statements.AssignmentFormatter
 import org.printscript.formatter.statements.DeclarationFormatter
-import org.printscript.formatter.statements.ExpressionStatementFormatter
 import org.printscript.formatter.statements.PrintScript10StatementDispatcher
 import org.printscript.formatter.statements.assignment
 import org.printscript.formatter.statements.declaration
 import org.printscript.formatter.statements.expressionStatement
+import org.printscript.formatter.syntax.StatementSeparator
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -34,20 +36,27 @@ private data class BrokenSource(
     override val range: Range = ANY_RANGE,
 ) : PrintScriptError
 
+private class VersionConBinarias(
+    private val base: NodeDispatcher,
+) : NodeDispatcher {
+    override fun formatOrNull(
+        node: ASTNode,
+        context: FormatterContext,
+    ): FormattedCode? =
+        when (node) {
+            is BinaryExpression -> FormattedCode("de otra version")
+            else -> base.formatOrNull(node, context)
+        }
+}
+
 class PrintScriptFormatterTest {
-    private fun printScript10Formatters(): List<PartialNodeFormatter<ASTNode>> {
+    private fun printScript10Dispatcher(): NodeDispatcher {
         val expressions = PrintScript10ExpressionFormatter()
-        return listOf(
-            PrintScript10StatementDispatcher(
-                declarations = DeclarationFormatter(expressions),
-                assignments = AssignmentFormatter(expressions),
-                expressionStatements = ExpressionStatementFormatter(expressions),
-            ),
-        )
+        return PrintScript10StatementDispatcher(DeclarationFormatter(expressions), expressions)
     }
 
     private fun formatter(config: FormatterConfig): PrintScriptFormatter =
-        PrintScriptFormatter(printScript10Formatters(), StatementSeparator(), config)
+        PrintScriptFormatter(printScript10Dispatcher(), StatementSeparator(), config)
 
     private fun format(
         program: Sequence<Result<ASTNode, PrintScriptError>>,
@@ -117,7 +126,7 @@ class PrintScriptFormatterTest {
     }
 
     @Test
-    fun `un nodo que ningun formatter reconoce se reporta como no soportado`() {
+    fun `un nodo que el dispatcher no reconoce se reporta como no soportado`() {
         val node = binary(PLUS, id("a"), id("b"))
 
         val results = format(sequenceOf(ok(node)))
@@ -127,13 +136,16 @@ class PrintScriptFormatterTest {
     }
 
     @Test
-    fun `el primer formatter que reconoce el nodo gana`() {
-        val extension = PartialNodeFormatter<ASTNode> { _, _ -> FormattedCode("de otra version") }
-        val nodes = listOf(extension) + printScript10Formatters()
-        val formatter = PrintScriptFormatter(nodes, StatementSeparator(), FormatterConfig())
-        val program = sequenceOf(ok(declaration("x", NUMBER, number(1.0))))
+    fun `una version nueva extiende el dispatcher de 1_0 delegando lo que ya sabe formatear`() {
+        val dispatcher = VersionConBinarias(printScript10Dispatcher())
+        val formatter = PrintScriptFormatter(dispatcher, StatementSeparator(), FormatterConfig())
+        val program =
+            sequenceOf(
+                ok(declaration("x", NUMBER, number(1.0))),
+                ok(binary(PLUS, id("a"), id("b"))),
+            )
 
-        assertEquals("de otra version\n", textOf(formatter.format(program).toList()))
+        assertEquals("let x: number = 1;\nde otra version\n", textOf(formatter.format(program).toList()))
     }
 
     @Test

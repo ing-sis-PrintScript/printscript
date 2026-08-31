@@ -1,6 +1,7 @@
-package org.printscript.formatter
+package org.printscript.formatter.syntax
 
 import org.printscript.ast.DeclaredType.NUMBER
+import org.printscript.formatter.FormatterContext
 import org.printscript.formatter.config.BlankLines
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.expressions.call
@@ -57,5 +58,26 @@ class StatementSeparatorTest {
     fun `una sentencia que no es println nunca lleva lineas en blanco adelante`() {
         assertEquals("", separator.before(isFirst = false, node = declaration, context = context(BlankLines.TWO)).text)
         assertEquals("", separator.before(isFirst = false, node = declaration, context = context(BlankLines.NONE)).text)
+    }
+
+    @Test
+    fun `una llamada a otra funcion no lleva lineas en blanco adelante`() {
+        val node = expressionStatement(call("print", id("x")))
+
+        assertEquals("", separator.before(isFirst = false, node = node, context = context(BlankLines.TWO)).text)
+    }
+
+    @Test
+    fun `una sentencia de expresion que no es una llamada no lleva lineas en blanco adelante`() {
+        val node = expressionStatement(id("x"))
+
+        assertEquals("", separator.before(isFirst = false, node = node, context = context(BlankLines.TWO)).text)
+    }
+
+    @Test
+    fun `una llamada suelta sin envolver en una sentencia no lleva lineas en blanco adelante`() {
+        val node = call("println", id("x"))
+
+        assertEquals("", separator.before(isFirst = false, node = node, context = context(BlankLines.TWO)).text)
     }
 }
