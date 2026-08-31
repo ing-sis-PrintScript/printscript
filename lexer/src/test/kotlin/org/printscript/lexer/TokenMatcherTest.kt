@@ -82,4 +82,21 @@ class TokenMatcherTest {
         assertNull(NumberRule.match("let x", 0, 1))
         assertNotNull(NumberRule.match("42", 0, 1))
     }
+
+    @Test
+    fun `un punto sin digitos despues no es un numero valido`() {
+        val error = matcher.match("12.", 0, 1).errorOrNull()
+        assertNotNull(error)
+        assertEquals("Numero invalido '12.'", error.message)
+        assertEquals(Position(1, 1), error.range.start)
+        assertEquals(Position(1, 3), error.range.end)
+    }
+
+    @Test
+    fun `un punto seguido de algo que no es digito tampoco`() {
+        val error = matcher.match("12.;", 0, 1).errorOrNull()
+        assertNotNull(error)
+        assertEquals("Numero invalido '12.'", error.message)
+    }
+
 }
