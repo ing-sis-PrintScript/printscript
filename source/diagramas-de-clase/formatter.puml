@@ -1,0 +1,332 @@
+@startuml formatter
+title PrintScript — módulo **formatter**
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam padding 3
+skinparam roundCorner 0
+skinparam defaultFontName Monospaced
+skinparam defaultFontSize 12
+skinparam ArrowColor #52646F
+skinparam class {
+  BorderColor #16212B
+  BackgroundColor #FFFFFF
+  HeaderBackgroundColor #EDF0F2
+  FontColor #16212B
+}
+skinparam package {
+  BorderColor #C6D0D7
+  BackgroundColor #F7F9FA
+  FontColor #52646F
+}
+skinparam note {
+  BorderColor #7E4E9C
+  BackgroundColor #F7F2FA
+  FontColor #4B3159
+}
+
+' ────────────────────────────────────────────────────────────
+package "externo" <<Frame>> {
+  interface ASTNode <<ast, sealed>>
+  interface Statement <<ast, sealed>>
+  interface Expression <<ast, sealed>>
+  class BinaryOperator <<ast, enum>>
+  class DeclaredType <<ast, enum>>
+  interface PrintScriptError <<common>>
+}
+
+' ────────────────────────────────────────────────────────────
+package "org.printscript.formatter" {
+
+  interface Formatter {
+    + format(program: Sequence<Result<ASTNode, _>>): Sequence<Result<FormattedCode, _>>
+  }
+
+  class PrintScriptFormatter {
+    - nodes: List<PartialNodeFormatter<ASTNode>>
+    - separator: StatementSeparator
+    - config: FormatterConfig
+    + format(program): Sequence<Result<FormattedCode, _>>
+    - emit(node, isFirst, context): Result<FormattedCode, _>
+    - formatNode(node, context): FormattedCode?
+  }
+
+  interface "NodeFormatter<in T : ASTNode>" as NodeFormatter <<fun interface>> {
+    + format(node: T, context: FormatterContext): FormattedCode
+  }
+
+  interface "PartialNodeFormatter<in T : ASTNode>" as PartialNodeFormatter <<fun interface>> {
+    + formatOrNull(node: T, context: FormatterContext): FormattedCode?
+  }
+
+  class UnsupportedNode <<data class>> {
+    + node: ASTNode
+    + range: Range
+    + message: String
+  }
+
+  class FormattedCode <<data class>> {
+    + text: String
+    + plus(other): FormattedCode
+    + {static} EMPTY
+  }
+
+  class FormatterContext <<data class>> {
+    + config: FormatterConfig
+  }
+
+  class Syntax <<internal object>> {
+    + {static} DECLARATION_KEYWORD = "let"
+    + {static} PRINTLN = "println"
+    + {static} TYPE_SEPARATOR = ":"
+    + {static} ASSIGN = "="
+    + {static} TERMINATOR = ";"
+    + {static} STATEMENT_SEPARATOR: String
+    + {static} OPERATOR_SPACING: Spacing
+    + {static} KEYWORD_SPACING: Spacing
+  }
+
+  class StatementSeparator {
+    - println: PrintlnRecognizer
+    + before(isFirst, node, context): FormattedCode
+    + after(): FormattedCode
+  }
+
+  class PrintlnRecognizer {
+    + matches(node: ASTNode): Boolean
+    - isPrintlnCall(expression): Boolean
+  }
+
+  class PrintScript10 <<object>> {
+    + nodeFormatters(): List<PartialNodeFormatter<ASTNode>>
+    + formatter(config: FormatterConfig): Formatter
+  }
+}
+
+' ────────────────────────────────────────────────────────────
+package "org.printscript.formatter.statements" {
+
+  class PrintScript10StatementDispatcher {
+    - declarations: NodeFormatter<VariableDeclaration>
+    - assignments: NodeFormatter<AssignmentStatement>
+    - expressionStatements: NodeFormatter<ExpressionStatement>
+    + formatOrNull(node: ASTNode, context): FormattedCode?
+  }
+
+  class DeclarationFormatter {
+    - expressions: NodeFormatter<Expression>
+    + format(node: VariableDeclaration, context): FormattedCode
+    - formatInitializer(initializer, context): FormattedCode
+  }
+
+  class AssignmentFormatter {
+    - expressions: NodeFormatter<Expression>
+    + format(node: AssignmentStatement, context): FormattedCode
+  }
+
+  class ExpressionStatementFormatter {
+    - expressions: NodeFormatter<Expression>
+    + format(node: ExpressionStatement, context): FormattedCode
+  }
+
+  class "Symbols.kt (statements)" as StatementSymbols <<extensiones>> {
+    ~ DeclaredType.symbol(): String
+  }
+}
+
+' ────────────────────────────────────────────────────────────
+package "org.printscript.formatter.expressions" {
+
+  class PrintScript10ExpressionFormatter {
+    - parenthesizer: Parenthesizer
+    - numbers: NumberRenderer
+    - strings: StringRenderer
+    + format(node: Expression, context): FormattedCode
+    - formatBinary(node, context): FormattedCode
+    - formatOperand(parent, operand, side, context): FormattedCode
+    - formatCall(node, context): FormattedCode
+  }
+
+  class Parenthesizer {
+    + needsParentheses(parent: BinaryOperator, child: Expression, side: OperandSide): Boolean
+  }
+
+  enum OperandSide {
+    LEFT
+    RIGHT
+  }
+
+  enum Precedence <<internal>> {
+    ADDITIVE
+    MULTIPLICATIVE
+    + bindsLooserThan(other): Boolean
+    + bindsNoTighterThan(other): Boolean
+    + {static} of(operator): Precedence
+  }
+
+  class NumberRenderer {
+    + render(value: Double): String
+  }
+
+  class StringRenderer {
+    + render(value: String): String
+    - quoteFor(value): String
+  }
+
+  class "Symbols.kt (expressions)" as ExpressionSymbols <<extensiones>> {
+    ~ BinaryOperator.symbol(): String
+  }
+}
+
+' ────────────────────────────────────────────────────────────
+package "org.printscript.formatter.config" {
+
+  class FormatterConfig <<data class>> {
+    + spaceBeforeColon: Spacing
+    + spaceAfterColon: Spacing
+    + spaceAroundAssignment: Spacing
+    + blankLinesBeforePrintln: BlankLines
+  }
+
+  enum Spacing {
+    NONE
+    SINGLE
+    + render(): String
+  }
+
+  enum BlankLines {
+    NONE
+    ONE
+    TWO
+    + render(): String
+    + {static} ALLOWED: IntRange
+    + {static} of(count: Int): BlankLines?
+  }
+
+  interface ConfigValue <<sealed>>
+  class BooleanValue <<data class>>
+  class IntValue <<data class>>
+
+  interface ConfigError <<sealed>> {
+    + message: String
+  }
+  class UnknownRule <<data class>>
+  class WrongType <<data class>>
+  class OutOfRange <<data class>>
+
+  class FormatterConfigLoader {
+    + load(values: Map<String, ConfigValue>): Result<FormatterConfig, ConfigError>
+    - applyRule(config, key, value): Result<FormatterConfig, ConfigError>
+    - readSpacing(key, value): Result<Spacing, ConfigError>
+    - readBlankLines(key, value): Result<BlankLines, ConfigError>
+  }
+}
+
+' ── implementaciones ────────────────────────────────────────
+Formatter <|.. PrintScriptFormatter
+PartialNodeFormatter <|.. PrintScript10StatementDispatcher
+NodeFormatter <|.. DeclarationFormatter
+NodeFormatter <|.. AssignmentFormatter
+NodeFormatter <|.. ExpressionStatementFormatter
+NodeFormatter <|.. PrintScript10ExpressionFormatter
+PrintScriptError <|.. UnsupportedNode
+ConfigValue <|.. BooleanValue
+ConfigValue <|.. IntValue
+ConfigError <|.. UnknownRule
+ConfigError <|.. WrongType
+ConfigError <|.. OutOfRange
+
+' ── composición ─────────────────────────────────────────────
+PrintScriptFormatter o--> "*" PartialNodeFormatter
+PrintScriptFormatter o--> "1" StatementSeparator
+PrintScriptFormatter o--> "1" FormatterConfig
+StatementSeparator *--> "1" PrintlnRecognizer
+PrintScript10StatementDispatcher o--> "3" NodeFormatter
+DeclarationFormatter o--> "1" NodeFormatter
+AssignmentFormatter o--> "1" NodeFormatter
+ExpressionStatementFormatter o--> "1" NodeFormatter
+PrintScript10ExpressionFormatter *--> "1" Parenthesizer
+PrintScript10ExpressionFormatter *--> "1" NumberRenderer
+PrintScript10ExpressionFormatter *--> "1" StringRenderer
+FormatterContext o--> "1" FormatterConfig
+FormatterConfig o--> "3" Spacing
+FormatterConfig o--> "1" BlankLines
+
+' ── uso ─────────────────────────────────────────────────────
+PrintScriptFormatter ..> FormatterContext : arma una vez
+PrintScriptFormatter ..> UnsupportedNode : emite si nadie reconoce el nodo
+PrintScriptFormatter ..> ASTNode : recibe
+NodeFormatter ..> FormattedCode
+PartialNodeFormatter ..> FormattedCode
+PrintScript10StatementDispatcher ..> Statement : when con else
+PrintScript10ExpressionFormatter ..> Expression : when exhaustivo
+PrintScript10ExpressionFormatter ..> ExpressionSymbols
+PrintScript10ExpressionFormatter ..> Syntax : espacio del operador
+DeclarationFormatter ..> StatementSymbols : DeclaredType
+Parenthesizer ..> Precedence
+Parenthesizer ..> OperandSide
+Parenthesizer ..> BinaryOperator
+StatementSeparator ..> Syntax : salto de línea
+FormatterConfigLoader ..> ConfigValue : traduce
+FormatterConfigLoader ..> ConfigError : reporta
+FormatterConfigLoader ..> FormatterConfig : construye
+PrintScript10 ..> PrintScript10StatementDispatcher : arma
+PrintScript10 ..> PrintScriptFormatter : arma
+
+' ── notas ───────────────────────────────────────────────────
+note right of PrintScriptFormatter
+  La única clase del módulo que
+  menciona `Sequence`. Todo lo de
+  abajo trabaja nodo por nodo.
+
+  Corta ante el primer `Failure`,
+  venga del parser o de un nodo
+  que nadie supo formatear: nunca
+  produce texto parcial.
+end note
+
+note bottom of PartialNodeFormatter
+  El punto de extensión entre versiones.
+  Cada versión aporta su formatter parcial
+  y la lista se recorre en orden hasta que
+  uno reconoce el nodo:
+
+    PrintScript11.nodeFormatters() =
+      listOf(dispatcher11) +
+      PrintScript10.nodeFormatters()
+
+  1.1 se agrega sin tocar 1.0, y "1.0 no
+  soporta este nodo" pasa a ser un valor
+  (UnsupportedNode) en vez de un `when`
+  que no compila.
+end note
+
+note right of Parenthesizer
+  La única lógica del módulo que puede
+  cambiar el significado del programa:
+  el AST no guarda paréntesis.
+
+  izquierda -> precedencia MENOR
+  derecha   -> MENOR O IGUAL
+end note
+
+note left of Spacing
+  Los value objects se renderizan
+  solos. Por eso no existe ni un
+  `if (config.algo) " " else ""`
+  en todo el módulo.
+end note
+
+note bottom of ConfigValue
+  El formatter no conoce JSON ni YAML:
+  recibe un Map ya traducido. El CLI
+  elige la librería.
+end note
+
+note bottom of PrintlnRecognizer
+  En el AST actual println no es un nodo
+  propio: es ExpressionStatement(Call…).
+  Ese detalle vive sólo acá.
+end note
+
+@enduml

@@ -14,4 +14,6 @@ object PrintScript10 {
             CallParser(expressions),
         )
     }
+
+    fun parser(): Parser = Parser(statementParsers(), SkipToSemicolon)
 }

@@ -15,6 +15,7 @@ import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.token.ListTokenSource
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -31,7 +32,9 @@ import kotlin.test.assertTrue
  * ninguno de estos se rompe.
  */
 class ParserTest {
-    private val parser = Parser(PrintScript10.statementParsers())
+    // Se pide la fábrica en vez de armar el Parser a mano: así el test usa el
+    // mismo cableado que va a usar el CLI, política de recuperación incluida.
+    private val parser = PrintScript10.parser()
 
     // ---- helpers ----
 
@@ -50,10 +53,8 @@ class ParserTest {
 
     private fun eof() = Token(TokenType.EOF, "", Range(Position(1, column), Position(1, column)))
 
-    private fun parse(vararg tokens: Token): List<Result<ASTNode, PrintScriptError>> {
-        val all = (tokens.toList() + eof()).map { Result.Success(it) as Result<Token, PrintScriptError> }
-        return parser.parse(all.asSequence()).toList()
-    }
+    private fun parse(vararg tokens: Token): List<Result<ASTNode, PrintScriptError>> =
+        parser.parse(ListTokenSource(tokens.toList() + eof())).toList()
 
     private fun single(vararg tokens: Token): ASTNode {
         val results = parse(*tokens)
@@ -330,9 +331,11 @@ class ParserTest {
             }
         val results =
             parser.parse(
-                sequenceOf(
-                    Result.Failure(lexico),
-                    Result.Success(eof()),
+                ResultTokenSource(
+                    listOf(
+                        Result.Failure(lexico),
+                        Result.Success(eof()),
+                    ),
                 ),
             ).toList()
 
@@ -410,27 +413,23 @@ class ParserTest {
      */
     @Test
     fun `el parser no consume mas tokens de los necesarios`() {
-        var producidos = 0
+        val leidos = TokenReadCounter()
         val perezosa =
-            sequence {
-                val tokens =
-                    listOf(
-                        let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-                        let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
-                        eof(),
-                    )
-                for (t in tokens) {
-                    producidos++
-                    yield(Result.Success(t) as Result<Token, PrintScriptError>)
-                }
-            }
+            CountingTokenSource(
+                listOf(
+                    let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                    let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
+                    eof(),
+                ),
+                leidos,
+            )
 
         // pido SOLO el primer statement
         parser.parse(perezosa).first()
 
         assertTrue(
-            producidos <= 8,
-            "para el primer statement no deberían leerse los tokens del segundo (leyó $producidos)",
+            leidos.total <= 8,
+            "para el primer statement no deberían leerse los tokens del segundo (leyó ${leidos.total})",
         )
     }
 }

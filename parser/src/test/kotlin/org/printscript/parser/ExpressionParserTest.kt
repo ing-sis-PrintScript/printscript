@@ -10,6 +10,7 @@ import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.token.Token
 import org.printscript.token.TokenType
@@ -44,19 +45,19 @@ class ExpressionParserTest {
         return Token(type, value, Range(start, end))
     }
 
-    private fun parse(vararg tokens: Token): Result<Expression, PrintScriptError> {
+    private fun parse(vararg tokens: Token): Result<Parsed<Expression>, PrintScriptError> {
         val results =
             tokens.map { Result.Success(it) as Result<Token, PrintScriptError> } +
                 Result.Success(Token(TokenType.EOF, "", Range(Position(1, 99), Position(1, 99))))
-        return parser.parse(TokenStream(results.asSequence()))
+        return parser.parse(TokenStream(ResultTokenSource(results)))
     }
 
-    private fun expressionOf(result: Result<Expression, PrintScriptError>): Expression {
-        assertIs<Result.Success<Expression>>(result, "esperaba parsear bien y falló")
-        return result.value
+    private fun expressionOf(result: Result<Parsed<Expression>, PrintScriptError>): Expression {
+        assertIs<Result.Success<Parsed<Expression>>>(result, "esperaba parsear bien y falló")
+        return result.value.value
     }
 
-    private fun errorOf(result: Result<Expression, PrintScriptError>): PrintScriptError {
+    private fun errorOf(result: Result<Parsed<Expression>, PrintScriptError>): PrintScriptError {
         assertIs<Result.Failure<PrintScriptError>>(result, "esperaba un error y parseó bien")
         return result.error
     }
@@ -333,7 +334,7 @@ class ExpressionParserTest {
                 override val message = "Caracter inesperado '@'"
                 override val range = Range(Position(1, 1), Position(1, 1))
             }
-        val stream = TokenStream(sequenceOf(Result.Failure(lexico)))
+        val stream = TokenStream(ResultTokenSource(listOf(Result.Failure(lexico))))
 
         val error = errorOf(parser.parse(stream))
 
