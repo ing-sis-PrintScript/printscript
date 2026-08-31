@@ -14,13 +14,14 @@ class RunnerTest {
 
     @Test
     fun `ejemplo 1 de la consigna`() {
-        val result = run(
-            """
-            let name: string = "Joe";
-            let lastName: string = "Doe";
-            println(name + " " + lastName);
-            """.trimIndent(),
-        )
+        val result =
+            run(
+                """
+                let name: string = "Joe";
+                let lastName: string = "Doe";
+                println(name + " " + lastName);
+                """.trimIndent(),
+            )
 
         assertNull(result.errorOrNull())
         assertEquals(listOf("Joe Doe"), io.output())
@@ -28,14 +29,15 @@ class RunnerTest {
 
     @Test
     fun `ejemplo 2 de la consigna`() {
-        val result = run(
-            """
-            let a: number = 12;
-            let b: number = 4;
-            let c: number = a / b;
-            println("Result: " + c);
-            """.trimIndent(),
-        )
+        val result =
+            run(
+                """
+                let a: number = 12;
+                let b: number = 4;
+                let c: number = a / b;
+                println("Result: " + c);
+                """.trimIndent(),
+            )
 
         assertNull(result.errorOrNull())
         assertEquals(listOf("Result: 3"), io.output())
