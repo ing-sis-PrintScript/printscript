@@ -82,6 +82,30 @@ class PrintScript10ExpressionFormatterTest {
     }
 
     @Test
+    fun `el menos unario se pega al operando`() {
+        assertEquals("-5", format(negated(number(5.0))))
+        assertEquals("-x", format(negated(id("x"))))
+    }
+
+    /** Sin paréntesis "-a + b" se releería como (-a) + b, que es otro árbol. */
+    @Test
+    fun `el menos unario sobre un binario lleva parentesis`() {
+        assertEquals("-(a + b)", format(negated(binary(PLUS, id("a"), id("b")))))
+        assertEquals("-(a * b)", format(negated(binary(TIMES, id("a"), id("b")))))
+    }
+
+    @Test
+    fun `el menos unario sobre otro unario lleva parentesis`() {
+        assertEquals("-(-x)", format(negated(negated(id("x")))))
+    }
+
+    @Test
+    fun `el menos unario liga mas fuerte que el producto y no lleva parentesis`() {
+        assertEquals("-a * b", format(binary(TIMES, negated(id("a")), id("b"))))
+        assertEquals("a - -b", format(binary(MINUS, id("a"), negated(id("b")))))
+    }
+
+    @Test
     fun `una llamada con un argumento`() {
         assertEquals("println(x)", format(call("println", id("x"))))
     }
@@ -115,6 +139,9 @@ class PrintScript10ExpressionFormatterTest {
                 binary(PLUS, id("a"), binary(PLUS, id("b"), id("c"))),
                 binary(DIVIDE, binary(DIVIDE, id("a"), id("b")), id("c")),
                 binary(DIVIDE, id("a"), binary(DIVIDE, id("b"), id("c"))),
+                negated(binary(PLUS, id("a"), id("b"))),
+                binary(PLUS, negated(id("a")), id("b")),
+                negated(negated(id("a"))),
             )
 
         val formatted = trees.map { format(it) }

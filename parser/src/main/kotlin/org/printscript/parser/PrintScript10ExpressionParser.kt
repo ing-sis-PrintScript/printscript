@@ -6,6 +6,8 @@ import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
+import org.printscript.ast.UnaryExpression
+import org.printscript.ast.UnaryOperator
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
@@ -39,7 +41,7 @@ class PrintScript10ExpressionParser : ExpressionParser {
     }
 
     private fun parseTerm(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
-        parseFactor(stream).flatMap { factor -> parseMultiplications(factor) }
+        parseUnary(stream).flatMap { unary -> parseMultiplications(unary) }
 
     private tailrec fun parseMultiplications(left: Parsed<Expression>): Result<Parsed<Expression>, PrintScriptError> {
         val operator =
@@ -49,11 +51,24 @@ class PrintScript10ExpressionParser : ExpressionParser {
                 else -> return Result.Success(left)
             }
 
-        return when (val right = parseFactor(left.rest.advance())) {
+        return when (val right = parseUnary(left.rest.advance())) {
             is Result.Failure -> right
             is Result.Success -> parseMultiplications(combine(left.value, operator, right.value))
         }
     }
+
+    private fun parseUnary(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
+        stream.peek().flatMap { token ->
+            when (token.type) {
+                TokenType.MINUS ->
+                    parseUnary(stream.advance()).map { operand ->
+                        val range = Range(token.range.start, operand.value.range.end)
+                        Parsed(UnaryExpression(UnaryOperator.MINUS, operand.value, range), operand.rest)
+                    }
+
+                else -> parseFactor(stream)
+            }
+        }
 
     private fun parseFactor(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
         stream.peek().flatMap { token ->

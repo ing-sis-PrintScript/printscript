@@ -6,6 +6,8 @@ import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
+import org.printscript.ast.UnaryExpression
+import org.printscript.ast.UnaryOperator
 import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
@@ -229,6 +231,88 @@ class ExpressionParserTest {
         assertEquals(" ", (left.right as StringLiteral).value)
     }
 
+    // ---- UNARIO ----
+
+    @Test
+    fun `numero negativo`() {
+        val expression = expressionOf(parse(op(TokenType.MINUS, "-"), num("5")))
+
+        val unary = assertIs<UnaryExpression>(expression)
+        assertEquals(UnaryOperator.MINUS, unary.operator)
+        assertEquals(5.0, assertIs<NumberLiteral>(unary.operand).value)
+    }
+
+    @Test
+    fun `menos delante de un identificador`() {
+        val expression = expressionOf(parse(op(TokenType.MINUS, "-"), id("x")))
+
+        val unary = assertIs<UnaryExpression>(expression)
+        assertEquals("x", assertIs<Identifier>(unary.operand).name)
+    }
+
+    /**
+     * El mismo MINUS es unario o binario según lo que haya a la izquierda.
+     * Si parseAdditions dejara de consumirlo primero, "5 - 3" se volvería
+     * dos expresiones sueltas y el interpreter calcularía otra cosa.
+     */
+    @Test
+    fun `con operando a la izquierda el menos sigue siendo binario`() {
+        val expression = expressionOf(parse(num("5"), op(TokenType.MINUS, "-"), num("3")))
+
+        val binary = assertIs<BinaryExpression>(expression)
+        assertEquals(BinaryOperator.MINUS, binary.operator)
+        assertEquals(3.0, assertIs<NumberLiteral>(binary.right).value)
+    }
+
+    @Test
+    fun `el menos unario liga mas fuerte que la multiplicacion`() {
+        // 1 * -2  →  1 * (-2), el unario queda abajo del *
+        val expression =
+            expressionOf(
+                parse(num("1"), op(TokenType.STAR, "*"), op(TokenType.MINUS, "-"), num("2")),
+            )
+
+        val root = assertIs<BinaryExpression>(expression)
+        assertEquals(BinaryOperator.TIMES, root.operator)
+        assertEquals(1.0, assertIs<NumberLiteral>(root.left).value)
+        assertEquals(2.0, assertIs<NumberLiteral>(assertIs<UnaryExpression>(root.right).operand).value)
+    }
+
+    @Test
+    fun `el menos unario se puede encadenar`() {
+        val expression = expressionOf(parse(op(TokenType.MINUS, "-"), op(TokenType.MINUS, "-"), num("5")))
+
+        val outer = assertIs<UnaryExpression>(expression)
+        val inner = assertIs<UnaryExpression>(outer.operand)
+        assertEquals(5.0, assertIs<NumberLiteral>(inner.operand).value)
+    }
+
+    @Test
+    fun `el menos unario aplica a una expresion entre parentesis`() {
+        // -(2 + 3)
+        val expression =
+            expressionOf(
+                parse(
+                    op(TokenType.MINUS, "-"),
+                    op(TokenType.LPAREN, "("),
+                    num("2"),
+                    op(TokenType.PLUS, "+"),
+                    num("3"),
+                    op(TokenType.RPAREN, ")"),
+                ),
+            )
+
+        val unary = assertIs<UnaryExpression>(expression)
+        assertEquals(BinaryOperator.PLUS, assertIs<BinaryExpression>(unary.operand).operator)
+    }
+
+    @Test
+    fun `menos sin operando es un error`() {
+        val error = errorOf(parse(op(TokenType.MINUS, "-")))
+
+        assertIs<SyntaxError>(error)
+    }
+
     // ---- PARÉNTESIS ----
 
     /**
@@ -362,6 +446,15 @@ class ExpressionParserTest {
 
         assertEquals(Position(1, 1), expression.range.start)
         assertEquals(Position(1, 5), expression.range.end)
+    }
+
+    @Test
+    fun `el range de un unario arranca en el operador`() {
+        // "- 5": el menos en la columna 1, el 5 en la 3
+        val expression = expressionOf(parse(op(TokenType.MINUS, "-"), num("5")))
+
+        assertEquals(Position(1, 1), expression.range.start)
+        assertEquals(Position(1, 3), expression.range.end)
     }
 
     @Test
