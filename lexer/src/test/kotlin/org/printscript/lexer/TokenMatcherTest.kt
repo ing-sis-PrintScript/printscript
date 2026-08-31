@@ -4,6 +4,7 @@ import org.printscript.common.Position
 import org.printscript.common.errorOrNull
 import org.printscript.common.getOrNull
 import org.printscript.lexer.rules.NumberRule
+import org.printscript.lexer.rules.SymbolRule
 import org.printscript.lexer.rules.WordRule
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -81,5 +82,30 @@ class TokenMatcherTest {
     fun `NumberRule contesta null si no arranca con digito`() {
         assertNull(NumberRule.match("let x", 0, 1))
         assertNotNull(NumberRule.match("42", 0, 1))
+    }
+
+    @Test
+    fun `un punto sin digitos despues no es un numero valido`() {
+        val error = matcher.match("12.", 0, 1).errorOrNull()
+        assertNotNull(error)
+        assertEquals("Numero invalido '12.'", error.message)
+        assertEquals(Position(1, 1), error.range.start)
+        assertEquals(Position(1, 3), error.range.end)
+    }
+
+    @Test
+    fun `un punto seguido de algo que no es digito tampoco`() {
+        val error = matcher.match("12.;", 0, 1).errorOrNull()
+        assertNotNull(error)
+        assertEquals("Numero invalido '12.'", error.message)
+    }
+
+    @Test
+    fun `entre dos simbolos que empiezan igual gana el mas largo`() {
+        val rule = SymbolRule(mapOf("=" to TokenType.ASSIGN, "==" to TokenType.ASSIGN))
+        val match = assertNotNull(rule.match("a == b", 2, 1)?.getOrNull())
+
+        assertEquals("==", match.token.value)
+        assertEquals(4, match.nextIndex)
     }
 }

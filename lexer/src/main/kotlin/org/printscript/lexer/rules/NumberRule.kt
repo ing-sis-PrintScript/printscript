@@ -15,8 +15,13 @@ object NumberRule : TokenRule {
 
         var i = from
         while (i < line.length && line[i].isDigit()) i++
+
         if (i < line.length && line[i] == '.') {
-            i++
+            val afterDot = i + 1
+            if (afterDot == line.length || !line[afterDot].isDigit()) {
+                return errorOf("Numero invalido '${line.substring(from, afterDot)}'", lineNumber, from, afterDot - from)
+            }
+            i = afterDot
             while (i < line.length && line[i].isDigit()) i++
         }
 
