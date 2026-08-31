@@ -1,6 +1,6 @@
 package org.printscript.parser
 
-import org.printscript.ast.ASTNode
+import org.printscript.ast.Statement
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.parser.statements.StatementParser
@@ -13,11 +13,11 @@ class Parser(
     private val statementParsers: List<StatementParser>,
     private val recovery: RecoveryStrategy,
 ) {
-    fun parse(source: TokenSource): Sequence<Result<ASTNode, PrintScriptError>> =
+    fun parse(source: TokenSource): Sequence<Result<Statement, PrintScriptError>> =
         generateSequence({ step(TokenStream(source)) }) { previous -> step(previous.rest) }
             .map { it.value }
 
-    private fun step(stream: TokenStream): Parsed<Result<ASTNode, PrintScriptError>>? {
+    private fun step(stream: TokenStream): Parsed<Result<Statement, PrintScriptError>>? {
         if (stream.atEnd()) return null
 
         return when (val result = parseStatement(stream)) {
@@ -26,7 +26,7 @@ class Parser(
         }
     }
 
-    private fun parseStatement(stream: TokenStream): Result<Parsed<ASTNode>, PrintScriptError> {
+    private fun parseStatement(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> {
         val peeked = stream.peek()
         if (peeked is Result.Failure) return peeked
 

@@ -5,7 +5,6 @@ import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
 import org.printscript.ast.Statement
 import org.printscript.ast.VariableDeclaration
-import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
@@ -46,7 +45,7 @@ class DeclarationParser(
                                         declaredType = declaredType,
                                         initializer = initializer,
                                         // De punta a punta: del "let" al ";".
-                                        range = spanOf(letToken.range.start, semicolon.range.end),
+                                        range = Range(letToken.range.start, semicolon.range.end),
                                     ),
                                     afterSemicolon,
                                 )
@@ -86,9 +85,4 @@ class DeclarationParser(
             expressions.parse(afterAssign)
         }
     }
-
-    private fun spanOf(
-        start: Position,
-        end: Position,
-    ) = Range(start, end)
 }
