@@ -7,6 +7,8 @@ import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
+import org.printscript.ast.UnaryExpression
+import org.printscript.ast.UnaryOperator
 import org.printscript.common.Result
 
 class ExpressionEvaluator {
@@ -19,6 +21,7 @@ class ExpressionEvaluator {
             is StringLiteral -> Result.Success(PrintScriptValue.StringValue(expression.value))
             is Identifier -> env.get(expression.name, expression.range)
             is BinaryExpression -> evaluateBinary(expression, env)
+            is UnaryExpression -> evaluateUnary(expression, env)
             // Las llamadas conocidas (println) se despachan desde
             // ExpressionStatementExecutor antes de llegar acá. Si una
             // CallExpression sí llega a evaluate(), es porque apareció
@@ -31,6 +34,23 @@ class ExpressionEvaluator {
                         expression.range,
                     ),
                 )
+        }
+    }
+
+    private fun evaluateUnary(
+        node: UnaryExpression,
+        env: Environment,
+    ): Result<PrintScriptValue, InterpreterError> {
+        val operandResult = evaluate(node.operand, env)
+        if (operandResult is Result.Failure) return operandResult
+
+        val operand = (operandResult as Result.Success).value
+        if (operand !is PrintScriptValue.NumberValue) {
+            return Result.Failure(InterpreterError("No se puede negar '$operand'.", node.range))
+        }
+
+        return when (node.operator) {
+            UnaryOperator.MINUS -> Result.Success(PrintScriptValue.NumberValue(-operand.value))
         }
     }
 

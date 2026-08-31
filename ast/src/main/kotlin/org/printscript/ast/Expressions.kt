@@ -24,6 +24,12 @@ data class BinaryExpression(
     override val range: Range,
 ) : Expression
 
+data class UnaryExpression(
+    val operator: UnaryOperator,
+    val operand: Expression,
+    override val range: Range,
+) : Expression
+
 data class CallExpression(
     val callee: Identifier,
     val arguments: List<Expression>,

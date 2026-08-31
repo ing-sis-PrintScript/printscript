@@ -10,6 +10,8 @@ import org.printscript.ast.ExpressionStatement
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
+import org.printscript.ast.UnaryExpression
+import org.printscript.ast.UnaryOperator
 import org.printscript.ast.VariableDeclaration
 import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
@@ -97,6 +99,8 @@ class ParserTest {
 
     private fun plus() = token(TokenType.PLUS, "+")
 
+    private fun minus() = token(TokenType.MINUS, "-")
+
     private fun slash() = token(TokenType.SLASH, "/")
 
     // ---- DECLARACIÓN ----
@@ -120,6 +124,18 @@ class ParserTest {
         val declaration = assertIs<VariableDeclaration>(node)
         assertEquals(DeclaredType.STRING, declaration.declaredType)
         assertEquals("Joe", assertIs<StringLiteral>(declaration.initializer).value)
+    }
+
+    /** El caso que rompía: el lexer parte "-5" en MINUS y NUMBER_LITERAL. */
+    @Test
+    fun `declaracion con un numero negativo`() {
+        // let x: number = -5;
+        val node = single(let(), id("x"), colon(), typeNumber(), assign(), minus(), num("5"), semi())
+
+        val declaration = assertIs<VariableDeclaration>(node)
+        val initializer = assertIs<UnaryExpression>(declaration.initializer)
+        assertEquals(UnaryOperator.MINUS, initializer.operator)
+        assertEquals(5.0, assertIs<NumberLiteral>(initializer.operand).value)
     }
 
     /** La gramática dice ["=", expression]: el inicializador es opcional. */

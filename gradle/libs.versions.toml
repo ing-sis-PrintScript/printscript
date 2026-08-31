@@ -4,6 +4,7 @@ junit = "5.11.4"
 jvm = "21"
 ktlint = "12.1.1"
 detekt = "1.23.7"
+clikt = "5.1.0"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -11,6 +12,8 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 ktlint-gradle-plugin = { module = "org.jlleitschuh.gradle.ktlint:org.jlleitschuh.gradle.ktlint.gradle.plugin", version.ref = "ktlint" }
 
 detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:io.gitlab.arturbosch.detekt.gradle.plugin", version.ref = "detekt" }
+
+clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 
