@@ -16,17 +16,17 @@ object PrintScript10 {
             "string" to TokenType.TYPE_STRING,
         )
 
-    val SYMBOLS: Map<Char, TokenType> =
+    val SYMBOLS: Map<String, TokenType> =
         mapOf(
-            ':' to TokenType.COLON,
-            ';' to TokenType.SEMICOLON,
-            '=' to TokenType.ASSIGN,
-            '(' to TokenType.LPAREN,
-            ')' to TokenType.RPAREN,
-            '+' to TokenType.PLUS,
-            '-' to TokenType.MINUS,
-            '*' to TokenType.STAR,
-            '/' to TokenType.SLASH,
+            ":" to TokenType.COLON,
+            ";" to TokenType.SEMICOLON,
+            "=" to TokenType.ASSIGN,
+            "(" to TokenType.LPAREN,
+            ")" to TokenType.RPAREN,
+            "+" to TokenType.PLUS,
+            "-" to TokenType.MINUS,
+            "*" to TokenType.STAR,
+            "/" to TokenType.SLASH,
         )
 
     val RULES: List<TokenRule> =

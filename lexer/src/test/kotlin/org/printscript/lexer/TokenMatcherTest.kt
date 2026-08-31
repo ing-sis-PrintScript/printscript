@@ -4,6 +4,7 @@ import org.printscript.common.Position
 import org.printscript.common.errorOrNull
 import org.printscript.common.getOrNull
 import org.printscript.lexer.rules.NumberRule
+import org.printscript.lexer.rules.SymbolRule
 import org.printscript.lexer.rules.WordRule
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -99,4 +100,12 @@ class TokenMatcherTest {
         assertEquals("Numero invalido '12.'", error.message)
     }
 
+    @Test
+    fun `entre dos simbolos que empiezan igual gana el mas largo`() {
+        val rule = SymbolRule(mapOf("=" to TokenType.ASSIGN, "==" to TokenType.ASSIGN))
+        val match = assertNotNull(rule.match("a == b", 2, 1)?.getOrNull())
+
+        assertEquals("==", match.token.value)
+        assertEquals(4, match.nextIndex)
+    }
 }
