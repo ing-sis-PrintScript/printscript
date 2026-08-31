@@ -7,5 +7,6 @@ include(
     "ast",
     "parser",
     "interpreter",
+    "formatter",
     "integration",
 )
