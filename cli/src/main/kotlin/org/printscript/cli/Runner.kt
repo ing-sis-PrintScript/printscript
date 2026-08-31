@@ -18,10 +18,11 @@ class Runner(io: PrintScriptIO = StandardIO()) {
         var environment = Environment()
 
         for (parsed in PrintScript10.parser().parse(Lexer().tokenize(source))) {
-            val node = when (parsed) {
-                is Result.Failure -> return parsed
-                is Result.Success -> parsed.value
-            }
+            val node =
+                when (parsed) {
+                    is Result.Failure -> return parsed
+                    is Result.Success -> parsed.value
+                }
             if (node !is Statement) {
                 return Result.Failure(CliError("Se esperaba una sentencia", node.range))
             }
