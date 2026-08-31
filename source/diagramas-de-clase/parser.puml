@@ -1,0 +1,204 @@
+@startuml parser
+title PrintScript — módulo **parser**
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam padding 3
+skinparam roundCorner 0
+skinparam defaultFontName Monospaced
+skinparam defaultFontSize 12
+skinparam ArrowColor #52646F
+skinparam class {
+  BorderColor #16212B
+  BackgroundColor #FFFFFF
+  HeaderBackgroundColor #EDF0F2
+  FontColor #16212B
+}
+skinparam package {
+  BorderColor #C6D0D7
+  BackgroundColor #F7F9FA
+  FontColor #52646F
+}
+skinparam note {
+  BorderColor #7E4E9C
+  BackgroundColor #F7F2FA
+  FontColor #4B3159
+}
+
+' ────────────────────────────────────────────────────────────
+package "externo" <<Frame>> {
+  interface TokenSource <<token>> {
+    + nextToken(): TokenReadResult
+  }
+  class Token <<token>>
+  class TokenType <<token, enum>>
+  interface ASTNode <<ast>>
+  interface Statement <<ast>>
+  interface Expression <<ast>>
+  interface PrintScriptError <<common>> {
+    + message: String
+    + range: Range
+  }
+}
+
+' ────────────────────────────────────────────────────────────
+package "org.printscript.parser.token" {
+
+  class TokenStream <<data class>> {
+    - current: TokenReadResult
+    - lastRange: Range
+    + TokenStream(source: TokenSource)
+    + peek(): Result<Token, PrintScriptError>
+    + advance(): TokenStream
+    + atEnd(): Boolean
+  }
+
+  class "Parsed<T>" as Parsed <<data class>> {
+    + value: T
+    + rest: TokenStream
+  }
+
+  class TokenStreamOperations <<extensiones>> {
+    + TokenStream.next(): Result<Parsed<Token>, _>
+    + TokenStream.expect(type, context?): Result<Parsed<Token>, _>
+    + TokenStream.skip(type, context?): Result<TokenStream, _>
+    + TokenStream.peekIs(type): Boolean
+    ~ TokenType.describe(): String
+  }
+
+  class UnexpectedEndOfInput <<data class>> {
+    + range: Range
+    + message: String
+  }
+}
+
+' ────────────────────────────────────────────────────────────
+package "org.printscript.parser" {
+
+  class Parser {
+    - statementParsers: List<StatementParser>
+    - recovery: RecoveryStrategy
+    + parse(source: TokenSource): Sequence<Result<ASTNode, _>>
+  }
+
+  interface RecoveryStrategy <<fun interface>> {
+    + recover(stream: TokenStream): TokenStream
+  }
+
+  class SkipToSemicolon <<object>> {
+    + recover(stream: TokenStream): TokenStream
+  }
+
+  interface ExpressionParser {
+    + parse(stream: TokenStream): Result<Parsed<Expression>, _>
+  }
+
+  class PrintScript10ExpressionParser {
+    + parse(stream): Result<Parsed<Expression>, _>
+    - parseAdditions(left): ...
+    - parseMultiplications(left): ...
+    - parseFactor(stream): ...
+  }
+
+  class SyntaxError <<data class>> {
+    + message: String
+    + range: Range
+  }
+
+  class PrintScript10 <<object>> {
+    + statementParsers(): List<StatementParser>
+    + parser(): Parser
+  }
+}
+
+' ────────────────────────────────────────────────────────────
+package "org.printscript.parser.statements" {
+
+  interface StatementParser {
+    + canHandle(type: TokenType): Boolean
+    + parse(stream: TokenStream): Result<Parsed<Statement>, _>
+  }
+
+  class DeclarationParser {
+    - expressions: ExpressionParser
+  }
+
+  class AssignmentParser {
+    - expressions: ExpressionParser
+  }
+
+  class CallParser {
+    - expressions: ExpressionParser
+  }
+}
+
+' ── implementaciones ────────────────────────────────────────
+StatementParser <|.. DeclarationParser
+StatementParser <|.. AssignmentParser
+StatementParser <|.. CallParser
+ExpressionParser <|.. PrintScript10ExpressionParser
+RecoveryStrategy <|.. SkipToSemicolon
+PrintScriptError <|.. SyntaxError
+PrintScriptError <|.. UnexpectedEndOfInput
+
+' ── composición ─────────────────────────────────────────────
+Parser o--> "1..*" StatementParser
+Parser o--> "1" RecoveryStrategy
+DeclarationParser o--> "1" ExpressionParser
+AssignmentParser o--> "1" ExpressionParser
+CallParser o--> "1" ExpressionParser
+
+' ── uso ─────────────────────────────────────────────────────
+Parser ..> TokenStream : crea desde\nTokenSource
+Parser ..> ASTNode : emite
+TokenStream ..> TokenSource : lee de
+TokenStream ..> Token
+Parsed o--> "1" TokenStream
+StatementParser ..> Parsed : devuelve
+StatementParser ..> Statement : construye
+ExpressionParser ..> Expression : construye
+TokenStreamOperations ..> TokenStream : opera sobre
+TokenStreamOperations ..> SyntaxError : arma
+DeclarationParser ..> TokenStreamOperations : <<usa>>
+AssignmentParser ..> TokenStreamOperations : <<usa>>
+CallParser ..> TokenStreamOperations : <<usa>>
+PrintScript10 ..> Parser : arma
+PrintScript10 ..> SkipToSemicolon
+
+' ── notas ───────────────────────────────────────────────────
+note right of TokenStream
+  Inmutable. `advance()` devuelve
+  un stream nuevo, nunca muta.
+  Lee un token por adelantado al
+  construirse, así `peek()` no
+  necesita memorizar nada.
+end note
+
+note bottom of Parsed
+  "esto parseé, y acá quedó
+  el stream". Es lo que permite
+  enhebrar sin estado mutable.
+end note
+
+note right of StatementParser
+  Lista de estrategias con `canHandle`:
+  el parser elige por el token inicial.
+  (En el formatter la misma decisión
+  se resuelve con un `when` exhaustivo,
+  porque ahí el conjunto es cerrado.)
+end note
+
+note left of TokenStreamOperations
+  `expect` y `skip` son política del
+  parser, no del mecanismo de lectura.
+  Por eso viven fuera de TokenStream.
+end note
+
+note bottom of SkipToSemicolon
+  Recuperación de errores: descarta
+  tokens hasta pasar el próximo ";".
+  Permite reportar varios errores
+  en una sola pasada.
+end note
+
+@enduml

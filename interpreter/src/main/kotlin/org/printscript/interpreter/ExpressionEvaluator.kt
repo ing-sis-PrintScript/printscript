@@ -19,9 +19,17 @@ class ExpressionEvaluator {
             is StringLiteral -> Result.Success(PrintScriptValue.StringValue(expression.value))
             is Identifier -> env.get(expression.name, expression.range)
             is BinaryExpression -> evaluateBinary(expression, env)
+            // Las llamadas conocidas (println) se despachan desde
+            // ExpressionStatementExecutor antes de llegar acá. Si una
+            // CallExpression sí llega a evaluate(), es porque apareció
+            // anidada dentro de otra expresión — algo que la gramática de
+            // 1.0 no produce, pero que 1.1 podría habilitar (ej "1 + f()").
             is CallExpression ->
                 Result.Failure(
-                    InterpreterError("Solo se soporta la llamada a 'println'.", expression.range),
+                    InterpreterError(
+                        "No se puede usar la llamada a '${expression.callee.name}' dentro de una expresión.",
+                        expression.range,
+                    ),
                 )
         }
     }

@@ -5,7 +5,7 @@ import org.printscript.lexer.LexicalError
 import org.printscript.lexer.TokenMatch
 import org.printscript.token.TokenType
 
-class WordRule(private val keywords: Map<String, TokenType>) : TokenRule {
+data class WordRule(private val keywords: Map<String, TokenType>) : TokenRule {
     override fun match(
         line: String,
         from: Int,

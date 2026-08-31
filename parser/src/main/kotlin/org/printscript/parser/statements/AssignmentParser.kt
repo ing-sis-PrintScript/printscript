@@ -9,7 +9,10 @@ import org.printscript.common.Result
 import org.printscript.common.flatMap
 import org.printscript.common.map
 import org.printscript.parser.ExpressionParser
+import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
+import org.printscript.parser.token.expect
+import org.printscript.parser.token.skip
 import org.printscript.token.TokenType
 
 /**
@@ -28,16 +31,19 @@ class AssignmentParser(
 ) : StatementParser {
     override fun canHandle(type: TokenType): Boolean = type == TokenType.IDENTIFIER
 
-    override fun parse(stream: TokenStream): Result<Statement, PrintScriptError> =
-        stream.expect(TokenType.IDENTIFIER, "el nombre de la variable").flatMap { name ->
-            stream.skip(TokenType.ASSIGN, "'=' en la asignación").flatMap {
-                expressions.parse(stream).flatMap { value ->
-                    stream.expect(TokenType.SEMICOLON, "';' al final de la asignación")
-                        .map { semicolon ->
-                            AssignmentStatement(
-                                target = Identifier(name.value, name.range),
-                                value = value,
-                                range = Range(name.range.start, semicolon.range.end),
+    override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> =
+        stream.expect(TokenType.IDENTIFIER, "como nombre de la variable").flatMap { (name, afterName) ->
+            afterName.skip(TokenType.ASSIGN, "en la asignación").flatMap { afterAssign ->
+                expressions.parse(afterAssign).flatMap { (value, afterValue) ->
+                    afterValue.expect(TokenType.SEMICOLON, "al final de la asignación")
+                        .map { (semicolon, afterSemicolon) ->
+                            Parsed(
+                                AssignmentStatement(
+                                    target = Identifier(name.value, name.range),
+                                    value = value,
+                                    range = Range(name.range.start, semicolon.range.end),
+                                ),
+                                afterSemicolon,
                             )
                         }
                 }

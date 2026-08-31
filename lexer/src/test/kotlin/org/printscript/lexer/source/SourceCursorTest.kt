@@ -3,33 +3,36 @@ package org.printscript.lexer.source
 import org.printscript.common.Position
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertIs
 
 class SourceCursorTest {
-    private fun cursorOf(vararg lines: String) = SourceCursor(lines.asSequence())
+    private fun cursorOf(text: String) = SourceCursor.from(StringSourceReader(text))
+
+    private fun foundOf(result: ScanResult): SourceCursor {
+        assertIs<ScanResult.Found>(result, "esperaba encontrar un token y vino $result")
+        return result.cursor
+    }
+
+    private tailrec fun agotar(cursor: SourceCursor): ScanResult.Exhausted =
+        when (val result = cursor.moveToNextToken()) {
+            is ScanResult.Found -> agotar(result.cursor.advanceTo(result.cursor.line.length))
+            is ScanResult.Exhausted -> result
+        }
 
     @Test
     fun `un fuente vacio no tiene tokens y termina en 1 1`() {
-        val cursor = cursorOf()
-
-        assertFalse(cursor.moveToNextToken())
-        assertEquals(Position(1, 1), cursor.endPosition())
+        assertEquals(ScanResult.Exhausted(Position(1, 1)), cursorOf("").moveToNextToken())
     }
 
     @Test
-    fun `una linea vacia tampoco tiene tokens`() {
-        val cursor = cursorOf("")
-
-        assertFalse(cursor.moveToNextToken())
-        assertEquals(Position(1, 1), cursor.endPosition())
+    fun `una linea de solo espacios tampoco tiene tokens`() {
+        assertIs<ScanResult.Exhausted>(cursorOf("   ").moveToNextToken())
     }
 
     @Test
     fun `se para en el primer caracter significativo`() {
-        val cursor = cursorOf("   let x;")
+        val cursor = foundOf(cursorOf("   let x;").moveToNextToken())
 
-        assertTrue(cursor.moveToNextToken())
         assertEquals(1, cursor.lineNumber)
         assertEquals(3, cursor.index)
         assertEquals('l', cursor.line[cursor.index])
@@ -37,62 +40,60 @@ class SourceCursorTest {
 
     @Test
     fun `el fin del fuente queda una columna despues del ultimo caracter`() {
-        val cursor = cursorOf("let x;")
-
-        while (cursor.moveToNextToken()) cursor.advanceTo(cursor.line.length)
-
-        assertEquals(Position(1, 7), cursor.endPosition())
+        assertEquals(Position(1, 7), agotar(cursorOf("let x;")).endPosition)
     }
 
     @Test
     fun `cuenta las lineas y reinicia el indice en cada una`() {
-        val cursor = cursorOf("a", "b")
+        val primera = foundOf(cursorOf("a\nb").moveToNextToken())
 
-        assertTrue(cursor.moveToNextToken())
-        assertEquals(1, cursor.lineNumber)
-        assertEquals(0, cursor.index)
+        assertEquals(1, primera.lineNumber)
+        assertEquals(0, primera.index)
 
-        cursor.advanceTo(1)
+        val segunda = foundOf(primera.advanceTo(1).moveToNextToken())
 
-        assertTrue(cursor.moveToNextToken())
-        assertEquals(2, cursor.lineNumber)
-        assertEquals(0, cursor.index)
+        assertEquals(2, segunda.lineNumber)
+        assertEquals(0, segunda.index)
     }
 
     @Test
     fun `saltea lineas enteras de whitespace sin perder la cuenta`() {
-        val cursor = cursorOf("   ", "\t\t", "x")
+        val cursor = foundOf(cursorOf("   \n\t\nx").moveToNextToken())
 
-        assertTrue(cursor.moveToNextToken())
         assertEquals(3, cursor.lineNumber)
         assertEquals(0, cursor.index)
     }
 
     @Test
     fun `advanceTo mueve el cursor a donde indico la regla`() {
-        val cursor = cursorOf("let x;")
+        val cursor = foundOf(cursorOf("let x;").moveToNextToken())
 
-        cursor.moveToNextToken()
-        cursor.advanceTo(3)
+        assertEquals(4, foundOf(cursor.advanceTo(3).moveToNextToken()).index)
+    }
 
-        assertTrue(cursor.moveToNextToken())
-        assertEquals(4, cursor.index)
+    @Test
+    fun `moveToNextToken no toca el cursor original`() {
+        val cursor = cursorOf("   let x;")
+
+        assertEquals(cursor.moveToNextToken(), cursor.moveToNextToken())
+    }
+
+    @Test
+    fun `avanzar desde un cursor guardado da siempre el mismo resultado`() {
+        val guardado = foundOf(cursorOf("let x;\nlet y;").moveToNextToken())
+
+        val primero = guardado.advanceTo(guardado.line.length).moveToNextToken()
+        agotar(guardado)
+
+        assertEquals(primero, guardado.advanceTo(guardado.line.length).moveToNextToken())
     }
 
     @Test
     fun `no lee mas lineas de las que necesita`() {
-        var leidas = 0
-        val infinitas =
-            sequence {
-                while (true) {
-                    leidas++
-                    yield("x")
-                }
-            }
+        val leidas = LineReadCounter()
 
-        val cursor = SourceCursor(infinitas)
-        cursor.moveToNextToken()
+        SourceCursor.from(InfiniteSourceReader("x", leidas)).moveToNextToken()
 
-        assertEquals(1, leidas)
+        assertEquals(1, leidas.total)
     }
 }
