@@ -9,4 +9,5 @@ include(
     "interpreter",
     "formatter",
     "integration",
+    "cli",
 )
