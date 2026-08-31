@@ -2,6 +2,7 @@ package org.printscript.formatter.syntax
 
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.DeclaredType
+import org.printscript.ast.UnaryOperator
 import org.printscript.formatter.config.Spacing
 
 internal object Syntax {
@@ -25,6 +26,11 @@ internal fun BinaryOperator.symbol(): String =
         BinaryOperator.MINUS -> "-"
         BinaryOperator.TIMES -> "*"
         BinaryOperator.DIVIDE -> "/"
+    }
+
+internal fun UnaryOperator.symbol(): String =
+    when (this) {
+        UnaryOperator.MINUS -> "-"
     }
 
 internal fun DeclaredType.symbol(): String =

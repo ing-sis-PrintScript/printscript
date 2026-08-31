@@ -2,6 +2,7 @@ package org.printscript.formatter.syntax
 
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.DeclaredType
+import org.printscript.ast.UnaryOperator
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -12,6 +13,11 @@ class SyntaxTest {
         assertEquals("-", BinaryOperator.MINUS.symbol())
         assertEquals("*", BinaryOperator.TIMES.symbol())
         assertEquals("/", BinaryOperator.DIVIDE.symbol())
+    }
+
+    @Test
+    fun `la negacion se escribe con el signo menos`() {
+        assertEquals("-", UnaryOperator.MINUS.symbol())
     }
 
     @Test
