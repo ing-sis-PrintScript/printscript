@@ -4,12 +4,19 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class BlankLinesTest {
+class SpacingTest {
     @Test
-    fun `NONE no renderiza ninguna linea en blanco`() {
-        assertEquals("", BlankLines.NONE.render())
+    fun `NONE no renderiza ningun espacio`() {
+        assertEquals("", Spacing.NONE.render())
     }
 
+    @Test
+    fun `SINGLE renderiza un unico espacio`() {
+        assertEquals(" ", Spacing.SINGLE.render())
+    }
+}
+
+class BlankLinesTest {
     @Test
     fun `cada constante renderiza tantos saltos como representa`() {
         assertEquals("", BlankLines.NONE.render())

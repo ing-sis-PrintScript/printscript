@@ -7,6 +7,24 @@ import org.printscript.ast.UnaryExpression
 
 enum class OperandSide { LEFT, RIGHT }
 
+internal enum class Precedence {
+    ADDITIVE,
+    MULTIPLICATIVE,
+    ;
+
+    fun bindsLooserThan(other: Precedence): Boolean = this < other
+
+    fun bindsNoTighterThan(other: Precedence): Boolean = this <= other
+
+    companion object {
+        fun of(operator: BinaryOperator): Precedence =
+            when (operator) {
+                BinaryOperator.PLUS, BinaryOperator.MINUS -> ADDITIVE
+                BinaryOperator.TIMES, BinaryOperator.DIVIDE -> MULTIPLICATIVE
+            }
+    }
+}
+
 class Parenthesizer {
     fun needsParentheses(
         parent: BinaryOperator,

@@ -1,4 +1,4 @@
-package org.printscript.formatter
+package org.printscript.formatter.engine
 
 import org.printscript.ast.ASTNode
 import org.printscript.common.PrintScriptError
