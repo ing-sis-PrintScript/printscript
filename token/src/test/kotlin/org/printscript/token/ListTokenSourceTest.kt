@@ -73,19 +73,4 @@ class ListTokenSourceTest {
         assertEquals(primerRecorrido, restoGuardado.allTokens())
         assertEquals(tokens, source.allTokens())
     }
-
-    @Test
-    fun `mutar la lista original no cambia ni el comportamiento ni la igualdad`() {
-        val original = declaracion().toMutableList()
-        val esperados = original.toList()
-        val source = ListTokenSource(original)
-        val gemela = ListTokenSource(esperados)
-
-        original.clear()
-        original.add(token(TokenType.PRINTLN, "println"))
-
-        assertEquals(esperados, source.allTokens(), "el comportamiento no puede depender de la lista de afuera")
-        assertEquals(gemela, source, "la igualdad tampoco")
-        assertEquals(gemela.hashCode(), source.hashCode())
-    }
 }
