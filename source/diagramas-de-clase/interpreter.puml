@@ -1,0 +1,133 @@
+@startuml interpreter-estructura
+title Modulo interpreter - del AST al efecto
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "ast" #F0F4F4 {
+  interface Statement
+  interface Expression
+}
+
+package "interpreter" {
+
+  interface PrintScriptInterpreter {
+    +execute(Statement, Environment): Result<Environment, InterpreterError>
+  }
+
+  class Interpreter {
+    -io: PrintScriptIO
+    -executors: List<StatementExecutor>
+    +execute(Statement, Environment): Result<Environment, InterpreterError>
+  }
+
+  object PrintScript10 {
+    +statementExecutors(): List<StatementExecutor>
+  }
+
+  class Environment {
+    -memory: Map<String, VariableSymbol>
+    +declare(name, type, value, range): Result<Environment, InterpreterError>
+    +assign(name, value, range): Result<Environment, InterpreterError>
+    +get(name, range): Result<PrintScriptValue, InterpreterError>
+    -checkType(...)
+  }
+
+  class VariableSymbol <<private>> {
+    -value: PrintScriptValue?
+    -type: DeclaredType
+  }
+
+  class ExpressionEvaluator {
+    +evaluate(Expression, Environment): Result<PrintScriptValue, InterpreterError>
+  }
+
+  interface PrintScriptValue <<sealed>>
+  class NumberValue {
+    +value: Double
+  }
+  class StringValue {
+    +value: String
+  }
+
+  class InterpreterError {
+    +message: String
+    +range: Range
+  }
+
+  package "statements" {
+    interface StatementExecutor {
+      +execute(Statement, Environment, PrintScriptIO): Result<...>?
+    }
+    class DeclarationExecutor
+    class AssignmentExecutor
+    class ExpressionStatementExecutor
+
+    interface BuiltInFunction <<fun interface>> {
+      +call(PrintScriptValue, PrintScriptIO): Result<Unit, InterpreterError>
+    }
+    object BuiltInFunctions {
+      +REGISTRY: Map<String, BuiltInFunction>
+    }
+  }
+
+  package "io" {
+    interface PrintScriptIO {
+      +print(String)
+      +read(String): String
+    }
+    class StandardIO
+  }
+}
+
+Interpreter ..|> PrintScriptInterpreter
+Interpreter --> "1..*" StatementExecutor
+Interpreter --> PrintScriptIO
+PrintScript10 ..> DeclarationExecutor : crea
+PrintScript10 ..> AssignmentExecutor : crea
+PrintScript10 ..> ExpressionStatementExecutor : crea
+
+DeclarationExecutor ..|> StatementExecutor
+AssignmentExecutor ..|> StatementExecutor
+ExpressionStatementExecutor ..|> StatementExecutor
+
+DeclarationExecutor --> ExpressionEvaluator
+AssignmentExecutor --> ExpressionEvaluator
+ExpressionStatementExecutor --> ExpressionEvaluator
+ExpressionStatementExecutor --> BuiltInFunctions : consulta el registro
+
+BuiltInFunctions --> BuiltInFunction
+BuiltInFunction ..> PrintScriptIO : imprime con
+
+StatementExecutor ..> Statement : recibe
+StatementExecutor ..> Environment : recibe y devuelve
+ExpressionEvaluator ..> Expression : recibe
+ExpressionEvaluator ..> PrintScriptValue : devuelve
+ExpressionEvaluator --> Environment : lee variables
+
+Environment *--> "0..*" VariableSymbol
+VariableSymbol --> PrintScriptValue
+NumberValue ..|> PrintScriptValue
+StringValue ..|> PrintScriptValue
+
+StandardIO ..|> PrintScriptIO
+
+note right of StatementExecutor
+  Un solo metodo que devuelve null
+  cuando el statement no es el suyo.
+  Misma forma que TokenRule en el lexer.
+end note
+
+note bottom of Environment
+  Inmutable: declare/assign no modifican,
+  devuelven un Environment NUEVO.
+  Quien llama hila uno con el siguiente.
+end note
+
+note bottom of BuiltInFunctions
+  Antes era un if (name == "println")
+  con string magico adentro de Interpreter.
+end note
+
+@enduml

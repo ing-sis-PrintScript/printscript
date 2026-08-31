@@ -1,0 +1,94 @@
+@startuml token-estructura
+title Modulo token - el vocabulario entre lexer y parser
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "common" #F0F4F4 {
+  class Range
+  interface PrintScriptError
+}
+
+package "token" {
+
+  class Token {
+    +type: TokenType
+    +value: String
+    +range: Range
+  }
+
+  enum TokenType {
+    .. keywords ..
+    LET
+    PRINTLN
+    TYPE_NUMBER
+    TYPE_STRING
+    .. identificadores ..
+    IDENTIFIER
+    .. literales ..
+    NUMBER_LITERAL
+    STRING_LITERAL
+    .. simbolos ..
+    COLON
+    ASSIGN
+    SEMICOLON
+    LPAREN
+    RPAREN
+    PLUS
+    MINUS
+    STAR
+    SLASH
+    .. control ..
+    EOF
+  }
+
+  interface TokenSource {
+    +nextToken(): TokenReadResult
+  }
+
+  class ListTokenSource {
+    -tokens: List<Token>
+    -offset: Int
+    +nextToken(): TokenReadResult
+  }
+
+  interface TokenReadResult <<sealed>>
+  class "Success" as ReadSuccess {
+    +token: Token
+    +remaining: TokenSource
+  }
+  class "Failure" as ReadFailure {
+    +error: PrintScriptError
+    +remaining: TokenSource
+  }
+  class "EndOfInput" as ReadEnd <<object>>
+}
+
+Token --> TokenType
+Token --> Range
+
+ListTokenSource ..|> TokenSource
+ReadSuccess ..|> TokenReadResult
+ReadFailure ..|> TokenReadResult
+ReadEnd ..|> TokenReadResult
+
+TokenSource ..> TokenReadResult : devuelve
+ReadSuccess --> Token
+ReadSuccess --> TokenSource : remaining
+ReadFailure --> PrintScriptError
+ReadFailure --> TokenSource : remaining
+
+note bottom of ReadSuccess
+  El "remaining" es la clave:
+  leer NO consume, te dan
+  una fuente nueva con el resto
+end note
+
+note top of TokenType
+  Los 17 tipos de PrintScript 1.0.
+  El agrupamiento es documentacion:
+  se ve de que esta hecho el lenguaje
+end note
+
+@enduml
