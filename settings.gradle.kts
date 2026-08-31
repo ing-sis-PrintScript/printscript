@@ -9,5 +9,4 @@ include(
     "interpreter",
     "formatter",
     "integration",
-    "formatter",
 )
