@@ -1,4 +1,4 @@
-package org.printscript.cli
+package org.printscript.cli.runners
 
 import org.printscript.common.errorOrNull
 import org.printscript.lexer.source.StringSourceReader
@@ -7,10 +7,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-class RunnerTest {
+class ExecuteRunnerTest {
     private val io = RecordingIO()
 
-    private fun run(source: String) = Runner(io).execute(StringSourceReader(source))
+    private fun run(source: String) = ExecuteRunner(io).execute(StringSourceReader(source))
 
     @Test
     fun `ejemplo 1 de la consigna`() {
