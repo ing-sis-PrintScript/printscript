@@ -12,7 +12,6 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.common.flatMap
-import org.printscript.common.map
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.peekIs
@@ -57,24 +56,25 @@ class PrintScript10ExpressionParser : ExpressionParser {
         }
     }
 
-    private fun parseUnary(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
-        stream.peek().flatMap { token ->
-            when (token.type) {
-                TokenType.MINUS ->
-                    parseUnary(stream.advance()).map { operand ->
-                        val range = Range(token.range.start, operand.value.range.end)
-                        Parsed(UnaryExpression(UnaryOperator.MINUS, operand.value, range), operand.rest)
-                    }
+    private fun parseUnary(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> {
+        val tokenResult = stream.peek()
+        if (tokenResult is Result.Failure) return tokenResult
+        val token = (tokenResult as Result.Success).value
 
-                else -> parseFactor(stream)
-            }
-        }
+        if (token.type != TokenType.MINUS) return parseFactor(stream)
+
+        val operandResult = parseUnary(stream.advance())
+        if (operandResult is Result.Failure) return operandResult
+        val (operand, rest) = (operandResult as Result.Success).value
+
+        val range = Range(token.range.start, operand.range.end)
+        return Result.Success(Parsed(UnaryExpression(UnaryOperator.MINUS, operand, range), rest))
+    }
 
     private fun parseFactor(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
         stream.peek().flatMap { token ->
             when (token.type) {
-                TokenType.NUMBER_LITERAL ->
-                    numberLiteral(token).map { Parsed(it, stream.advance()) }
+                TokenType.NUMBER_LITERAL -> numberLiteral(token, stream.advance())
 
                 // token.value ya viene sin comillas: son delimitadores, no contenido.
                 TokenType.STRING_LITERAL ->
@@ -92,22 +92,32 @@ class PrintScript10ExpressionParser : ExpressionParser {
             }
         }
 
-    private fun numberLiteral(token: Token): Result<Expression, PrintScriptError> {
+    private fun numberLiteral(
+        token: Token,
+        rest: TokenStream,
+    ): Result<Parsed<Expression>, PrintScriptError> {
         val number =
             token.value.toDoubleOrNull()
                 ?: return Result.Failure(
                     SyntaxError("'${token.value}' no es un número válido", token.range),
                 )
 
-        return Result.Success(NumberLiteral(number, token.range))
+        return Result.Success(Parsed(NumberLiteral(number, token.range), rest))
     }
 
-    private fun parenthesized(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
-        stream.skip(TokenType.LPAREN).flatMap { afterOpen ->
-            parseExpression(afterOpen).flatMap { (inner, afterInner) ->
-                afterInner.skip(TokenType.RPAREN).map { afterClose -> Parsed(inner, afterClose) }
-            }
-        }
+    private fun parenthesized(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> {
+        val openResult = stream.skip(TokenType.LPAREN)
+        if (openResult is Result.Failure) return openResult
+        val afterOpen = (openResult as Result.Success).value
+
+        val innerResult = parseExpression(afterOpen)
+        if (innerResult is Result.Failure) return innerResult
+        val (inner, afterInner) = (innerResult as Result.Success).value
+
+        val closeResult = afterInner.skip(TokenType.RPAREN)
+        if (closeResult is Result.Failure) return closeResult
+        return Result.Success(Parsed(inner, (closeResult as Result.Success).value))
+    }
 
     private fun combine(
         left: Expression,
