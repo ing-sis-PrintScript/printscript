@@ -6,47 +6,50 @@ import org.printscript.ast.Statement
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
-import org.printscript.common.flatMap
-import org.printscript.common.map
 import org.printscript.parser.ExpressionParser
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.expect
 import org.printscript.parser.token.skip
+import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-/**
- * assignment = identifier, "=", expression, ";" ;
- *
- * Sin "let" y sin tipo: la variable ya existe y su tipo quedó fijado en la
- * declaración. Que efectivamente exista es problema del análisis semántico,
- * no del parser.
- *
- * El identificador de la izquierda NO lo parsea el ExpressionParser: acá no es
- * un valor que se lee, es el destino de la asignación. La expresión de la
- * derecha sí, porque eso sí se evalúa.
- */
 class AssignmentParser(
     private val expressions: ExpressionParser,
 ) : StatementParser {
     override fun canHandle(type: TokenType): Boolean = type == TokenType.IDENTIFIER
 
-    override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> =
-        stream.expect(TokenType.IDENTIFIER, "como nombre de la variable").flatMap { (name, afterName) ->
-            afterName.skip(TokenType.ASSIGN, "en la asignación").flatMap { afterAssign ->
-                expressions.parse(afterAssign).flatMap { (value, afterValue) ->
-                    afterValue.expect(TokenType.SEMICOLON, "al final de la asignación")
-                        .map { (semicolon, afterSemicolon) ->
-                            Parsed(
-                                AssignmentStatement(
-                                    target = Identifier(name.value, name.range),
-                                    value = value,
-                                    range = Range(name.range.start, semicolon.range.end),
-                                ),
-                                afterSemicolon,
-                            )
-                        }
-                }
-            }
-        }
+    // El identificador de la izquierda es el destino, no un valor: no lo parsea el ExpressionParser.
+    override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> {
+        val nameResult = stream.expect(TokenType.IDENTIFIER, "como nombre de la variable")
+        if (nameResult is Result.Failure) return nameResult
+        val (name, afterName) = (nameResult as Result.Success).value
+
+        val assignResult = afterName.skip(TokenType.ASSIGN, "en la asignación")
+        if (assignResult is Result.Failure) return assignResult
+        val afterAssign = (assignResult as Result.Success).value
+
+        return parseValue(name, afterAssign)
+    }
+
+    private fun parseValue(
+        name: Token,
+        stream: TokenStream,
+    ): Result<Parsed<Statement>, PrintScriptError> {
+        val valueResult = expressions.parse(stream)
+        if (valueResult is Result.Failure) return valueResult
+        val (value, afterValue) = (valueResult as Result.Success).value
+
+        val semicolonResult = afterValue.expect(TokenType.SEMICOLON, "al final de la asignación")
+        if (semicolonResult is Result.Failure) return semicolonResult
+        val (semicolon, afterSemicolon) = (semicolonResult as Result.Success).value
+
+        val statement =
+            AssignmentStatement(
+                target = Identifier(name.value, name.range),
+                value = value,
+                range = Range(name.range.start, semicolon.range.end),
+            )
+        return Result.Success(Parsed(statement, afterSemicolon))
+    }
 }
