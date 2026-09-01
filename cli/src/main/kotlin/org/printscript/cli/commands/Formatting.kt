@@ -1,8 +1,8 @@
 package org.printscript.cli.commands
 
 import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
 import org.printscript.cli.config.ConfigReadError
 import org.printscript.cli.config.loadFormatterConfig

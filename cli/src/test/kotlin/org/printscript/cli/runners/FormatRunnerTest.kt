@@ -38,13 +38,14 @@ class FormatRunnerTest {
     @Test
     fun `los saltos antes de println salen de la config`() {
         val dosSaltos = FormatterConfig(blankLinesBeforePrintln = BlankLines.TWO)
-        val salida = format(
-            """
-            let x: number = 5;
-            println(x);
-            """.trimIndent(),
-            dosSaltos,
-        )
+        val salida =
+            format(
+                """
+                let x: number = 5;
+                println(x);
+                """.trimIndent(),
+                dosSaltos,
+            )
 
         assertEquals("let x: number = 5;\n\n\nprintln(x);\n", salida)
     }
