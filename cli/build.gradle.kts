@@ -10,7 +10,10 @@ dependencies {
     implementation(project(":lexer"))
     implementation(project(":parser"))
     implementation(project(":interpreter"))
+    implementation(project(":formatter"))
     implementation(libs.clikt)
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.yaml)
 }
 
 application {
