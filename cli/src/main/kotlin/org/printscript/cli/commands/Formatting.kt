@@ -9,7 +9,7 @@ import org.printscript.cli.config.loadFormatterConfig
 import org.printscript.cli.runners.FormatRunner
 import org.printscript.common.Result
 import org.printscript.formatter.config.FormatterConfig
-import org.printscript.lexer.source.StringSourceReader
+import org.printscript.lexer.source.FileSourceReader
 
 internal class Formatting : CliktCommand(name = "formatting") {
     private val source by argument(help = "Archivo PrintScript a formatear")
@@ -31,7 +31,7 @@ internal class Formatting : CliktCommand(name = "formatting") {
     }
 
     private fun formatWith(config: FormatterConfig) {
-        for (result in FormatRunner(config).format(StringSourceReader(source.readText()))) {
+        for (result in FormatRunner(config).format(FileSourceReader.of(source))) {
             when (result) {
                 // Cada trozo ya trae sus separadores: se imprime crudo, sin agregar saltos.
                 is Result.Success -> echo(result.value.text, trailingNewline = false)
