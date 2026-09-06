@@ -8,6 +8,7 @@ include(
     "parser",
     "interpreter",
     "formatter",
+    "analyzer",
     "integration",
     "cli",
 )
