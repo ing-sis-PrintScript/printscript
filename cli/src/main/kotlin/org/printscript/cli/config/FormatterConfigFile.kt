@@ -8,7 +8,8 @@ import org.printscript.formatter.config.FormatterConfigLoader
 
 /**
  * Las dos mitades de leer la config del formatter:
- *   ConfigReader          archivo -> Map<String, ConfigValue>   (leer y tipar)
+ *   ConfigReader          archivo -> JsonNode                   (leer)
+ *   toConfigValues        JsonNode -> Map<String, ConfigValue>  (tipar)
  *   FormatterConfigLoader Map     -> FormatterConfig            (validar reglas)
  *
  * La segunda ya existia en el modulo formatter, que a proposito no toca el
@@ -18,7 +19,8 @@ internal fun loadFormatterConfig(
     fileName: String,
     text: String,
 ): Result<FormatterConfig, ConfigReadError> =
-    ConfigReader().read(fileName, text)
+    ConfigReader().readTree(fileName, text)
+        .flatMap { root -> toConfigValues(root) }
         .flatMap { values ->
             FormatterConfigLoader().load(values).mapError { ConfigReadError(it.message) }
         }

@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":parser"))
     implementation(project(":interpreter"))
     implementation(project(":formatter"))
+    implementation(project(":analyzer"))
     implementation(libs.clikt)
     implementation(libs.jackson.databind)
     implementation(libs.jackson.yaml)
