@@ -7,9 +7,10 @@ data class StringSourceReader(
     private val text: String,
     private val offset: Int = 0,
 ) : SourceReader {
-    // length + 1 y no length: desde length todavía queda por emitir la última línea
-    // (por eso "" da una línea vacía), así que hace falta un valor extra para "no hay más".
-    private val endOfInputOffset: Int get() = text.length + 1
+    // Llegar al final del texto es no tener mas lineas: el salto final CIERRA la
+    // ultima linea, no abre una vacia. Es la convencion de readLine, la misma que
+    // sigue FileSourceReader, que es el reader que corre de verdad en el CLI.
+    private val endOfInputOffset: Int get() = text.length
 
     init {
         require(offset in 0..endOfInputOffset) {
