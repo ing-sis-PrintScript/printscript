@@ -1,5 +1,6 @@
 package org.printscript.cli.runners
 
+import org.printscript.cli.progress.Progress
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.interpreter.Environment
@@ -8,13 +9,16 @@ import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.io.StandardIO
 import org.printscript.lexer.source.SourceReader
 
-internal class ExecuteRunner(io: PrintScriptIO = StandardIO()) {
+internal class ExecuteRunner(
+    io: PrintScriptIO = StandardIO(),
+    private val progress: Progress = Progress.NONE,
+) {
     private val interpreter = Interpreter(io)
 
     fun execute(source: SourceReader): Result<Unit, PrintScriptError> {
         var environment = Environment()
 
-        for (parsed in statements(source)) {
+        for (parsed in statements(source, progress)) {
             val statement =
                 when (parsed) {
                     is Result.Failure -> return parsed

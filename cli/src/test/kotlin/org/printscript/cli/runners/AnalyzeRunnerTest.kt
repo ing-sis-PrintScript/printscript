@@ -4,6 +4,7 @@ import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.Severity
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.analyzer.config.SnakeCase
+import org.printscript.cli.progress.Progress
 import org.printscript.lexer.source.StringSourceReader
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -78,5 +79,15 @@ class AnalyzeRunnerTest {
 
         assertEquals(listOf("syntax", "identifier-naming"), findings.map { it.rule })
         assertEquals(listOf(1, 2), findings.map { it.range.start.line })
+    }
+
+    @Test
+    fun `avisa una vez por cada sentencia parseada`() {
+        var notices = 0
+
+        AnalyzeRunner(AnalyzerConfig(), Progress { notices++ })
+            .analyze(StringSourceReader("let x: number = 1;\nlet y: number = 2;")) { }
+
+        assertEquals(2, notices)
     }
 }

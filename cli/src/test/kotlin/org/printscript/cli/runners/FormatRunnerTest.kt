@@ -1,5 +1,6 @@
 package org.printscript.cli.runners
 
+import org.printscript.cli.progress.Progress
 import org.printscript.common.getOrNull
 import org.printscript.formatter.config.BlankLines
 import org.printscript.formatter.config.FormatterConfig
@@ -48,5 +49,18 @@ class FormatRunnerTest {
             )
 
         assertEquals("let x: number = 5;\n\n\nprintln(x);\n", salida)
+    }
+
+    @Test
+    fun `avisa una vez por cada sentencia parseada`() {
+        var notices = 0
+
+        // El format() devuelve una Sequence perezosa: si nadie la consume no se
+        // parsea nada, y el contador quedaria en cero.
+        FormatRunner(FormatterConfig(), Progress { notices++ })
+            .format(StringSourceReader("let x: number = 1;\nlet y: number = 2;"))
+            .count()
+
+        assertEquals(2, notices)
     }
 }

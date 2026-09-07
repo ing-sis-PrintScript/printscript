@@ -1,5 +1,6 @@
 package org.printscript.cli.runners
 
+import org.printscript.cli.progress.Progress
 import org.printscript.lexer.source.StringSourceReader
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,5 +47,15 @@ class ValidateRunnerTest {
             )
 
         assertEquals(listOf(1, 3), errors.map { it.range.start.line })
+    }
+
+    @Test
+    fun `avisa una vez por cada sentencia parseada`() {
+        var notices = 0
+
+        ValidateRunner(Progress { notices++ })
+            .validate(StringSourceReader("let x: number = 1;\nlet y: number = 2;"))
+
+        assertEquals(2, notices)
     }
 }
