@@ -8,6 +8,7 @@ import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.cli.config.ConfigReadError
 import org.printscript.cli.config.loadAnalyzerConfig
+import org.printscript.cli.progress.CountingProgress
 import org.printscript.cli.runners.AnalyzeRunner
 import org.printscript.common.Result
 import org.printscript.lexer.source.FileSourceReader
@@ -40,11 +41,14 @@ internal class Analyzing : CliktCommand(name = "analyzing") {
      */
     private fun analyzeWith(config: AnalyzerConfig) {
         var problems = 0
+        val progress = CountingProgress()
 
-        AnalyzeRunner(config).analyze(FileSourceReader.of(source)) { diagnostic ->
+        AnalyzeRunner(config, progress).analyze(FileSourceReader.of(source)) { diagnostic ->
             problems++
             echo(line(diagnostic), err = true)
         }
+
+        progress.done()
 
         if (problems == 0) {
             echo("✓ ${source.name} — sin problemas")

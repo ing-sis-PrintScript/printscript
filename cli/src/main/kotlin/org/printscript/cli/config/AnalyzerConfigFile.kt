@@ -14,27 +14,12 @@ private const val PRINTLN_ARGUMENTS = "println-only-simple-arguments"
 private const val CAMEL = "camel-case"
 private const val SNAKE = "snake-case"
 
-/**
- * La config del analyzer, leida de un .yaml, .yml o .json:
- *
- *   identifier-naming: camel-case          # camel-case | snake-case
- *   println-only-simple-arguments: true
- *
- * Un archivo vacio, o sin alguna de las dos claves, deja los defaults que ya
- * declara AnalyzerConfig. Una clave desconocida es un error: casi siempre es un
- * typo, y fallar es mas util que ignorarla en silencio.
- */
 internal fun loadAnalyzerConfig(
     fileName: String,
     text: String,
 ): Result<AnalyzerConfig, ConfigReadError> =
     ConfigReader().readTree(fileName, text).flatMap { root -> toAnalyzerConfig(root) }
 
-/**
- * Misma forma que FormatterConfigLoader.load: se arranca de los defaults y cada
- * clave del archivo devuelve una config nueva. El flatMap corta en la primera
- * clave invalida.
- */
 private fun toAnalyzerConfig(root: JsonNode): Result<AnalyzerConfig, ConfigReadError> {
     val defaults: Result<AnalyzerConfig, ConfigReadError> = Result.Success(AnalyzerConfig())
 

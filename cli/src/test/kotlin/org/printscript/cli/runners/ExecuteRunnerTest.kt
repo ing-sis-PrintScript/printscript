@@ -1,5 +1,6 @@
 package org.printscript.cli.runners
 
+import org.printscript.cli.progress.Progress
 import org.printscript.common.errorOrNull
 import org.printscript.lexer.source.StringSourceReader
 import kotlin.test.Test
@@ -50,5 +51,15 @@ class ExecuteRunnerTest {
 
         assertEquals("Caracter inesperado '@'", error.message)
         assertEquals(17, error.range.start.column)
+    }
+
+    @Test
+    fun `avisa una vez por cada sentencia parseada`() {
+        var notices = 0
+
+        ExecuteRunner(io, Progress { notices++ })
+            .execute(StringSourceReader("let x: number = 1;\nlet y: number = 2;"))
+
+        assertEquals(2, notices)
     }
 }
