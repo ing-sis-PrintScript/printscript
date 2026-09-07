@@ -44,6 +44,23 @@ class ExecuteRunnerTest {
         assertEquals(listOf("Result: 3"), io.output())
     }
 
+    // El unico test que pasa por AssignmentStatement de punta a punta: lexer,
+    // parser e interprete. Los otros dos ejemplos solo declaran.
+    @Test
+    fun `reasignar una variable`() {
+        val result =
+            run(
+                """
+                let x: number = 5;
+                x = x + 3;
+                println(x);
+                """.trimIndent(),
+            )
+
+        assertNull(result.errorOrNull())
+        assertEquals(listOf("8"), io.output())
+    }
+
     @Test
     fun `un error corta la ejecucion y trae la posicion`() {
         val result = run("""let x: number = @;""")
