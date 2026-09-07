@@ -4,14 +4,14 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
 import org.printscript.cli.runners.ValidateRunner
-import org.printscript.lexer.source.StringSourceReader
+import org.printscript.lexer.source.FileSourceReader
 
 internal class Validation : CliktCommand(name = "validation") {
     private val source by argument(help = "Archivo PrintScript a validar")
         .file(mustExist = true, canBeDir = false, mustBeReadable = true)
 
     override fun run() {
-        val errors = ValidateRunner().validate(StringSourceReader(source.readText()))
+        val errors = ValidateRunner().validate(FileSourceReader.of(source))
 
         if (errors.isEmpty()) {
             echo("✓ ${source.name} — sin errores")
