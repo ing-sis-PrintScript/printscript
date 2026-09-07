@@ -7,16 +7,21 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import org.printscript.common.Result
 import org.printscript.common.flatMap
-import org.printscript.formatter.config.ConfigValue
 
+/**
+ * Abre el archivo de configuracion y lo deja como un arbol, sin interpretarlo.
+ *
+ * Solo lee: elegir el formato por la extension y parsearlo es lo unico que
+ * comparten el formatter y el analyzer. Que significa cada clave y que valores
+ * acepta es asunto de cada uno, porque tienen vocabularios distintos --el
+ * formatter habla de booleanos y enteros, el analyzer necesita ademas un texto
+ * para la convencion de nombres--.
+ */
 internal class ConfigReader {
-    fun read(
+    fun readTree(
         fileName: String,
         text: String,
-    ): Result<Map<String, ConfigValue>, ConfigReadError> =
-        mapperFor(fileName)
-            .flatMap { mapper -> parse(mapper, text) }
-            .flatMap { root -> toConfigValues(root) }
+    ): Result<JsonNode, ConfigReadError> = mapperFor(fileName).flatMap { mapper -> parse(mapper, text) }
 
     private fun mapperFor(fileName: String): Result<ObjectMapper, ConfigReadError> =
         when {
