@@ -1,4 +1,4 @@
-package org.printscript.cli.config
+package org.printscript.runner.config
 
 import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.databind.JsonNode

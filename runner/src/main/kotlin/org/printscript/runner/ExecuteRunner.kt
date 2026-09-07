@@ -1,6 +1,5 @@
-package org.printscript.cli.runners
+package org.printscript.runner
 
-import org.printscript.cli.progress.Progress
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.interpreter.Environment
@@ -8,8 +7,9 @@ import org.printscript.interpreter.Interpreter
 import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.io.StandardIO
 import org.printscript.lexer.source.SourceReader
+import org.printscript.runner.progress.Progress
 
-internal class ExecuteRunner(
+class ExecuteRunner(
     io: PrintScriptIO = StandardIO(),
     private val progress: Progress = Progress.NONE,
 ) {

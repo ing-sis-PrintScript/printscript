@@ -1,4 +1,4 @@
-package org.printscript.cli.runners
+package org.printscript.runner
 
 import org.printscript.interpreter.io.PrintScriptIO
 

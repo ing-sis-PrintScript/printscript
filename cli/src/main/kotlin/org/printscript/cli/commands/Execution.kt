@@ -4,9 +4,9 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
 import org.printscript.cli.progress.CountingProgress
-import org.printscript.cli.runners.ExecuteRunner
 import org.printscript.common.Result
 import org.printscript.lexer.source.FileSourceReader
+import org.printscript.runner.ExecuteRunner
 
 internal class Execution : CliktCommand(name = "execution") {
     private val source by argument(help = "Archivo PrintScript a ejecutar")

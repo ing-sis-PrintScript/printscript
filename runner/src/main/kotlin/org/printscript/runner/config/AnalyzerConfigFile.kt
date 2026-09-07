@@ -1,4 +1,4 @@
-package org.printscript.cli.config
+package org.printscript.runner.config
 
 import com.fasterxml.jackson.databind.JsonNode
 import org.printscript.analyzer.config.AnalyzerConfig
@@ -14,7 +14,7 @@ private const val PRINTLN_ARGUMENTS = "println-only-simple-arguments"
 private const val CAMEL = "camel-case"
 private const val SNAKE = "snake-case"
 
-internal fun loadAnalyzerConfig(
+fun loadAnalyzerConfig(
     fileName: String,
     text: String,
 ): Result<AnalyzerConfig, ConfigReadError> =

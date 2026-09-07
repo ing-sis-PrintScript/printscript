@@ -1,4 +1,4 @@
-package org.printscript.cli.config
+package org.printscript.runner.config
 
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.analyzer.config.CamelCase

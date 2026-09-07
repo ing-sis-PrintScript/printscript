@@ -6,12 +6,12 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
 import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.config.AnalyzerConfig
-import org.printscript.cli.config.ConfigReadError
-import org.printscript.cli.config.loadAnalyzerConfig
 import org.printscript.cli.progress.CountingProgress
-import org.printscript.cli.runners.AnalyzeRunner
 import org.printscript.common.Result
 import org.printscript.lexer.source.FileSourceReader
+import org.printscript.runner.AnalyzeRunner
+import org.printscript.runner.config.ConfigReadError
+import org.printscript.runner.config.loadAnalyzerConfig
 
 internal class Analyzing : CliktCommand(name = "analyzing") {
     private val source by argument(help = "Archivo PrintScript a analizar")

@@ -4,8 +4,8 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
 import org.printscript.cli.progress.CountingProgress
-import org.printscript.cli.runners.ValidateRunner
 import org.printscript.lexer.source.FileSourceReader
+import org.printscript.runner.ValidateRunner
 
 internal class Validation : CliktCommand(name = "validation") {
     private val source by argument(help = "Archivo PrintScript a validar")

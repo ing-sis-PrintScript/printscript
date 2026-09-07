@@ -1,4 +1,4 @@
-package org.printscript.cli.config
+package org.printscript.runner.config
 
 import org.printscript.common.errorOrNull
 import org.printscript.common.flatMap

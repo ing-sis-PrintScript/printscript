@@ -1,7 +1,7 @@
-package org.printscript.cli.runners
+package org.printscript.runner
 
-import org.printscript.cli.progress.Progress
 import org.printscript.lexer.source.StringSourceReader
+import org.printscript.runner.progress.Progress
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

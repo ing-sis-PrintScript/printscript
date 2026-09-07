@@ -4,13 +4,13 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
-import org.printscript.cli.config.ConfigReadError
-import org.printscript.cli.config.loadFormatterConfig
 import org.printscript.cli.progress.CountingProgress
-import org.printscript.cli.runners.FormatRunner
 import org.printscript.common.Result
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.lexer.source.FileSourceReader
+import org.printscript.runner.FormatRunner
+import org.printscript.runner.config.ConfigReadError
+import org.printscript.runner.config.loadFormatterConfig
 
 internal class Formatting : CliktCommand(name = "formatting") {
     private val source by argument(help = "Archivo PrintScript a formatear")
