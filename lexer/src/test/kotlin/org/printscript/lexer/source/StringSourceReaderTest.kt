@@ -20,11 +20,8 @@ class StringSourceReaderTest {
     private fun visible(text: String): String = text.replace("\n", "\\n").replace("\r", "\\r")
 
     @Test
-    fun `una fuente vacia da una linea vacia y despues EndOfInput`() {
-        val primera = successOf(StringSourceReader("").nextLine())
-
-        assertEquals("", primera.line)
-        assertEquals(LineReadResult.EndOfInput, primera.remaining.nextLine())
+    fun `una fuente vacia no tiene lineas`() {
+        assertEquals(LineReadResult.EndOfInput, StringSourceReader("").nextLine())
     }
 
     @Test
@@ -38,8 +35,8 @@ class StringSourceReaderTest {
     }
 
     @Test
-    fun `un salto de linea final produce una linea vacia extra`() {
-        assertEquals(listOf("a", ""), StringSourceReader("a\n").allLines())
+    fun `un salto de linea final cierra la ultima linea, no abre una nueva`() {
+        assertEquals(listOf("a"), StringSourceReader("a\n").allLines())
     }
 
     @Test
@@ -76,52 +73,41 @@ class StringSourceReaderTest {
         assertEquals(listOf("uno", "dos", "tres"), reader.allLines())
     }
 
+    // Ojo: NO coincide con lineSequence() de Kotlin, que para "a\n" devuelve ["a", ""].
+    // La referencia es readLine, que es lo que hace FileSourceReader al leer del disco.
     @Test
-    fun `produce exactamente las mismas lineas que lineSequence`() {
-        val fuentes =
-            listOf(
-                "",
-                "a",
-                "a\n",
-                "\n",
-                "a\n\nb",
-                "\n\n\n",
-                "a\r\nb",
-                "a\rb",
-                "a\r\n\r\nb",
-                "a\rb\nc\r\nd",
-                "let x: number = 5;\nprintln(x);\n",
-                "   \n\t\n",
+    fun `casos de separadores`() {
+        val esperado =
+            mapOf(
+                "" to emptyList(),
+                "a" to listOf("a"),
+                "a\n" to listOf("a"),
+                "\n" to listOf(""),
+                "a\n\nb" to listOf("a", "", "b"),
+                "\n\n\n" to listOf("", "", ""),
+                "a\r\nb" to listOf("a", "b"),
+                "a\rb" to listOf("a", "b"),
+                "a\r\n\r\nb" to listOf("a", "", "b"),
+                "a\rb\nc\r\nd" to listOf("a", "b", "c", "d"),
+                "let x: number = 5;\nprintln(x);\n" to listOf("let x: number = 5;", "println(x);"),
+                "   \n\t\n" to listOf("   ", "\t"),
             )
 
-        for (fuente in fuentes) {
-            assertEquals(
-                fuente.lineSequence().toList(),
-                StringSourceReader(fuente).allLines(),
-                "difiere para \"${visible(fuente)}\"",
-            )
+        for ((fuente, lineas) in esperado) {
+            assertEquals(lineas, StringSourceReader(fuente).allLines(), "difiere para \"${visible(fuente)}\"")
         }
     }
 
     @Test
-    fun `un reader parado en el centinela ya no tiene lineas`() {
+    fun `un reader parado al final del texto ya no tiene lineas`() {
         val texto = "una\ndos"
 
-        assertEquals(LineReadResult.EndOfInput, StringSourceReader(texto, texto.length + 1).nextLine())
-    }
-
-    @Test
-    fun `parado en el largo del texto todavia queda la ultima linea`() {
-        val texto = "una\ndos"
-
-        val ultima = successOf(StringSourceReader(texto, texto.length).nextLine())
-
-        assertEquals("", ultima.line, "desde length se emite la línea vacía final, no EndOfInput")
+        assertEquals(LineReadResult.EndOfInput, StringSourceReader(texto, texto.length).nextLine())
     }
 
     @Test
     fun `un offset fuera de rango no construye el reader`() {
-        assertFailsWith<IllegalArgumentException> { StringSourceReader("abc", 5) }
+        assertFailsWith<IllegalArgumentException> { StringSourceReader("abc", 4) }
         assertFailsWith<IllegalArgumentException> { StringSourceReader("abc", -1) }
     }
 }
