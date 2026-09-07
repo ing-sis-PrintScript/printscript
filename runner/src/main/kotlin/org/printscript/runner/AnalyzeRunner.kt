@@ -7,7 +7,6 @@ import org.printscript.analyzer.Severity
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
-import org.printscript.lexer.source.SourceReader
 import org.printscript.runner.progress.Progress
 
 private const val SYNTAX = "syntax"
@@ -19,7 +18,7 @@ class AnalyzeRunner(
     // Por cada sentencia: si fallo reporto el error, si salio bien la analizo.
     // Todo sale por el mismo emitter, en el orden en que aparece en el archivo.
     fun analyze(
-        source: SourceReader,
+        source: SourceFactory,
         emit: DiagnosticEmitter,
     ) {
         val analyzer = PrintScript10.analyzer(config)

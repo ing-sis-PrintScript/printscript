@@ -35,7 +35,7 @@ internal class Formatting : CliktCommand(name = "formatting") {
     private fun formatWith(config: FormatterConfig) {
         val progress = CountingProgress()
 
-        for (result in FormatRunner(config, progress).format(StreamSourceReader.of(source))) {
+        for (result in FormatRunner(config, progress).format { StreamSourceReader.of(source) }) {
             when (result) {
                 // Cada trozo ya trae sus separadores: se imprime crudo, sin agregar saltos.
                 is Result.Success -> echo(result.value.text, trailingNewline = false)

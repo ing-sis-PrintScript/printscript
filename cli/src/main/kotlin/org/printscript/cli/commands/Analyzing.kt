@@ -42,7 +42,7 @@ internal class Analyzing : CliktCommand(name = "analyzing") {
         var problems = 0
         val progress = CountingProgress()
 
-        AnalyzeRunner(config, progress).analyze(StreamSourceReader.of(source)) { diagnostic ->
+        AnalyzeRunner(config, progress).analyze({ StreamSourceReader.of(source) }) { diagnostic ->
             problems++
             echo(line(diagnostic), err = true)
         }

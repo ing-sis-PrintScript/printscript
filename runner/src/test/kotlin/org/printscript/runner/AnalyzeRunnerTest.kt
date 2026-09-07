@@ -16,7 +16,7 @@ class AnalyzeRunnerTest {
         source: String,
         config: AnalyzerConfig = AnalyzerConfig(),
     ) {
-        AnalyzeRunner(config).analyze(StringSourceReader(source)) { findings.add(it) }
+        AnalyzeRunner(config).analyze({ StringSourceReader(source) }) { findings.add(it) }
     }
 
     @Test
@@ -86,7 +86,7 @@ class AnalyzeRunnerTest {
         var notices = 0
 
         AnalyzeRunner(AnalyzerConfig(), Progress { notices++ })
-            .analyze(StringSourceReader("let x: number = 1;\nlet y: number = 2;")) { }
+            .analyze({ StringSourceReader("let x: number = 1;\nlet y: number = 2;") }) { }
 
         assertEquals(2, notices)
     }

@@ -14,7 +14,7 @@ internal class Execution : CliktCommand(name = "execution") {
 
     override fun run() {
         val progress = CountingProgress()
-        val result = ExecuteRunner(progress = progress).execute(StreamSourceReader.of(source))
+        val result = ExecuteRunner(progress = progress).execute { StreamSourceReader.of(source) }
         progress.done()
 
         if (result is Result.Failure) {

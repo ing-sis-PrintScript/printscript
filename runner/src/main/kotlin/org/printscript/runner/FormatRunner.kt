@@ -5,13 +5,12 @@ import org.printscript.common.Result
 import org.printscript.formatter.FormattedCode
 import org.printscript.formatter.PrintScript10
 import org.printscript.formatter.config.FormatterConfig
-import org.printscript.lexer.source.SourceReader
 import org.printscript.runner.progress.Progress
 
 class FormatRunner(
     private val config: FormatterConfig,
     private val progress: Progress = Progress.NONE,
 ) {
-    fun format(source: SourceReader): Sequence<Result<FormattedCode, PrintScriptError>> =
+    fun format(source: SourceFactory): Sequence<Result<FormattedCode, PrintScriptError>> =
         PrintScript10.formatter(config).format(statements(source, progress))
 }

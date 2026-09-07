@@ -6,7 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ValidateRunnerTest {
-    private fun validate(source: String) = ValidateRunner().validate(StringSourceReader(source))
+    private fun validate(source: String) = ValidateRunner().validate { StringSourceReader(source) }
 
     @Test
     fun `un archivo sano no reporta errores`() {
@@ -54,7 +54,7 @@ class ValidateRunnerTest {
         var notices = 0
 
         ValidateRunner(Progress { notices++ })
-            .validate(StringSourceReader("let x: number = 1;\nlet y: number = 2;"))
+            .validate { StringSourceReader("let x: number = 1;\nlet y: number = 2;") }
 
         assertEquals(2, notices)
     }

@@ -6,7 +6,6 @@ import org.printscript.interpreter.Environment
 import org.printscript.interpreter.Interpreter
 import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.io.StandardIO
-import org.printscript.lexer.source.SourceReader
 import org.printscript.runner.progress.Progress
 
 class ExecuteRunner(
@@ -15,7 +14,7 @@ class ExecuteRunner(
 ) {
     private val interpreter = Interpreter(io)
 
-    fun execute(source: SourceReader): Result<Unit, PrintScriptError> {
+    fun execute(source: SourceFactory): Result<Unit, PrintScriptError> {
         var environment = Environment()
 
         for (parsed in statements(source, progress)) {

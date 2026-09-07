@@ -13,7 +13,7 @@ internal class Validation : CliktCommand(name = "validation") {
 
     override fun run() {
         val progress = CountingProgress()
-        val errors = ValidateRunner(progress).validate(StreamSourceReader.of(source))
+        val errors = ValidateRunner(progress).validate { StreamSourceReader.of(source) }
         progress.done()
 
         if (errors.isEmpty()) {

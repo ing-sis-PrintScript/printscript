@@ -11,7 +11,7 @@ import kotlin.test.assertNull
 class ExecuteRunnerTest {
     private val io = RecordingIO()
 
-    private fun run(source: String) = ExecuteRunner(io).execute(StringSourceReader(source))
+    private fun run(source: String) = ExecuteRunner(io).execute { StringSourceReader(source) }
 
     @Test
     fun `ejemplo 1 de la consigna`() {
@@ -75,7 +75,7 @@ class ExecuteRunnerTest {
         var notices = 0
 
         ExecuteRunner(io, Progress { notices++ })
-            .execute(StringSourceReader("let x: number = 1;\nlet y: number = 2;"))
+            .execute { StringSourceReader("let x: number = 1;\nlet y: number = 2;") }
 
         assertEquals(2, notices)
     }

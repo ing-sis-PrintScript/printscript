@@ -14,7 +14,7 @@ class FormatRunnerTest {
         source: String,
         config: FormatterConfig = FormatterConfig(),
     ) = FormatRunner(config)
-        .format(StringSourceReader(source))
+        .format { StringSourceReader(source) }
         .mapNotNull { it.getOrNull() }
         .joinToString("") { it.text }
 
@@ -58,7 +58,7 @@ class FormatRunnerTest {
         // El format() devuelve una Sequence perezosa: si nadie la consume no se
         // parsea nada, y el contador quedaria en cero.
         FormatRunner(FormatterConfig(), Progress { notices++ })
-            .format(StringSourceReader("let x: number = 1;\nlet y: number = 2;"))
+            .format { StringSourceReader("let x: number = 1;\nlet y: number = 2;") }
             .count()
 
         assertEquals(2, notices)
