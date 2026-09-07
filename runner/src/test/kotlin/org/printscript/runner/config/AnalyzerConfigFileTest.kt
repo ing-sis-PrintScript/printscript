@@ -15,7 +15,6 @@ class AnalyzerConfigFileTest {
     fun `lee las dos reglas`() {
         val config =
             loadAnalyzerConfig(
-                "reglas.yaml",
                 """
                 identifier-naming: snake-case
                 println-only-simple-arguments: false
@@ -29,42 +28,42 @@ class AnalyzerConfigFileTest {
     fun `un archivo vacio deja los defaults`() {
         assertEquals(
             AnalyzerConfig(CamelCase, restrictPrintlnArguments = true),
-            loadAnalyzerConfig("reglas.yaml", "").getOrNull(),
+            loadAnalyzerConfig("").getOrNull(),
         )
     }
 
     @Test
     fun `una clave sola deja la otra en su default`() {
-        val config = loadAnalyzerConfig("reglas.yaml", "identifier-naming: snake-case").getOrNull()
+        val config = loadAnalyzerConfig("identifier-naming: snake-case").getOrNull()
 
         assertEquals(AnalyzerConfig(SnakeCase, restrictPrintlnArguments = true), config)
     }
 
     @Test
     fun `json y yaml equivalentes dan lo mismo`() {
-        val json = loadAnalyzerConfig("reglas.json", """{ "identifier-naming": "snake-case" }""").getOrNull()
-        val yaml = loadAnalyzerConfig("reglas.yaml", "identifier-naming: snake-case").getOrNull()
+        val json = loadAnalyzerConfig("""{ "identifier-naming": "snake-case" }""").getOrNull()
+        val yaml = loadAnalyzerConfig("identifier-naming: snake-case").getOrNull()
 
         assertEquals(yaml, json)
     }
 
     @Test
     fun `una convencion que no existe es un error`() {
-        val error = assertNotNull(loadAnalyzerConfig("reglas.yaml", "identifier-naming: PascalCase").errorOrNull())
+        val error = assertNotNull(loadAnalyzerConfig("identifier-naming: PascalCase").errorOrNull())
 
         assertTrue(error.message.contains("camel-case"))
     }
 
     @Test
     fun `una clave desconocida es un error, no se ignora`() {
-        val error = assertNotNull(loadAnalyzerConfig("reglas.yaml", "identifier-namming: camel-case").errorOrNull())
+        val error = assertNotNull(loadAnalyzerConfig("identifier-namming: camel-case").errorOrNull())
 
         assertTrue(error.message.contains("identifier-namming"))
     }
 
     @Test
     fun `un valor del tipo equivocado es un error`() {
-        val error = assertNotNull(loadAnalyzerConfig("reglas.yaml", "println-only-simple-arguments: 2").errorOrNull())
+        val error = assertNotNull(loadAnalyzerConfig("println-only-simple-arguments: 2").errorOrNull())
 
         assertTrue(error.message.contains("true o false"))
     }

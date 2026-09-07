@@ -6,27 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import org.printscript.common.Result
-import org.printscript.common.flatMap
 
+// Un solo mapper para los dos formatos: JSON es un subconjunto de YAML, asi que el
+// parser de YAML lee los dos. No hay nada que detectar, y por eso esta clase no
+// necesita saber como se llamaba el archivo: el TCK entrega un stream sin nombre.
 internal class ConfigReader {
-    fun readTree(
-        fileName: String,
-        text: String,
-    ): Result<JsonNode, ConfigReadError> = mapperFor(fileName).flatMap { mapper -> parse(mapper, text) }
-
-    private fun mapperFor(fileName: String): Result<ObjectMapper, ConfigReadError> =
-        when {
-            fileName.endsWith(".yaml") || fileName.endsWith(".yml") -> Result.Success(ObjectMapper(YAMLFactory()))
-            fileName.endsWith(".json") -> Result.Success(ObjectMapper())
-            else -> Result.Failure(ConfigReadError("La configuracion tiene que ser .yaml, .yml o .json"))
-        }
-
-    private fun parse(
-        mapper: ObjectMapper,
-        text: String,
-    ): Result<JsonNode, ConfigReadError> =
+    fun readTree(text: String): Result<JsonNode, ConfigReadError> =
         try {
-            val root = mapper.readTree(text)
+            val root = ObjectMapper(YAMLFactory()).readTree(text)
             when {
                 root == null || root.isMissingNode || root.isNull -> Result.Success(EMPTY)
                 root.isObject -> Result.Success(root)

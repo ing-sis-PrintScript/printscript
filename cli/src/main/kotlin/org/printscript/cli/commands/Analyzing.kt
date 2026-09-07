@@ -8,7 +8,8 @@ import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.cli.progress.CountingProgress
 import org.printscript.common.Result
-import org.printscript.lexer.source.FileSourceReader
+import org.printscript.common.flatMap
+import org.printscript.lexer.source.StreamSourceReader
 import org.printscript.runner.AnalyzeRunner
 import org.printscript.runner.config.ConfigReadError
 import org.printscript.runner.config.loadAnalyzerConfig
@@ -26,24 +27,22 @@ internal class Analyzing : CliktCommand(name = "analyzing") {
             is Result.Success -> analyzeWith(loaded.value)
         }
 
-    /** Sin --config valen los defaults, que no es un error sino el caso normal. */
+    // Sin --config valen los defaults, que no es un error sino el caso normal.
     private fun analyzerConfig(): Result<AnalyzerConfig, ConfigReadError> {
         val file = config ?: return Result.Success(AnalyzerConfig())
-        return loadAnalyzerConfig(file.name, file.readText())
+        return configText(file).flatMap { loadAnalyzerConfig(it) }
     }
 
-    /**
-     * Los problemas se imprimen a medida que aparecen, no se juntan: el analyzer
-     * los va emitiendo mientras recorre el archivo, y salen ya en orden.
-     *
-     * El contador es el unico estado, y es el minimo necesario para saber si hubo
-     * problemas sin haberlos guardado.
-     */
+    // Los problemas se imprimen a medida que aparecen, no se juntan: el analyzer
+    // los va emitiendo mientras recorre el archivo, y salen ya en orden.
+    //
+    // El contador es el unico estado, y es el minimo necesario para saber si hubo
+    // problemas sin haberlos guardado.
     private fun analyzeWith(config: AnalyzerConfig) {
         var problems = 0
         val progress = CountingProgress()
 
-        AnalyzeRunner(config, progress).analyze(FileSourceReader.of(source)) { diagnostic ->
+        AnalyzeRunner(config, progress).analyze(StreamSourceReader.of(source)) { diagnostic ->
             problems++
             echo(line(diagnostic), err = true)
         }

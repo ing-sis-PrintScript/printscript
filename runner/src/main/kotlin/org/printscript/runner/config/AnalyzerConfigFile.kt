@@ -14,11 +14,8 @@ private const val PRINTLN_ARGUMENTS = "println-only-simple-arguments"
 private const val CAMEL = "camel-case"
 private const val SNAKE = "snake-case"
 
-fun loadAnalyzerConfig(
-    fileName: String,
-    text: String,
-): Result<AnalyzerConfig, ConfigReadError> =
-    ConfigReader().readTree(fileName, text).flatMap { root -> toAnalyzerConfig(root) }
+fun loadAnalyzerConfig(text: String): Result<AnalyzerConfig, ConfigReadError> =
+    ConfigReader().readTree(text).flatMap { root -> toAnalyzerConfig(root) }
 
 private fun toAnalyzerConfig(root: JsonNode): Result<AnalyzerConfig, ConfigReadError> {
     val defaults: Result<AnalyzerConfig, ConfigReadError> = Result.Success(AnalyzerConfig())
