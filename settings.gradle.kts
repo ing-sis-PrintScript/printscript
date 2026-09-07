@@ -9,6 +9,5 @@ include(
     "interpreter",
     "formatter",
     "analyzer",
-    "integration",
     "cli",
 )
