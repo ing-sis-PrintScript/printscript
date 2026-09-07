@@ -8,5 +8,4 @@ sealed interface ASTNode {
 
 sealed interface Statement : ASTNode
 
-
 sealed interface Expression : ASTNode

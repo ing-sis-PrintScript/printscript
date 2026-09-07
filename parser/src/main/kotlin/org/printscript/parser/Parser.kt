@@ -1,59 +1,41 @@
 package org.printscript.parser
 
-import org.printscript.ast.ASTNode
+import org.printscript.ast.Statement
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.parser.statements.StatementParser
-import org.printscript.token.Token
-import org.printscript.token.TokenType
+import org.printscript.parser.token.Parsed
+import org.printscript.parser.token.TokenStream
+import org.printscript.parser.token.describe
+import org.printscript.token.TokenSource
 
-/**
- * Convierte una secuencia de tokens en una secuencia de nodos del AST.
- *
- * Entra Sequence, sale Sequence: un statement por vez, tirando del lexer solo
- * lo necesario. En ningún momento existe el AST completo en memoria, que es lo
- * que pide la consigna para fuentes que no entran en RAM.
- *
- * No sabe parsear nada: elige quién parsea y coordina qué hacer ante un error.
- * La gramática vive en los StatementParser y en el ExpressionParser.
- */
 class Parser(
-    private val statementParsers: List<StatementParser> = PrintScript10.statementParsers(),
+    private val statementParsers: List<StatementParser>,
+    private val recovery: RecoveryStrategy,
 ) {
+    fun parse(source: TokenSource): Sequence<Result<Statement, PrintScriptError>> =
+        generateSequence({ step(TokenStream(source)) }) { previous -> step(previous.rest) }
+            .map { it.value }
 
-    fun parse(tokens: Sequence<Result<Token, PrintScriptError>>): Sequence<Result<ASTNode, PrintScriptError>> =
-        sequence {
-            val stream = TokenStream(tokens)
+    private fun step(stream: TokenStream): Parsed<Result<Statement, PrintScriptError>>? {
+        if (stream.atEnd()) return null
 
-            while (!stream.atEnd()) {
-                val result = parseStatement(stream)
-                yield(result)
-
-                // Tras un error el stream quedó en el medio de un statement roto.
-                // Sin sincronizar, el próximo intento arrancaría desde la mitad y
-                // produciría errores en cascada, todos consecuencia del primero.
-                if (result is Result.Failure) stream.synchronize()
-            }
+        return when (val result = parseStatement(stream)) {
+            is Result.Success -> Parsed(Result.Success(result.value.value), result.value.rest)
+            is Result.Failure -> Parsed(result, recovery.recover(stream))
         }
+    }
 
-    /**
-     * Un peek para elegir, y el parser elegido consume TODOS sus tokens,
-     * incluido el primero. El que decide, mira; el que construye, consume.
-     */
-    private fun parseStatement(stream: TokenStream): Result<ASTNode, PrintScriptError> {
+    private fun parseStatement(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> {
         val peeked = stream.peek()
-        if (peeked is Result.Failure) {
-            // Error léxico: lo reenviamos tal cual. No es nuestro y no podemos
-            // arreglarlo, pero tampoco lo disfrazamos de error de sintaxis.
-            stream.next() // consumirlo, para que synchronize no lo vuelva a leer
-            return peeked
-        }
+        if (peeked is Result.Failure) return peeked
 
         val token = (peeked as Result.Success).value
-        val parser = statementParsers.firstOrNull { it.canHandle(token.type) }
-            ?: return Result.Failure(
-                SyntaxError("No se esperaba '${token.lexeme}' acá", token.range),
-            )
+        val parser =
+            statementParsers.firstOrNull { it.canHandle(token.type) }
+                ?: return Result.Failure(
+                    SyntaxError("No se esperaba ${token.type.describe()} acá", token.range),
+                )
 
         return parser.parse(stream)
     }

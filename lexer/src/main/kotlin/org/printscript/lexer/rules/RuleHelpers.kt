@@ -4,24 +4,43 @@ import org.printscript.common.Position
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.lexer.LexicalError
+import org.printscript.lexer.TokenMatch
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-/** Armado de tokens y errores, compartido por todas las reglas. */
+internal fun matchOf(
+    type: TokenType,
+    text: String,
+    line: Int,
+    index: Int,
+): Result<TokenMatch, LexicalError> = matchOf(type, text, text.length, line, index)
 
+internal fun matchOf(
+    type: TokenType,
+    value: String,
+    rawLength: Int,
+    line: Int,
+    index: Int,
+): Result<TokenMatch, LexicalError> =
+    Result.Success(
+        TokenMatch(
+            token = Token(type, value, rangeOf(line, index, rawLength)),
+            nextIndex = index + rawLength,
+        ),
+    )
 
-internal fun tokenOf(type: TokenType, text: String, line: Int, index: Int): Result<Token, LexicalError> =
-    tokenOf(type, text, text, line, index)
+internal fun errorOf(
+    message: String,
+    line: Int,
+    index: Int,
+    length: Int,
+): Result<TokenMatch, LexicalError> = Result.Failure(LexicalError(message, rangeOf(line, index, length)))
 
-
-internal fun tokenOf(type: TokenType, lexeme: String, value: String, line: Int, index: Int, ): Result<Token, LexicalError> =
-    Result.Success(Token(type, lexeme, value, rangeOf(line, index, lexeme.length)))
-
-internal fun errorOf(message: String, line: Int, index: Int, length: Int): Result<Token, LexicalError> =
-    Result.Failure(LexicalError(message, rangeOf(line, index, length)))
-
-/** Traduce índice 0-based + largo a un Range de columnas 1-based. */
-internal fun rangeOf(line: Int, index: Int, length: Int): Range {
+internal fun rangeOf(
+    line: Int,
+    index: Int,
+    length: Int,
+): Range {
     val startColumn = index + 1
     return Range(Position(line, startColumn), Position(line, startColumn + length - 1))
 }

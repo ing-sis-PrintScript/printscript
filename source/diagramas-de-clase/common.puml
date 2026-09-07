@@ -1,0 +1,62 @@
+@startuml common-estructura
+title Modulo common - de lo que depende todo el resto
+
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "common" {
+
+  class Position {
+    +line: Int
+    +column: Int
+  }
+
+  class Range {
+    +start: Position
+    +end: Position
+  }
+
+  interface PrintScriptError {
+    +message: String
+    +range: Range
+  }
+
+  interface "Result<out T, out E>" as Result <<sealed>>
+  class "Success<out T>" as Success {
+    +value: T
+  }
+  class "Failure<out E>" as Failure {
+    +error: E
+  }
+
+  class "operadores\n(funciones de extension)" as Ops <<utility>> {
+    map(transform): Result<R, E>
+    flatMap(transform): Result<R, E>
+    mapError(transform): Result<T, F>
+    getOrNull(): T?
+    errorOrNull(): E?
+    getOrElse(default): T
+    collectResults(): Result<List<T>, E>
+  }
+}
+
+Range *--> "2" Position
+PrintScriptError --> Range
+Success ..|> Result
+Failure ..|> Result
+Ops ..> Result : operan sobre
+
+note right of Result
+  sealed = solo estas dos.
+  El compilador te obliga a
+  cubrir los dos casos en un when:
+  no te podes olvidar del error.
+end note
+
+note bottom of Position
+  1-based: el primer caracter
+  es la columna 1.
+  El "end" del Range es inclusivo.
+end note
+
+@enduml

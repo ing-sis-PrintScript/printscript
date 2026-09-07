@@ -1,3 +1,3 @@
 plugins {
-    id("printscript.kotlin-library-conventions")
+    id("printscript.published-library-conventions")
 }

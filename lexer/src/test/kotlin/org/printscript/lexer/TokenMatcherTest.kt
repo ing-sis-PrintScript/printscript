@@ -4,6 +4,7 @@ import org.printscript.common.Position
 import org.printscript.common.errorOrNull
 import org.printscript.common.getOrNull
 import org.printscript.lexer.rules.NumberRule
+import org.printscript.lexer.rules.SymbolRule
 import org.printscript.lexer.rules.WordRule
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -11,44 +12,53 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-/**
- * Tests del reconocedor solo: sin secuencias, sin streaming, sin líneas.
- * Le paso una línea y un índice, y verifico qué token sale.
- */
 class TokenMatcherTest {
-
     private val matcher = TokenMatcher()
 
-    private fun matchAt(line: String, from: Int) =
-        assertNotNull(matcher.match(line, from, 1).getOrNull(), "esperaba un token")
+    private fun matchAt(
+        line: String,
+        from: Int,
+    ) = assertNotNull(matcher.match(line, from, 1).getOrNull(), "esperaba un token")
 
     @Test
     fun `reconoce una keyword`() {
-        val token = matchAt("let x = 5;", 0)
-        assertEquals(TokenType.LET, token.type)
-        assertEquals("let", token.lexeme)
+        val match = matchAt("let x = 5;", 0)
+        assertEquals(TokenType.LET, match.token.type)
+        assertEquals("let", match.token.value)
     }
 
     @Test
     fun `una palabra que no es keyword es identificador`() {
-        assertEquals(TokenType.IDENTIFIER, matchAt("letter", 0).type)
+        assertEquals(TokenType.IDENTIFIER, matchAt("letter", 0).token.type)
     }
 
     @Test
     fun `reconoce un decimal completo`() {
-        assertEquals("12.5", matchAt("12.5 / 4", 0).lexeme)
+        assertEquals("12.5", matchAt("12.5 / 4", 0).token.value)
     }
 
     @Test
-    fun `el lexema del string incluye las comillas`() {
-        assertEquals("\"Joe\"", matchAt("""nombre = "Joe";""", 9).lexeme)
+    fun `el string guarda el contenido sin comillas pero ocupa las dos posiciones extra`() {
+        val match = matchAt("""nombre = "Joe";""", 9)
+
+        assertEquals(TokenType.STRING_LITERAL, match.token.type)
+        assertEquals("Joe", match.token.value)
+        assertEquals(Position(1, 10), match.token.range.start)
+        assertEquals(Position(1, 14), match.token.range.end)
+        assertEquals(14, match.nextIndex)
     }
 
     @Test
     fun `arranca a matchear desde el indice que le paso`() {
-        val token = matchAt("let x = 5;", 8)
-        assertEquals(TokenType.NUMBER_LITERAL, token.type)
-        assertEquals("5", token.lexeme)
+        val match = matchAt("let x = 5;", 8)
+        assertEquals(TokenType.NUMBER_LITERAL, match.token.type)
+        assertEquals("5", match.token.value)
+    }
+
+    @Test
+    fun `el nextIndex apunta al caracter siguiente al token`() {
+        assertEquals(3, matchAt("let x = 5;", 0).nextIndex)
+        assertEquals(5, matchAt("let x = 5;", 4).nextIndex)
     }
 
     @Test
@@ -59,17 +69,43 @@ class TokenMatcherTest {
         assertEquals(Position(1, 9), error.range.start)
     }
 
-    /** Las reglas entran por constructor: cambiando la lista cambia el lenguaje. */
     @Test
     fun `se le puede cambiar el juego de reglas`() {
         val sinKeywords = TokenMatcher(listOf(WordRule(emptyMap())))
-        assertEquals(TokenType.IDENTIFIER, assertNotNull(sinKeywords.match("let x", 0, 1).getOrNull()).type)
+        assertEquals(
+            TokenType.IDENTIFIER,
+            assertNotNull(sinKeywords.match("let x", 0, 1).getOrNull()).token.type,
+        )
     }
 
-    /** Una regla se puede testear sola, sin matcher ni lexer de por medio. */
     @Test
     fun `NumberRule contesta null si no arranca con digito`() {
         assertNull(NumberRule.match("let x", 0, 1))
         assertNotNull(NumberRule.match("42", 0, 1))
+    }
+
+    @Test
+    fun `un punto sin digitos despues no es un numero valido`() {
+        val error = matcher.match("12.", 0, 1).errorOrNull()
+        assertNotNull(error)
+        assertEquals("Numero invalido '12.'", error.message)
+        assertEquals(Position(1, 1), error.range.start)
+        assertEquals(Position(1, 3), error.range.end)
+    }
+
+    @Test
+    fun `un punto seguido de algo que no es digito tampoco`() {
+        val error = matcher.match("12.;", 0, 1).errorOrNull()
+        assertNotNull(error)
+        assertEquals("Numero invalido '12.'", error.message)
+    }
+
+    @Test
+    fun `entre dos simbolos que empiezan igual gana el mas largo`() {
+        val rule = SymbolRule(mapOf("=" to TokenType.ASSIGN, "==" to TokenType.ASSIGN))
+        val match = assertNotNull(rule.match("a == b", 2, 1)?.getOrNull())
+
+        assertEquals("==", match.token.value)
+        assertEquals(4, match.nextIndex)
     }
 }

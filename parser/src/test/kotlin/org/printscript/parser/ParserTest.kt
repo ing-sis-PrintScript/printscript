@@ -10,11 +10,14 @@ import org.printscript.ast.ExpressionStatement
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
+import org.printscript.ast.UnaryExpression
+import org.printscript.ast.UnaryOperator
 import org.printscript.ast.VariableDeclaration
 import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.token.ListTokenSource
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 import kotlin.test.Test
@@ -31,27 +34,29 @@ import kotlin.test.assertTrue
  * ninguno de estos se rompe.
  */
 class ParserTest {
-
-    private val parser = Parser()
+    // Se pide la fábrica en vez de armar el Parser a mano: así el test usa el
+    // mismo cableado que va a usar el CLI, política de recuperación incluida.
+    private val parser = PrintScript10.parser()
 
     // ---- helpers ----
 
     private var column = 1
 
-    private fun token(type: TokenType, text: String): Token {
+    private fun token(
+        type: TokenType,
+        text: String,
+    ): Token {
         val start = Position(1, column)
         val end = Position(1, column + text.length - 1)
         column += text.length + 1
         val value = if (type == TokenType.STRING_LITERAL) text.trim('"') else text
-        return Token(type, text, value, Range(start, end))
+        return Token(type, value, Range(start, end))
     }
 
-    private fun eof() = Token(TokenType.EOF, "", "", Range(Position(1, column), Position(1, column)))
+    private fun eof() = Token(TokenType.EOF, "", Range(Position(1, column), Position(1, column)))
 
-    private fun parse(vararg tokens: Token): List<Result<ASTNode, PrintScriptError>> {
-        val all = (tokens.toList() + eof()).map { Result.Success(it) as Result<Token, PrintScriptError> }
-        return parser.parse(all.asSequence()).toList()
-    }
+    private fun parse(vararg tokens: Token): List<Result<ASTNode, PrintScriptError>> =
+        parser.parse(ListTokenSource(tokens.toList() + eof())).toList()
 
     private fun single(vararg tokens: Token): ASTNode {
         val results = parse(*tokens)
@@ -69,18 +74,33 @@ class ParserTest {
 
     // atajos
     private fun let() = token(TokenType.LET, "let")
+
     private fun id(name: String) = token(TokenType.IDENTIFIER, name)
+
     private fun colon() = token(TokenType.COLON, ":")
+
     private fun assign() = token(TokenType.ASSIGN, "=")
+
     private fun semi() = token(TokenType.SEMICOLON, ";")
+
     private fun num(text: String) = token(TokenType.NUMBER_LITERAL, text)
+
     private fun str(text: String) = token(TokenType.STRING_LITERAL, "\"$text\"")
+
     private fun typeNumber() = token(TokenType.TYPE_NUMBER, "number")
+
     private fun typeString() = token(TokenType.TYPE_STRING, "string")
+
     private fun println_() = token(TokenType.PRINTLN, "println")
+
     private fun lparen() = token(TokenType.LPAREN, "(")
+
     private fun rparen() = token(TokenType.RPAREN, ")")
+
     private fun plus() = token(TokenType.PLUS, "+")
+
+    private fun minus() = token(TokenType.MINUS, "-")
+
     private fun slash() = token(TokenType.SLASH, "/")
 
     // ---- DECLARACIÓN ----
@@ -104,6 +124,18 @@ class ParserTest {
         val declaration = assertIs<VariableDeclaration>(node)
         assertEquals(DeclaredType.STRING, declaration.declaredType)
         assertEquals("Joe", assertIs<StringLiteral>(declaration.initializer).value)
+    }
+
+    /** El caso que rompía: el lexer parte "-5" en MINUS y NUMBER_LITERAL. */
+    @Test
+    fun `declaracion con un numero negativo`() {
+        // let x: number = -5;
+        val node = single(let(), id("x"), colon(), typeNumber(), assign(), minus(), num("5"), semi())
+
+        val declaration = assertIs<VariableDeclaration>(node)
+        val initializer = assertIs<UnaryExpression>(declaration.initializer)
+        assertEquals(UnaryOperator.MINUS, initializer.operator)
+        assertEquals(5.0, assertIs<NumberLiteral>(initializer.operand).value)
     }
 
     /** La gramática dice ["=", expression]: el inicializador es opcional. */
@@ -200,11 +232,12 @@ class ParserTest {
      */
     @Test
     fun `ejemplo 1 de la consigna`() {
-        val results = parse(
-            let(), id("name"), colon(), typeString(), assign(), str("Joe"), semi(),
-            let(), id("lastName"), colon(), typeString(), assign(), str("Doe"), semi(),
-            println_(), lparen(), id("name"), plus(), str(" "), plus(), id("lastName"), rparen(), semi(),
-        )
+        val results =
+            parse(
+                let(), id("name"), colon(), typeString(), assign(), str("Joe"), semi(),
+                let(), id("lastName"), colon(), typeString(), assign(), str("Doe"), semi(),
+                println_(), lparen(), id("name"), plus(), str(" "), plus(), id("lastName"), rparen(), semi(),
+            )
 
         assertEquals(3, results.size)
         assertTrue(results.all { it is Result.Success }, "los tres statements tienen que parsear")
@@ -223,12 +256,13 @@ class ParserTest {
      */
     @Test
     fun `ejemplo 2 de la consigna`() {
-        val results = parse(
-            let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-            let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
-            let(), id("c"), colon(), typeNumber(), assign(), id("a"), slash(), id("b"), semi(),
-            println_(), lparen(), str("Result: "), plus(), id("c"), rparen(), semi(),
-        )
+        val results =
+            parse(
+                let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
+                let(), id("c"), colon(), typeNumber(), assign(), id("a"), slash(), id("b"), semi(),
+                println_(), lparen(), str("Result: "), plus(), id("c"), rparen(), semi(),
+            )
 
         assertEquals(4, results.size)
         assertTrue(results.all { it is Result.Success })
@@ -242,12 +276,13 @@ class ParserTest {
      */
     @Test
     fun `ejemplo 3 de la consigna`() {
-        val results = parse(
-            let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-            let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
-            id("a"), assign(), id("a"), slash(), id("b"), semi(),
-            println_(), lparen(), str("Result: "), plus(), id("a"), rparen(), semi(),
-        )
+        val results =
+            parse(
+                let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
+                id("a"), assign(), id("a"), slash(), id("b"), semi(),
+                println_(), lparen(), str("Result: "), plus(), id("a"), rparen(), semi(),
+            )
 
         assertEquals(4, results.size)
         assertTrue(results.all { it is Result.Success })
@@ -281,19 +316,44 @@ class ParserTest {
         assertIs<SyntaxError>(error)
     }
 
+    /**
+     * El mensaje describe el TIPO del token, no su texto. Antes salía el
+     * lexema crudo ("No se esperaba '"hola"' acá", con las comillas del
+     * literal adentro del mensaje); ahora el texto se deriva del TokenType,
+     * así que no depende de qué campos tenga Token.
+     */
+    @Test
+    fun `el error describe el tipo del token, no su texto`() {
+        val error = errorOf(str("hola"), semi())
+
+        assertIs<SyntaxError>(error)
+        assertTrue(
+            error.message.contains("un string"),
+            "el mensaje debería describir el tipo: ${error.message}",
+        )
+        assertTrue(
+            !error.message.contains("hola"),
+            "el mensaje no debería depender del texto del token: ${error.message}",
+        )
+    }
+
     /** El error del lexer se reenvía tal cual, sin envolverlo en un SyntaxError. */
     @Test
     fun `un error lexico se propaga`() {
-        val lexico = object : PrintScriptError {
-            override val message = "Caracter inesperado '@'"
-            override val range = Range(Position(1, 1), Position(1, 1))
-        }
-        val results = parser.parse(
-            sequenceOf(
-                Result.Failure(lexico),
-                Result.Success(eof()),
-            ),
-        ).toList()
+        val lexico =
+            object : PrintScriptError {
+                override val message = "Caracter inesperado '@'"
+                override val range = Range(Position(1, 1), Position(1, 1))
+            }
+        val results =
+            parser.parse(
+                ResultTokenSource(
+                    listOf(
+                        Result.Failure(lexico),
+                        Result.Success(eof()),
+                    ),
+                ),
+            ).toList()
 
         val failure = assertIs<Result.Failure<PrintScriptError>>(results.first())
         assertEquals(lexico, failure.error)
@@ -311,11 +371,12 @@ class ParserTest {
         // let a: number = 12;   ← ok
         // let b: number = ;     ← roto (falta el valor)
         // let c: number = 3;    ← ok, tiene que parsear igual
-        val results = parse(
-            let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-            let(), id("b"), colon(), typeNumber(), assign(), semi(),
-            let(), id("c"), colon(), typeNumber(), assign(), num("3"), semi(),
-        )
+        val results =
+            parse(
+                let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                let(), id("b"), colon(), typeNumber(), assign(), semi(),
+                let(), id("c"), colon(), typeNumber(), assign(), num("3"), semi(),
+            )
 
         assertEquals(3, results.size)
         assertIs<Result.Success<ASTNode>>(results[0])
@@ -368,25 +429,23 @@ class ParserTest {
      */
     @Test
     fun `el parser no consume mas tokens de los necesarios`() {
-        var producidos = 0
-        val perezosa = sequence {
-            val tokens = listOf(
-                let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
-                let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
-                eof(),
+        val leidos = TokenReadCounter()
+        val perezosa =
+            CountingTokenSource(
+                listOf(
+                    let(), id("a"), colon(), typeNumber(), assign(), num("12"), semi(),
+                    let(), id("b"), colon(), typeNumber(), assign(), num("4"), semi(),
+                    eof(),
+                ),
+                leidos,
             )
-            for (t in tokens) {
-                producidos++
-                yield(Result.Success(t) as Result<Token, PrintScriptError>)
-            }
-        }
 
         // pido SOLO el primer statement
         parser.parse(perezosa).first()
 
         assertTrue(
-            producidos <= 8,
-            "para el primer statement no deberían leerse los tokens del segundo (leyó $producidos)",
+            leidos.total <= 8,
+            "para el primer statement no deberían leerse los tokens del segundo (leyó ${leidos.total})",
         )
     }
 }

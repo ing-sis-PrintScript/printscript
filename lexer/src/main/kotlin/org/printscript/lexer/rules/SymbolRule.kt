@@ -2,14 +2,26 @@ package org.printscript.lexer.rules
 
 import org.printscript.common.Result
 import org.printscript.lexer.LexicalError
-import org.printscript.token.Token
+import org.printscript.lexer.TokenMatch
 import org.printscript.token.TokenType
 
-/** Símbolos de un solo caracter: : ; = ( ) + - * / */
-class SymbolRule(private val symbols: Map<Char, TokenType>) : TokenRule {
+class SymbolRule(private val symbols: Map<String, TokenType>) : TokenRule {
+    private val maxLength = symbols.keys.maxOfOrNull { it.length } ?: 0
 
-    override fun match(line: String, from: Int, lineNumber: Int): Result<Token, LexicalError>? {
-        val type = symbols[line[from]] ?: return null
-        return tokenOf(type, line[from].toString(), lineNumber, from)
+    override fun match(
+        line: String,
+        from: Int,
+        lineNumber: Int,
+    ): Result<TokenMatch, LexicalError>? {
+        var length = minOf(maxLength, line.length - from)
+        while (length > 0) {
+            val candidate = line.substring(from, from + length)
+            val type = symbols[candidate]
+            if (type != null) {
+                return matchOf(type, candidate, lineNumber, from)
+            }
+            length--
+        }
+        return null
     }
 }

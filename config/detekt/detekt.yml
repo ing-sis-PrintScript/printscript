@@ -1,0 +1,9 @@
+style:
+  ReturnCount:
+    active: true
+    max: 5 # Provisorio a discutir con el profesor/ayudante
+
+complexity:
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 20

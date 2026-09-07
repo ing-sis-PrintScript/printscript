@@ -10,20 +10,23 @@ package org.printscript.common
  */
 sealed interface Result<out T, out E> {
     data class Success<out T>(val value: T) : Result<T, Nothing>
+
     data class Failure<out E>(val error: E) : Result<Nothing, E>
 }
 
 /** Devuelve el valor, o null si fue Failure. */
-fun <T, E> Result<T, E>.getOrNull(): T? = when (this) {
-    is Result.Success -> value
-    is Result.Failure -> null
-}
+fun <T, E> Result<T, E>.getOrNull(): T? =
+    when (this) {
+        is Result.Success -> value
+        is Result.Failure -> null
+    }
 
 /** Devuelve el error, o null si fue Success. */
-fun <T, E> Result<T, E>.errorOrNull(): E? = when (this) {
-    is Result.Success -> null
-    is Result.Failure -> error
-}
+fun <T, E> Result<T, E>.errorOrNull(): E? =
+    when (this) {
+        is Result.Success -> null
+        is Result.Failure -> error
+    }
 
 /**
  * Junta una secuencia de resultados en un único Result con la lista completa.
@@ -49,10 +52,11 @@ fun <T, E> Sequence<Result<T, E>>.collectResults(): Result<List<T>, E> {
  * Sirve cuando la transformación NO puede fallar:
  *   expect(NUMBER_LITERAL).map { NumberLiteral(it.value.toDouble(), it.range) }
  */
-inline fun <T, E, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> = when (this) {
-    is Result.Success -> Result.Success(transform(value))
-    is Result.Failure -> this
-}
+inline fun <T, E, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> =
+    when (this) {
+        is Result.Success -> Result.Success(transform(value))
+        is Result.Failure -> this
+    }
 
 /**
  * Igual que map, pero para cuando la transformación TAMBIÉN puede fallar.
@@ -61,10 +65,11 @@ inline fun <T, E, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> = when 
  * un Result<Result<...>> anidado. Con flatMap la cadena queda plana y corta sola
  * en el primer Failure — nadie tiene que escribir el if de "si falló, salir".
  */
-inline fun <T, E, R> Result<T, E>.flatMap(transform: (T) -> Result<R, E>): Result<R, E> = when (this) {
-    is Result.Success -> transform(value)
-    is Result.Failure -> this
-}
+inline fun <T, E, R> Result<T, E>.flatMap(transform: (T) -> Result<R, E>): Result<R, E> =
+    when (this) {
+        is Result.Success -> transform(value)
+        is Result.Failure -> this
+    }
 
 /**
  * Transforma el error, dejando el valor intacto. El espejo de map.
@@ -72,13 +77,15 @@ inline fun <T, E, R> Result<T, E>.flatMap(transform: (T) -> Result<R, E>): Resul
  * Por si alguna etapa necesita enriquecer un error de la anterior con contexto
  * propio antes de propagarlo.
  */
-inline fun <T, E, F> Result<T, E>.mapError(transform: (E) -> F): Result<T, F> = when (this) {
-    is Result.Success -> this
-    is Result.Failure -> Result.Failure(transform(error))
-}
+inline fun <T, E, F> Result<T, E>.mapError(transform: (E) -> F): Result<T, F> =
+    when (this) {
+        is Result.Success -> this
+        is Result.Failure -> Result.Failure(transform(error))
+    }
 
 /** El valor si fue Success, o el default si fue Failure. */
-fun <T, E> Result<T, E>.getOrElse(default: T): T = when (this) {
-    is Result.Success -> value
-    is Result.Failure -> default
-}
+fun <T, E> Result<T, E>.getOrElse(default: T): T =
+    when (this) {
+        is Result.Success -> value
+        is Result.Failure -> default
+    }

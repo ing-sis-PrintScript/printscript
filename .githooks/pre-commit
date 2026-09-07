@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# pre-commit - verifica el estilo del codigo antes de crear el commit.
+#
+# Vive versionado en .githooks/ y se copia a .git/hooks/ con:
+#     ./gradlew installGitHooks
+# (enganchado a `check`, asi que se instala solo la primera vez que buildeas)
+#
+# Corre ktlint y detekt, no los tests: el hook esta para atrapar lo mecanico.
+# Los tests y el coverage corren en CI, que es donde no se pueden saltear.
+#
+# Para saltearlo en un caso puntual:  git commit --no-verify
+
+set -e
+
+# Los hooks se ejecutan desde la raiz del repo, pero no en todos los casos
+# (worktrees, submodulos). Nos aseguramos.
+cd "$(git rev-parse --show-toplevel)"
+
+# Si el commit no toca codigo ni configuracion de estilo, no hay nada que
+# verificar y no tiene sentido levantar Gradle para nada.
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+if ! echo "$STAGED" | grep -qE '\.(kt|kts)$|\.editorconfig$|detekt\.yml$'; then
+    exit 0
+fi
+
+echo ""
+echo "pre-commit: verificando estilo (ktlint + detekt)"
+echo ""
+
+if ! ./gradlew ktlintCheck detekt --daemon --console=plain; then
+    echo ""
+    echo "-------------------------------------------------------------"
+    echo "  Commit cancelado: el codigo no pasa las verificaciones."
+    echo ""
+    echo "  Formato        ->  ./gradlew ktlintFormat"
+    echo "  Reglas detekt  ->  hay que arreglarlo a mano, no se autocorrige"
+    echo ""
+    echo "  Si necesitas commitear igual:  git commit --no-verify NO RECOMENDADO!!"
+    echo "-------------------------------------------------------------"
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "pre-commit: ok"
+echo ""

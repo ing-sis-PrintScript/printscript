@@ -1,0 +1,82 @@
+package org.printscript.cli.runners
+
+import org.printscript.cli.progress.Progress
+import org.printscript.common.errorOrNull
+import org.printscript.lexer.source.StringSourceReader
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+
+class ExecuteRunnerTest {
+    private val io = RecordingIO()
+
+    private fun run(source: String) = ExecuteRunner(io).execute(StringSourceReader(source))
+
+    @Test
+    fun `ejemplo 1 de la consigna`() {
+        val result =
+            run(
+                """
+                let name: string = "Joe";
+                let lastName: string = "Doe";
+                println(name + " " + lastName);
+                """.trimIndent(),
+            )
+
+        assertNull(result.errorOrNull())
+        assertEquals(listOf("Joe Doe"), io.output())
+    }
+
+    @Test
+    fun `ejemplo 2 de la consigna`() {
+        val result =
+            run(
+                """
+                let a: number = 12;
+                let b: number = 4;
+                let c: number = a / b;
+                println("Result: " + c);
+                """.trimIndent(),
+            )
+
+        assertNull(result.errorOrNull())
+        assertEquals(listOf("Result: 3"), io.output())
+    }
+
+    // El unico test que pasa por AssignmentStatement de punta a punta: lexer,
+    // parser e interprete. Los otros dos ejemplos solo declaran.
+    @Test
+    fun `reasignar una variable`() {
+        val result =
+            run(
+                """
+                let x: number = 5;
+                x = x + 3;
+                println(x);
+                """.trimIndent(),
+            )
+
+        assertNull(result.errorOrNull())
+        assertEquals(listOf("8"), io.output())
+    }
+
+    @Test
+    fun `un error corta la ejecucion y trae la posicion`() {
+        val result = run("""let x: number = @;""")
+        val error = assertNotNull(result.errorOrNull())
+
+        assertEquals("Caracter inesperado '@'", error.message)
+        assertEquals(17, error.range.start.column)
+    }
+
+    @Test
+    fun `avisa una vez por cada sentencia parseada`() {
+        var notices = 0
+
+        ExecuteRunner(io, Progress { notices++ })
+            .execute(StringSourceReader("let x: number = 1;\nlet y: number = 2;"))
+
+        assertEquals(2, notices)
+    }
+}

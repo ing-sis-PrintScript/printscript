@@ -1,9 +1,11 @@
+// Como se compila y testea un modulo de PrintScript. Nada de analisis estatico
+// ni de coverage: eso vive en sus propias convenciones.
 plugins {
     kotlin("jvm")
 }
 
 group = "printscript"
-version = "1.0-SNAPSHOT"
+version = providers.gradleProperty("releaseVersion").getOrElse("1.0.0-SNAPSHOT")
 
 repositories {
     mavenCentral()
