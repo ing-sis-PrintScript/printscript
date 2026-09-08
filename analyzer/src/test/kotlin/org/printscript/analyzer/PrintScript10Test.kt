@@ -9,23 +9,33 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PrintScript10Test {
+    // Los defaults son apagado: un config vacio no arma ninguna regla.
     @Test
-    fun `con la configuracion por defecto, camelCase no se reporta y println invalido si`() {
+    fun `con la configuracion por defecto no se reporta nada`() {
         val analyzer = PrintScript10.analyzer(AnalyzerConfig())
         val statements =
             program(
-                declaration("miVariable", initializer = number(1.0)),
+                declaration("mi_variable", initializer = number(1.0)),
                 expressionStatement(call("println", binary(BinaryOperator.PLUS, number(1.0), number(2.0)))),
             )
 
-        val diagnostics = analyzer.collectDiagnostics(statements)
+        assertTrue(analyzer.collectDiagnostics(statements).isEmpty())
+    }
 
-        assertEquals(listOf("println-argument"), diagnostics.map { it.rule })
+    @Test
+    fun `prender restrictPrintlnArguments reporta el println con expresion`() {
+        val analyzer = PrintScript10.analyzer(AnalyzerConfig(restrictPrintlnArguments = true))
+        val statements =
+            program(
+                expressionStatement(call("println", binary(BinaryOperator.PLUS, number(1.0), number(2.0)))),
+            )
+
+        assertEquals(listOf("println-argument"), analyzer.collectDiagnostics(statements).map { it.rule })
     }
 
     @Test
     fun `apagar restrictPrintlnArguments deja de reportar esa regla`() {
-        val config = AnalyzerConfig(restrictPrintlnArguments = false)
+        val config = AnalyzerConfig(namingConvention = CamelCase, restrictPrintlnArguments = false)
         val analyzer = PrintScript10.analyzer(config)
         val statements =
             program(
@@ -49,7 +59,7 @@ class PrintScript10Test {
 
     @Test
     fun `un programa sin problemas no reporta nada`() {
-        val analyzer = PrintScript10.analyzer(AnalyzerConfig())
+        val analyzer = PrintScript10.analyzer(AnalyzerConfig(CamelCase, restrictPrintlnArguments = true))
         val statements =
             program(
                 declaration("total", initializer = number(0.0)),

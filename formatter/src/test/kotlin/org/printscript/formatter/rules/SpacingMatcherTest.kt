@@ -11,24 +11,24 @@ import kotlin.test.assertNull
 class SpacingMatcherTest {
     private val cualquiera = Token(TokenType.COLON, ":", Range(Position(1, 1), Position(1, 1)))
 
-    private fun siempre(spacing: String) = SpacingRule { _, _ -> spacing }
+    private fun siempre(spacing: String) = SpacingRule { _, _, _ -> spacing }
 
-    private val nunca = SpacingRule { _, _ -> null }
+    private val nunca = SpacingRule { _, _, _ -> null }
 
     @Test
     fun `sin reglas no contesta`() {
-        assertNull(SpacingMatcher().spacingFor(null, cualquiera))
+        assertNull(SpacingMatcher().spacingFor(null, cualquiera, FormattingState()))
     }
 
     @Test
     fun `si ninguna regla opina tampoco contesta`() {
-        assertNull(SpacingMatcher(listOf(nunca, nunca)).spacingFor(null, cualquiera))
+        assertNull(SpacingMatcher(listOf(nunca, nunca)).spacingFor(null, cualquiera, FormattingState()))
     }
 
     @Test
     fun `contesta la primera que opina`() {
         val matcher = SpacingMatcher(listOf(nunca, siempre("  "), siempre(" ")))
 
-        assertEquals("  ", matcher.spacingFor(null, cualquiera))
+        assertEquals("  ", matcher.spacingFor(null, cualquiera, FormattingState()))
     }
 }

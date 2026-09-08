@@ -9,10 +9,13 @@ import org.printscript.common.Result
 import org.printscript.common.flatMap
 import org.printscript.common.map
 
-private const val NAMING = "identifier-naming"
-private const val PRINTLN_ARGUMENTS = "println-only-simple-arguments"
-private const val CAMEL = "camel-case"
-private const val SNAKE = "snake-case"
+// Los nombres los fija el TCK, no nosotros: son la especificacion. Ojo el guion bajo
+// de identifier_format y el ESPACIO en los valores: "camel case", no "camelCase".
+private const val NAMING = "identifier_format"
+private const val PRINTLN_ARGUMENTS = "mandatory-variable-or-literal-in-println"
+private const val READ_INPUT_ARGUMENTS = "mandatory-variable-or-literal-in-readInput"
+private const val CAMEL = "camel case"
+private const val SNAKE = "snake case"
 
 fun loadAnalyzerConfig(text: String): Result<AnalyzerConfig, ConfigReadError> =
     ConfigReader().readTree(text).flatMap { root -> toAnalyzerConfig(root) }
@@ -33,6 +36,7 @@ private fun applyRule(
     when (key) {
         NAMING -> namingConventionOf(node).map { config.copy(namingConvention = it) }
         PRINTLN_ARGUMENTS -> booleanOf(key, node).map { config.copy(restrictPrintlnArguments = it) }
+        READ_INPUT_ARGUMENTS -> booleanOf(key, node).map { config.copy(restrictReadInputArguments = it) }
         else -> Result.Failure(ConfigReadError("Regla de analisis desconocida: '$key'"))
     }
 

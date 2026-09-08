@@ -44,12 +44,21 @@ class FormatRunnerTest {
     }
 
     @Test
-    fun `los saltos antes de println salen de la config`() {
-        val dosSaltos = FormatterConfig(blankLinesBeforePrintln = BlankLines.TWO)
+    fun `las lineas en blanco DESPUES de un println salen de la config`() {
+        val dosLineas = FormatterConfig(lineBreaksAfterPrintln = BlankLines.TWO)
 
         assertEquals(
-            "let x: number = 5;\n\n\nprintln(x);",
-            format("let x: number = 5;\nprintln(x);", dosSaltos),
+            "println(x);\n\n\nprintln(y);",
+            format("println(x);\nprintln(y);", dosLineas),
         )
+    }
+
+    // La regla no toca lo que viene despues de una declaracion, solo de un println.
+    @Test
+    fun `una declaracion seguida de println queda como estaba`() {
+        val dosLineas = FormatterConfig(lineBreaksAfterPrintln = BlankLines.TWO)
+        val fuente = "let x: number = 5;\nprintln(x);"
+
+        assertEquals(fuente, format(fuente, dosLineas))
     }
 }

@@ -3,6 +3,7 @@ package org.printscript.runner
 import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.Severity
 import org.printscript.analyzer.config.AnalyzerConfig
+import org.printscript.analyzer.config.CamelCase
 import org.printscript.analyzer.config.SnakeCase
 import org.printscript.lexer.source.StringSourceReader
 import org.printscript.runner.progress.Progress
@@ -12,9 +13,13 @@ import kotlin.test.assertEquals
 class AnalyzeRunnerTest {
     private val findings = mutableListOf<Diagnostic>()
 
+    // Los defaults del config son apagado, asi que los tests que quieren ver reportes
+    // piden explicitamente las dos reglas prendidas.
+    private val todasPrendidas = AnalyzerConfig(CamelCase, restrictPrintlnArguments = true)
+
     private fun analyze(
         source: String,
-        config: AnalyzerConfig = AnalyzerConfig(),
+        config: AnalyzerConfig = todasPrendidas,
     ) {
         AnalyzeRunner(config).analyze({ StringSourceReader(source) }) { findings.add(it) }
     }
@@ -22,6 +27,15 @@ class AnalyzeRunnerTest {
     @Test
     fun `un archivo prolijo no reporta nada`() {
         analyze("let miVariable: number = 5;\nprintln(miVariable);")
+
+        assertEquals(emptyList(), findings)
+    }
+
+    // El caso valid-no-rules del TCK: sin reglas configuradas no se reporta nada,
+    // aunque el archivo mezcle convenciones.
+    @Test
+    fun `sin reglas configuradas no reporta nada`() {
+        analyze("let miVariable: number = 5;\nlet mi_variable: number = 10;", AnalyzerConfig())
 
         assertEquals(emptyList(), findings)
     }

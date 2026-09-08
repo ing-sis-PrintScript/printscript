@@ -52,8 +52,8 @@ class FormatterConfigLoaderTest {
     fun `las lineas en blanco antes del println salen del entero`() {
         val key = "line-breaks-after-println"
 
-        assertEquals(BlankLines.TWO, loadOne(key, int(2)).getOrNull()?.blankLinesBeforePrintln)
-        assertEquals(BlankLines.NONE, loadOne(key, int(0)).getOrNull()?.blankLinesBeforePrintln)
+        assertEquals(BlankLines.TWO, loadOne(key, int(2)).getOrNull()?.lineBreaksAfterPrintln)
+        assertEquals(BlankLines.NONE, loadOne(key, int(0)).getOrNull()?.lineBreaksAfterPrintln)
     }
 
     @Test
@@ -104,6 +104,6 @@ class FormatterConfigLoaderTest {
 
         assertEquals(Spacing.NONE, config?.spaceAroundAssignment)
         assertEquals(FormatterConfig().spaceAfterColon, config?.spaceAfterColon)
-        assertEquals(FormatterConfig().blankLinesBeforePrintln, config?.blankLinesBeforePrintln)
+        assertEquals(FormatterConfig().lineBreaksAfterPrintln, config?.lineBreaksAfterPrintln)
     }
 }

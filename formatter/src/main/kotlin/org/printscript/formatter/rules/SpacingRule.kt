@@ -13,5 +13,6 @@ fun interface SpacingRule {
     fun spacingFor(
         prev: Token?,
         current: Token,
+        state: FormattingState,
     ): String?
 }
