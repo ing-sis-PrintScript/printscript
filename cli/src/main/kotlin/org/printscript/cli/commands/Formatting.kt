@@ -4,7 +4,6 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
-import org.printscript.cli.progress.CountingProgress
 import org.printscript.common.Result
 import org.printscript.common.flatMap
 import org.printscript.formatter.config.FormatterConfig
@@ -32,20 +31,14 @@ internal class Formatting : CliktCommand(name = "formatting") {
         return configText(file).flatMap { loadFormatterConfig(it) }
     }
 
+    // Sin barra de progreso: formatear no parsea, asi que no hay sentencias que contar.
     private fun formatWith(config: FormatterConfig) {
-        val progress = CountingProgress()
-
-        for (result in FormatRunner(config, progress).format { StreamSourceReader.of(source) }) {
+        for (result in FormatRunner(config).format { StreamSourceReader.of(source) }) {
             when (result) {
                 // Cada trozo ya trae sus separadores: se imprime crudo, sin agregar saltos.
                 is Result.Success -> echo(result.value.text, trailingNewline = false)
-                is Result.Failure -> {
-                    progress.done()
-                    fail("${source.name}:${result.error.range.start}  ${result.error.message}")
-                }
+                is Result.Failure -> fail("${source.name}:${result.error.range.start}  ${result.error.message}")
             }
         }
-
-        progress.done()
     }
 }
