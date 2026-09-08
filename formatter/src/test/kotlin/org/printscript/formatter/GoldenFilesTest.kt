@@ -1,101 +1,89 @@
 package org.printscript.formatter
 
-import org.printscript.ast.BinaryOperator.DIVIDE
-import org.printscript.ast.BinaryOperator.MINUS
-import org.printscript.ast.BinaryOperator.PLUS
-import org.printscript.ast.BinaryOperator.TIMES
-import org.printscript.ast.DeclaredType.NUMBER
-import org.printscript.ast.DeclaredType.STRING
+import org.printscript.common.Result
 import org.printscript.formatter.config.BlankLines
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.config.Spacing
-import org.printscript.formatter.expressions.binary
-import org.printscript.formatter.expressions.call
-import org.printscript.formatter.expressions.id
-import org.printscript.formatter.expressions.number
-import org.printscript.formatter.expressions.string
-import org.printscript.formatter.statements.assignment
-import org.printscript.formatter.statements.declaration
-import org.printscript.formatter.statements.expressionStatement
+import org.printscript.lexer.Lexer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.fail
 
 class GoldenFilesTest {
-    private val withBlankLine = FormatterConfig(blankLinesBeforePrintln = BlankLines.ONE)
-
-    private fun golden(name: String): String =
-        checkNotNull(javaClass.getResourceAsStream("/golden/$name")) { "falta el golden $name" }
+    // Se juntan las lineas con "\n", igual que SuiteOps.readFile del TCK: el salto final
+    // del archivo no cuenta. El formatter tampoco lo emite.
+    private fun recurso(path: String): String =
+        checkNotNull(javaClass.getResourceAsStream(path)) { "falta el recurso $path" }
             .bufferedReader()
-            .readText()
+            .readLines()
+            .joinToString("\n")
 
-    private fun greeting() = binary(PLUS, binary(PLUS, id("name"), string(" ")), id("lastName"))
+    private fun formatear(
+        fuente: String,
+        config: FormatterConfig,
+    ): String =
+        PrintScript10.formatter(config)
+            .format(Lexer().tokenize(fuente))
+            .joinToString("") { result ->
+                when (result) {
+                    is Result.Success -> result.value.text
+                    is Result.Failure -> fail("no esperaba un error: ${result.error.message}")
+                }
+            }
 
-    private fun example1() =
-        program(
-            declaration("name", STRING, string("Joe")),
-            declaration("lastName", STRING, string("Doe")),
-            expressionStatement(call("println", greeting())),
+    private fun verificar(
+        fuente: String,
+        golden: String,
+        config: FormatterConfig,
+    ) = assertEquals(recurso("/golden/$golden"), formatear(recurso("/source/$fuente"), config))
+
+    // Las tres reglas de espaciado en su forma habitual, mas una linea en blanco antes
+    // del println.
+    private val canonico =
+        FormatterConfig(
+            spaceBeforeColon = Spacing.NONE,
+            spaceAfterColon = Spacing.SINGLE,
+            spaceAroundAssignment = Spacing.SINGLE,
+            blankLinesBeforePrintln = BlankLines.ONE,
         )
 
     @Test
     fun `ejemplo 1`() {
-        assertEquals(golden("ejemplo1.ps"), formatToText(example1(), withBlankLine))
+        verificar("ejemplo1.ps", "ejemplo1.ps", canonico)
     }
 
     @Test
     fun `ejemplo 2`() {
-        val program =
-            program(
-                declaration("a", NUMBER, number(12.0)),
-                declaration("b", NUMBER, number(4.0)),
-                declaration("c", NUMBER, binary(DIVIDE, id("a"), id("b"))),
-                expressionStatement(call("println", binary(PLUS, string("Result: "), id("c")))),
-            )
-
-        assertEquals(golden("ejemplo2.ps"), formatToText(program, withBlankLine))
+        verificar("ejemplo2.ps", "ejemplo2.ps", canonico)
     }
 
     @Test
     fun `ejemplo 3 con una asignacion`() {
-        val program =
-            program(
-                declaration("a", NUMBER, number(12.0)),
-                declaration("b", NUMBER, number(4.0)),
-                assignment("a", binary(DIVIDE, id("a"), id("b"))),
-                expressionStatement(call("println", binary(PLUS, string("Result: "), id("a")))),
-            )
-
-        assertEquals(golden("ejemplo3.ps"), formatToText(program, withBlankLine))
+        verificar("ejemplo3.ps", "ejemplo3.ps", canonico)
     }
 
     @Test
     fun `ejemplo 1 con las tres reglas de espaciado apagadas`() {
         val config =
-            withBlankLine.copy(
+            canonico.copy(
                 spaceBeforeColon = Spacing.NONE,
                 spaceAfterColon = Spacing.NONE,
                 spaceAroundAssignment = Spacing.NONE,
             )
 
-        assertEquals(golden("sin-espacios.ps"), formatToText(example1(), config))
+        verificar("ejemplo1.ps", "sin-espacios.ps", config)
     }
 
     @Test
     fun `ejemplo 1 con espacio antes de los dos puntos`() {
-        val config = withBlankLine.copy(spaceBeforeColon = Spacing.SINGLE)
-
-        assertEquals(golden("espacio-antes-de-dos-puntos.ps"), formatToText(example1(), config))
+        verificar("ejemplo1.ps", "espacio-antes-de-dos-puntos.ps", canonico.copy(spaceBeforeColon = Spacing.SINGLE))
     }
 
+    // Sin ninguna regla activa el archivo sale igual, parentesis incluidos. El formatter
+    // viejo necesitaba un Parenthesizer para esto porque el AST no los guarda; preservando
+    // el fuente el problema no existe.
     @Test
-    fun `los parentesis necesarios sobreviven al formateo`() {
-        val program =
-            program(
-                declaration("x", NUMBER, binary(TIMES, binary(PLUS, number(1.0), number(2.0)), number(3.0))),
-                declaration("y", NUMBER, binary(MINUS, id("a"), binary(MINUS, id("b"), id("c")))),
-                declaration("z", NUMBER, binary(PLUS, id("a"), binary(PLUS, id("b"), id("c")))),
-            )
-
-        assertEquals(golden("parentesis.ps"), formatToText(program, FormatterConfig()))
+    fun `los parentesis sobreviven al formateo`() {
+        verificar("parentesis.ps", "parentesis.ps", FormatterConfig())
     }
 }

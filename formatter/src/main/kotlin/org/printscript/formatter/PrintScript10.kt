@@ -1,18 +1,23 @@
 package org.printscript.formatter
 
 import org.printscript.formatter.config.FormatterConfig
-import org.printscript.formatter.engine.NodeDispatcher
-import org.printscript.formatter.engine.PrintScriptFormatter
-import org.printscript.formatter.expressions.PrintScript10ExpressionFormatter
-import org.printscript.formatter.statements.DeclarationFormatter
-import org.printscript.formatter.statements.PrintScript10StatementDispatcher
-import org.printscript.formatter.syntax.StatementSeparator
+import org.printscript.formatter.engine.TokenFormatter
+import org.printscript.formatter.rules.AssignmentSpacingRule
+import org.printscript.formatter.rules.ColonSpacingRule
+import org.printscript.formatter.rules.PrintlnLineBreaksRule
+import org.printscript.formatter.rules.SpacingMatcher
+import org.printscript.formatter.rules.SpacingRule
 
 object PrintScript10 {
-    fun dispatcher(): NodeDispatcher {
-        val expressions = PrintScript10ExpressionFormatter()
-        return PrintScript10StatementDispatcher(DeclarationFormatter(expressions), expressions)
-    }
+    // El ORDEN de esta lista solo decide algo si dos reglas opinan del mismo espacio.
+    // Con los configs del TCK no pasa nunca: activan una clave por vez. Si algun dia
+    // llegan dos juntas, se resuelve aca.
+    fun rules(config: FormatterConfig): List<SpacingRule> =
+        listOf(
+            ColonSpacingRule(config.spaceBeforeColon, config.spaceAfterColon),
+            AssignmentSpacingRule(config.spaceAroundAssignment),
+            PrintlnLineBreaksRule(config.blankLinesBeforePrintln),
+        )
 
-    fun formatter(config: FormatterConfig): Formatter = PrintScriptFormatter(dispatcher(), StatementSeparator(), config)
+    fun formatter(config: FormatterConfig): Formatter = TokenFormatter(SpacingMatcher(rules(config)))
 }

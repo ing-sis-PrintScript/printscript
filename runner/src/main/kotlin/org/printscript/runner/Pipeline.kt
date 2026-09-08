@@ -1,0 +1,17 @@
+package org.printscript.runner
+
+import org.printscript.ast.Statement
+import org.printscript.common.PrintScriptError
+import org.printscript.common.Result
+import org.printscript.lexer.Lexer
+import org.printscript.parser.PrintScript10
+import org.printscript.runner.progress.Progress
+
+// Lexer y despues parser: la parte que comparten los cuatro comandos.
+// El aviso de progreso sale de aca porque este es el momento en que se parseo una
+// sentencia, y es el mismo para los cuatro. Quien cuenta y quien muestra es el CLI.
+fun statements(
+    source: SourceFactory,
+    progress: Progress = Progress.NONE,
+): Sequence<Result<Statement, PrintScriptError>> =
+    PrintScript10.parser().parse(Lexer().tokenize(source.open())).onEach { progress.parsed() }

@@ -202,6 +202,40 @@ class LexerTest {
     }
 
     @Test
+    fun `cada token guarda el whitespace que lo precede`() {
+        val tokens = tokensOf("let  x =\n  5;")
+
+        assertEquals(listOf("", "  ", " ", "\n  ", "", ""), tokens.map { it.leadingTrivia.text })
+    }
+
+    @Test
+    fun `el primer token no arrastra un salto de linea que no existe`() {
+        assertEquals("", tokensOf("let x;").first().leadingTrivia.text)
+    }
+
+    @Test
+    fun `la trivia y los valores reconstruyen el fuente`() {
+        val fuente = "let  x : number = 5;\n\nprintln( x );"
+
+        assertEquals(fuente, tokensOf(fuente).joinToString("") { it.leadingTrivia.text + it.value })
+    }
+
+    @Test
+    fun `las lineas en blanco quedan contadas en la trivia`() {
+        val println = tokensOf("let x = 5;\n\n\nprintln(x);").first { it.type == TokenType.PRINTLN }
+
+        assertEquals(3, println.leadingTrivia.lineBreaks)
+        assertEquals("", println.leadingTrivia.indentation)
+    }
+
+    @Test
+    fun `la indentacion es lo que sigue al ultimo salto`() {
+        val cinco = tokensOf("let x =\n    5;").first { it.type == TokenType.NUMBER_LITERAL }
+
+        assertEquals("    ", cinco.leadingTrivia.indentation)
+    }
+
+    @Test
     fun `dos lexers distintos sobre el mismo fuente producen fuentes iguales`() {
         val fuente = "let x: number = 5;\nprintln(x);"
 

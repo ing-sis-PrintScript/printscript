@@ -74,7 +74,7 @@ class StringSourceReaderTest {
     }
 
     // Ojo: NO coincide con lineSequence() de Kotlin, que para "a\n" devuelve ["a", ""].
-    // La referencia es readLine, que es lo que hace FileSourceReader al leer del disco.
+    // La referencia es readLine, que es lo que hace StreamSourceReader al leer del disco.
     @Test
     fun `casos de separadores`() {
         val esperado =

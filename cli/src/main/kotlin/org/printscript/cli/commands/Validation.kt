@@ -4,8 +4,8 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
 import org.printscript.cli.progress.CountingProgress
-import org.printscript.cli.runners.ValidateRunner
-import org.printscript.lexer.source.FileSourceReader
+import org.printscript.lexer.source.StreamSourceReader
+import org.printscript.runner.ValidateRunner
 
 internal class Validation : CliktCommand(name = "validation") {
     private val source by argument(help = "Archivo PrintScript a validar")
@@ -13,7 +13,7 @@ internal class Validation : CliktCommand(name = "validation") {
 
     override fun run() {
         val progress = CountingProgress()
-        val errors = ValidateRunner(progress).validate(FileSourceReader.of(source))
+        val errors = ValidateRunner(progress).validate { StreamSourceReader.of(source) }
         progress.done()
 
         if (errors.isEmpty()) {

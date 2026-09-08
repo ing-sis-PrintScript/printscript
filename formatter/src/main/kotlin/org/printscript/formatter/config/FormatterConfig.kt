@@ -1,10 +1,13 @@
 package org.printscript.formatter.config
 
+// null es "esa clave no vino en el config", y significa NO TOCAR ese espacio.
+// Es el tercer estado que necesita un formatter incremental: no alcanza con
+// "ninguno" y "uno", hace falta "el que ya estaba".
 data class FormatterConfig(
-    val spaceBeforeColon: Spacing = Spacing.NONE,
-    val spaceAfterColon: Spacing = Spacing.SINGLE,
-    val spaceAroundAssignment: Spacing = Spacing.SINGLE,
-    val blankLinesBeforePrintln: BlankLines = BlankLines.NONE,
+    val spaceBeforeColon: Spacing? = null,
+    val spaceAfterColon: Spacing? = null,
+    val spaceAroundAssignment: Spacing? = null,
+    val blankLinesBeforePrintln: BlankLines? = null,
 )
 
 enum class Spacing(private val spaces: Int) {

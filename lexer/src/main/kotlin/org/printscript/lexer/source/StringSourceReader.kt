@@ -9,7 +9,7 @@ data class StringSourceReader(
 ) : SourceReader {
     // Llegar al final del texto es no tener mas lineas: el salto final CIERRA la
     // ultima linea, no abre una vacia. Es la convencion de readLine, la misma que
-    // sigue FileSourceReader, que es el reader que corre de verdad en el CLI.
+    // sigue StreamSourceReader, que es el reader que corre de verdad en el CLI.
     private val endOfInputOffset: Int get() = text.length
 
     init {

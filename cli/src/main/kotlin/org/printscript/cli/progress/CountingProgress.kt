@@ -1,5 +1,6 @@
 package org.printscript.cli.progress
 
+import org.printscript.runner.progress.Progress
 import java.io.PrintStream
 
 // Reescribe siempre el mismo renglon con cuantas sentencias van.
