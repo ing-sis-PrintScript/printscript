@@ -1,7 +1,6 @@
 package org.printscript.formatter
 
 import org.printscript.common.Result
-import org.printscript.formatter.config.BlankLines
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.config.Spacing
 import org.printscript.lexer.Lexer
@@ -37,14 +36,14 @@ class GoldenFilesTest {
         config: FormatterConfig,
     ) = assertEquals(recurso("/golden/$golden"), formatear(recurso("/source/$fuente"), config))
 
-    // Las tres reglas de espaciado en su forma habitual, mas una linea en blanco antes
-    // del println.
+    // Las tres reglas de espaciado en su forma habitual. La linea en blanco antes del
+    // println NO sale de una regla --line-breaks-after-println actua despues de un
+    // println, no antes-- sino que viene en el fuente y el formatter la preserva.
     private val canonico =
         FormatterConfig(
             spaceBeforeColon = Spacing.NONE,
             spaceAfterColon = Spacing.SINGLE,
             spaceAroundAssignment = Spacing.SINGLE,
-            blankLinesBeforePrintln = BlankLines.ONE,
         )
 
     @Test

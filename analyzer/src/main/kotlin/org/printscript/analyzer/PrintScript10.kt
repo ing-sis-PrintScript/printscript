@@ -10,18 +10,18 @@ import org.printscript.analyzer.rules.PrintlnArgumentRule
  * Qué reglas de estilo se aplican en PrintScript 1.0, armadas a partir de la
  * configuración recibida.
  *
- * Espejo del PrintScript10 del lexer/parser/interpreter/formatter: agregar
- * una regla nueva (parte 2 del TP) es un constructor más en rules(), no
- * tocar Analyzer ni las reglas existentes. Apagar una regla por
- * configuración es sacarla de la lista con takeIf, no un if adentro de la
- * regla misma.
+ * Espejo del PrintScript10 del lexer/parser/interpreter/formatter: agregar una regla
+ * nueva es un constructor más en rules(), no tocar Analyzer ni las reglas existentes.
+ * Apagar una regla por configuración es sacarla de la lista, no un if adentro de la
+ * regla misma — por eso una convención en null no arma la regla en vez de armar una que
+ * no reporta nada.
  */
 object PrintScript10 {
     fun analyzer(config: AnalyzerConfig): Analyzer = PrintScriptAnalyzer(rules(config))
 
     private fun rules(config: AnalyzerConfig): List<Rule> =
         listOfNotNull(
-            IdentifierNamingRule(config.namingConvention),
+            config.namingConvention?.let { IdentifierNamingRule(it) },
             PrintlnArgumentRule().takeIf { config.restrictPrintlnArguments },
         )
 }

@@ -1,9 +1,14 @@
 package org.printscript.formatter.engine
 
 import org.printscript.common.Result
+import org.printscript.formatter.config.BlankLines
 import org.printscript.formatter.config.Spacing
-import org.printscript.formatter.rules.ColonSpacingRule
+import org.printscript.formatter.rules.LineBreakAfterStatementRule
+import org.printscript.formatter.rules.LineBreaksAfterPrintlnRule
+import org.printscript.formatter.rules.SingleSpaceSeparationRule
 import org.printscript.formatter.rules.SpacingMatcher
+import org.printscript.formatter.rules.colonSpacing
+import org.printscript.formatter.rules.operatorSpacing
 import org.printscript.lexer.Lexer
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -74,14 +79,14 @@ class TokenFormatterTest {
 
     @Test
     fun `la regla del colon reescribe ese espacio y no toca el resto`() {
-        val matcher = SpacingMatcher(listOf(ColonSpacingRule(before = Spacing.NONE)))
+        val matcher = SpacingMatcher(listOf(colonSpacing(Spacing.NONE, null)))
 
         assertEquals("let  x: number   = 5;", formatear("let  x : number   = 5;", matcher))
     }
 
     @Test
     fun `la regla del colon tambien ordena el espacio de atras`() {
-        val matcher = SpacingMatcher(listOf(ColonSpacingRule(before = Spacing.NONE, after = Spacing.SINGLE)))
+        val matcher = SpacingMatcher(listOf(colonSpacing(Spacing.NONE, Spacing.SINGLE)))
 
         assertEquals("let x: string = \"a\";", formatear("let x   :string = \"a\";", matcher))
     }
@@ -90,11 +95,58 @@ class TokenFormatterTest {
     // declaraciones, y todo lo demas de cada una sale como venia.
     @Test
     fun `dos declaraciones distintas conservan lo suyo salvo donde la regla manda`() {
-        val matcher = SpacingMatcher(listOf(ColonSpacingRule(before = Spacing.NONE)))
+        val matcher = SpacingMatcher(listOf(colonSpacing(Spacing.NONE, null)))
 
         assertEquals(
             "let a:string = \"x\";\n\nlet  b: string   = \"y\";",
             formatear("let a:string = \"x\";\n\nlet  b : string   = \"y\";", matcher),
+        )
+    }
+
+    // Los dos casos del TCK, con los main y golden de print-0 y print-1.
+    @Test
+    fun `line-breaks-after-println en cero borra las lineas en blanco de mas`() {
+        val matcher = SpacingMatcher(listOf(LineBreaksAfterPrintlnRule(BlankLines.NONE)))
+        val main = "let a:string = \"x\";\nprintln(a);\n\n\n\n\nprintln(\"y\");"
+
+        assertEquals("let a:string = \"x\";\nprintln(a);\nprintln(\"y\");", formatear(main, matcher))
+    }
+
+    @Test
+    fun `line-breaks-after-println en uno separa los println y no toca el let`() {
+        val matcher = SpacingMatcher(listOf(LineBreaksAfterPrintlnRule(BlankLines.ONE)))
+        val main = "let a:string = \"x\";\nprintln(a);\nprintln(\"y\");"
+
+        assertEquals("let a:string = \"x\";\nprintln(a);\n\nprintln(\"y\");", formatear(main, matcher))
+    }
+
+    // Los main y golden de mandatory-line-break-after-statement: mete los saltos y no
+    // toca el espaciado propio de cada declaracion.
+    @Test
+    fun `el salto obligatorio despues del punto y coma no toca nada mas`() {
+        val matcher = SpacingMatcher(listOf(LineBreakAfterStatementRule(mandatory = true)))
+        val main = "let a:string = \"x\";let b : string = \"y\";let c :string=\"z\";"
+
+        assertEquals("let a:string = \"x\";\nlet b : string = \"y\";\nlet c :string=\"z\";", formatear(main, matcher))
+    }
+
+    @Test
+    fun `los operadores quedan rodeados de espacios`() {
+        val matcher = SpacingMatcher(listOf(operatorSpacing(mandatory = true)))
+
+        assertEquals("let r: number = 5 + 4 * 3 / 2;", formatear("let r: number = 5+4*3/2;", matcher))
+    }
+
+    // El golden de mandatory-single-space-separation: un espacio entre todo, salvo antes
+    // del ';', y sin juntar los dos statements en un renglon.
+    @Test
+    fun `la separacion por un espacio toca todo menos el punto y coma y los saltos`() {
+        val matcher = SpacingMatcher(listOf(SingleSpaceSeparationRule(mandatory = true)))
+        val main = "let something:      string=\"a really cool thing\";\nprintln(something);"
+
+        assertEquals(
+            "let something : string = \"a really cool thing\";\nprintln ( something );",
+            formatear(main, matcher),
         )
     }
 

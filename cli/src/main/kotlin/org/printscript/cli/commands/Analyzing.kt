@@ -3,6 +3,7 @@ package org.printscript.cli.commands
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.file
 import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.config.AnalyzerConfig
@@ -18,8 +19,12 @@ internal class Analyzing : CliktCommand(name = "analyzing") {
     private val source by argument(help = "Archivo PrintScript a analizar")
         .file(mustExist = true, canBeDir = false, mustBeReadable = true)
 
+    // Obligatorio, a diferencia de formatting: una regla que el archivo no menciona no
+    // se aplica, asi que sin config el analyzer no tendria nada que hacer y diria que
+    // esta todo bien sobre cualquier archivo. Es la unica config que ES el comando.
     private val config by option("--config", help = "Reglas de estilo en .yaml, .yml o .json")
         .file(mustExist = true, canBeDir = false, mustBeReadable = true)
+        .required()
 
     override fun run() =
         when (val loaded = analyzerConfig()) {
@@ -27,11 +32,8 @@ internal class Analyzing : CliktCommand(name = "analyzing") {
             is Result.Success -> analyzeWith(loaded.value)
         }
 
-    // Sin --config valen los defaults, que no es un error sino el caso normal.
-    private fun analyzerConfig(): Result<AnalyzerConfig, ConfigReadError> {
-        val file = config ?: return Result.Success(AnalyzerConfig())
-        return configText(file).flatMap { loadAnalyzerConfig(it) }
-    }
+    private fun analyzerConfig(): Result<AnalyzerConfig, ConfigReadError> =
+        configText(config).flatMap { loadAnalyzerConfig(it) }
 
     // Los problemas se imprimen a medida que aparecen, no se juntan: el analyzer
     // los va emitiendo mientras recorre el archivo, y salen ya en orden.

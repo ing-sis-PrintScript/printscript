@@ -7,6 +7,7 @@ import org.printscript.formatter.config.Spacing
 import org.printscript.lexer.Lexer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.fail
 
 class PrintScript10Test {
@@ -30,15 +31,31 @@ class PrintScript10Test {
                 spaceBeforeColon = Spacing.NONE,
                 spaceAfterColon = Spacing.SINGLE,
                 spaceAroundAssignment = Spacing.SINGLE,
-                blankLinesBeforePrintln = BlankLines.ONE,
             )
 
-        assertEquals("let x: number = 5;\n\nprintln(x);", formatear("let x:number=5;\nprintln(x);", config))
+        assertEquals("let x: number = 5;\n\nprintln(x);", formatear("let x:number=5;\n\nprintln(x);", config))
     }
 
+    // Contar reglas no prueba nada. Lo que importa es que ninguna clave del config quede
+    // sin cablear: si se agrega un campo y se olvida de sumarlo a PrintScript10.rules,
+    // esa config no cambia nada y este test lo agarra.
     @Test
-    fun `el factory arma las tres reglas y cada una responde por lo suyo`() {
-        assertEquals(3, PrintScript10.rules(FormatterConfig()).size)
+    fun `cada clave del config esta cableada a una regla`() {
+        val fuente = "let a:number=1+2;println(a);println(a);"
+        val configs =
+            listOf(
+                FormatterConfig(spaceBeforeColon = Spacing.SINGLE),
+                FormatterConfig(spaceAfterColon = Spacing.SINGLE),
+                FormatterConfig(spaceAroundAssignment = Spacing.SINGLE),
+                FormatterConfig(lineBreaksAfterPrintln = BlankLines.ONE),
+                FormatterConfig(lineBreakAfterStatement = true),
+                FormatterConfig(spaceSurroundingOperations = true),
+                FormatterConfig(singleSpaceSeparation = true),
+            )
+
+        for (config in configs) {
+            assertNotEquals(fuente, formatear(fuente, config), "esta config no cambio nada: $config")
+        }
     }
 
     @Test

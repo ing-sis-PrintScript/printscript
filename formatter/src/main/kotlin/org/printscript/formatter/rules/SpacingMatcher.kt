@@ -13,5 +13,6 @@ data class SpacingMatcher(private val rules: List<SpacingRule> = emptyList()) {
     fun spacingFor(
         prev: Token?,
         current: Token,
-    ): String? = rules.firstNotNullOfOrNull { it.spacingFor(prev, current) }
+        state: FormattingState,
+    ): String? = rules.firstNotNullOfOrNull { it.spacingFor(prev, current, state) }
 }

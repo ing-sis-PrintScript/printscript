@@ -4,6 +4,7 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.formatter.FormattedCode
 import org.printscript.formatter.Formatter
+import org.printscript.formatter.rules.FormattingState
 import org.printscript.formatter.rules.SpacingMatcher
 import org.printscript.token.Token
 import org.printscript.token.TokenReadResult
@@ -40,7 +41,9 @@ private fun render(
     matcher: SpacingMatcher,
     prev: Token?,
     token: Token,
-): FormattedCode = FormattedCode((matcher.spacingFor(prev, token) ?: token.leadingTrivia.text) + sourceTextOf(token))
+    state: FormattingState,
+): FormattedCode =
+    FormattedCode((matcher.spacingFor(prev, token, state) ?: token.leadingTrivia.text) + sourceTextOf(token))
 
 // Misma razon que ParsedStatements en el parser: mientras alguien sostenga el primer
 // eslabon de la fuente, la cadena entera queda viva y el archivo no entra en memoria.
@@ -61,15 +64,24 @@ private class FormattedTokens(
             // ya consumido.
             private var pending: TokenSource? = first
 
-            // El token anterior: es todo el contexto que una regla necesita.
+            // El token anterior alcanza para casi todas las reglas.
             private var previous: Token? = null
+
+            // Lo que no entra en dos tokens. currentHead es con que arranco la sentencia
+            // que se esta recorriendo; al cerrarla con ';' pasa a ser la "anterior".
+            private var currentHead: TokenType? = null
+            private var state = FormattingState()
 
             override fun computeNext() {
                 when (val read = pending?.nextToken()) {
                     is TokenReadResult.Success -> {
-                        val formatted = render(matcher, previous, read.token)
+                        val token = read.token
+                        // Se formatea con el estado que dejo la sentencia anterior, y
+                        // recien despues se actualiza: si no, un ';' se veria a si mismo.
+                        val formatted = render(matcher, previous, token, state)
                         pending = read.remaining
-                        previous = read.token
+                        previous = token
+                        advanceStatement(token)
                         setNext(Result.Success(formatted))
                     }
 
@@ -80,6 +92,15 @@ private class FormattedTokens(
                     }
 
                     TokenReadResult.EndOfInput, null -> done()
+                }
+            }
+
+            private fun advanceStatement(token: Token) {
+                if (token.type == TokenType.SEMICOLON) {
+                    state = FormattingState(lastStatementHead = currentHead)
+                    currentHead = null
+                } else if (currentHead == null && token.type != TokenType.EOF) {
+                    currentHead = token.type
                 }
             }
         }
