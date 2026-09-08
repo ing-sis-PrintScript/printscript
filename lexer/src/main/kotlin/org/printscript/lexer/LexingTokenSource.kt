@@ -25,13 +25,18 @@ internal data class LexingTokenSource(
         when (val match = matcher.match(at.line, at.index, at.lineNumber)) {
             is Result.Success ->
                 TokenReadResult.Success(
-                    match.value.token,
+                    // La trivia la pega el lexer, no las reglas: ellas ven una
+                    // linea y un indice, no saben que quedo atras.
+                    match.value.token.copy(leadingTrivia = at.trivia),
                     LexingTokenSource(matcher, at.advanceTo(match.value.nextIndex)),
                 )
 
             is Result.Failure -> TokenReadResult.Failure(match.error, noMoreTokens())
         }
 
+    // El EOF va sin trivia a proposito: el salto final del archivo cierra la
+    // ultima linea, no abre una vacia. Si termina o no con salto lo decide una
+    // regla del formatter, no el lexer.
     private fun endOfFileAt(end: Position): TokenReadResult =
         TokenReadResult.Success(Token(TokenType.EOF, "", Range(end, end)), noMoreTokens())
 
