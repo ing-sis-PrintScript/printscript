@@ -1,5 +1,6 @@
 package org.printscript.runner
 
+import org.printscript.common.Version
 import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.lexer.source.LineReadResult
 import org.printscript.lexer.source.SourceReader
@@ -100,7 +101,7 @@ class LargeProgramMemoryTest {
         var parsed = 0
 
         sinQuedarseSinMemoria("lexer + parser", { parsed }) {
-            statements({ fuente() }).forEach { parsed++ }
+            statements({ fuente() }, Version.V10).forEach { parsed++ }
         }
     }
 
@@ -109,7 +110,7 @@ class LargeProgramMemoryTest {
         val io = CountingIO()
 
         sinQuedarseSinMemoria("ejecucion completa", { io.printed }) {
-            ExecuteRunner(io).execute { fuente() }
+            ExecuteRunner(Version.V10, io).execute { fuente() }
         }
     }
 }

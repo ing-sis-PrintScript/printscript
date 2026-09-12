@@ -5,6 +5,7 @@ import org.printscript.analyzer.Severity
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.analyzer.config.CamelCase
 import org.printscript.analyzer.config.SnakeCase
+import org.printscript.common.Version
 import org.printscript.lexer.source.StringSourceReader
 import org.printscript.runner.progress.Progress
 import kotlin.test.Test
@@ -21,7 +22,7 @@ class AnalyzeRunnerTest {
         source: String,
         config: AnalyzerConfig = todasPrendidas,
     ) {
-        AnalyzeRunner(config).analyze({ StringSourceReader(source) }) { findings.add(it) }
+        AnalyzeRunner(config, Version.V10).analyze({ StringSourceReader(source) }) { findings.add(it) }
     }
 
     @Test
@@ -99,7 +100,7 @@ class AnalyzeRunnerTest {
     fun `avisa una vez por cada sentencia parseada`() {
         var notices = 0
 
-        AnalyzeRunner(AnalyzerConfig(), Progress { notices++ })
+        AnalyzeRunner(AnalyzerConfig(), Version.V10, Progress { notices++ })
             .analyze({ StringSourceReader("let x: number = 1;\nlet y: number = 2;") }) { }
 
         assertEquals(2, notices)

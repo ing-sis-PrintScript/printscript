@@ -11,9 +11,11 @@ internal class Validation : CliktCommand(name = "validation") {
     private val source by argument(help = "Archivo PrintScript a validar")
         .file(mustExist = true, canBeDir = false, mustBeReadable = true)
 
+    private val version by versionOption()
+
     override fun run() {
         val progress = CountingProgress()
-        val errors = ValidateRunner(progress).validate { StreamSourceReader.of(source) }
+        val errors = ValidateRunner(version, progress).validate { StreamSourceReader.of(source) }
         progress.done()
 
         if (errors.isEmpty()) {

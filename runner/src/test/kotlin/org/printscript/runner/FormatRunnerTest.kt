@@ -1,5 +1,6 @@
 package org.printscript.runner
 
+import org.printscript.common.Version
 import org.printscript.common.getOrNull
 import org.printscript.formatter.config.BlankLines
 import org.printscript.formatter.config.FormatterConfig
@@ -12,7 +13,7 @@ class FormatRunnerTest {
     private fun format(
         source: String,
         config: FormatterConfig = FormatterConfig(),
-    ) = FormatRunner(config)
+    ) = FormatRunner(config, Version.V10)
         .format { StringSourceReader(source) }
         .mapNotNull { it.getOrNull() }
         .joinToString("") { it.text }
