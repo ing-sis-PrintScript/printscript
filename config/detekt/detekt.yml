@@ -1,9 +1,10 @@
 style:
   ReturnCount:
     active: true
-    max: 5 # Provisorio a discutir con el profesor/ayudante
+    max: 4
 
 complexity:
   CyclomaticComplexMethod:
     active: true
     threshold: 20
+    ignoreSimpleWhenEntries: true
