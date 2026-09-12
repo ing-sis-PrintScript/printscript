@@ -2,6 +2,7 @@ package org.printscript.interpreter
 
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
+import org.printscript.ast.BooleanLiteral
 import org.printscript.ast.CallExpression
 import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
@@ -21,6 +22,7 @@ class ExpressionEvaluator {
         return when (expression) {
             is NumberLiteral -> Result.Success(PrintScriptValue.NumberValue(expression.value))
             is StringLiteral -> Result.Success(PrintScriptValue.StringValue(expression.value))
+            is BooleanLiteral -> Result.Success(PrintScriptValue.BooleanValue(expression.value))
             is Identifier -> env.get(expression.name, expression.range)
             is BinaryExpression -> evaluateBinary(expression, env)
             is UnaryExpression -> evaluateUnary(expression, env)

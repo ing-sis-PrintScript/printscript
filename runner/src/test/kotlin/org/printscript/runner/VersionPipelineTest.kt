@@ -6,7 +6,6 @@ import org.printscript.common.errorOrNull
 import org.printscript.lexer.source.StringSourceReader
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class VersionPipelineTest {
@@ -45,24 +44,19 @@ class VersionPipelineTest {
         assertTrue(errores(fuente, Version.V10).isNotEmpty())
     }
 
-    // La misma palabra se lee distinto segun la version, y el mensaje de error lo
-    // delata. Esto es lo que garantiza que --version 1.0 no acepte un programa de 1.1.
+    // El mismo archivo es valido en una version e invalido en la otra. Esto es lo que
+    // garantiza que --version 1.0 no acepte un programa de 1.1.
     @Test
-    fun `la version cambia como se lee la misma palabra`() {
+    fun `la misma palabra se lee distinto segun la version`() {
         val fuente = """const activo: boolean = true;"""
 
-        val comoDiezCero = errores(fuente, Version.V10).first().message
-        val comoUnoUno = errores(fuente, Version.V11).first().message
+        assertTrue(errores(fuente, Version.V11).isEmpty(), "como 1.1 tiene que ser valido")
 
         // Como 1.0, 'const' no esta en el mapa de keywords: sale IDENTIFIER, y como una
         // asignacion empieza con un identificador, AssignmentParser lo agarra creyendo
         // que es el nombre de una variable. Por eso se queja del '=' que no aparece.
+        val comoDiezCero = errores(fuente, Version.V10).first().message
+
         assertTrue(comoDiezCero.contains("'='"), "como 1.0: $comoDiezCero")
-
-        // Como 1.1 si es keyword, asi que ningun parser lo reclama --todavia no existe
-        // el de const-- y el error nombra la palabra.
-        assertTrue(comoUnoUno.contains("const"), "como 1.1: $comoUnoUno")
-
-        assertNotEquals(comoDiezCero, comoUnoUno, "la version tiene que cambiar como se lee")
     }
 }

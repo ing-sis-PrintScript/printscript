@@ -6,6 +6,7 @@ data class VariableDeclaration(
     val identifier: Identifier,
     val declaredType: DeclaredType,
     val initializer: Expression?,
+    val kind: DeclarationKind,
     override val range: Range,
 ) : Statement
 

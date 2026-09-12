@@ -306,7 +306,7 @@ class ParserTest {
         val error = errorOf(let(), id("a"), colon(), id("entero"), assign(), num("12"), semi())
 
         assertIs<SyntaxError>(error)
-        assertTrue(error.message.contains("number"), "debería decir qué tipos son válidos: ${error.message}")
+        assertTrue(error.message.contains("entero"), "debería nombrar lo que se escribió: ${error.message}")
     }
 
     @Test

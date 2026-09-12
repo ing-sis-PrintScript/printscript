@@ -1,10 +1,15 @@
 package org.printscript.interpreter
 
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.common.Range
 import org.printscript.common.Result
 
-private data class VariableSymbol(val value: PrintScriptValue?, val type: DeclaredType)
+private data class VariableSymbol(
+    val value: PrintScriptValue?,
+    val type: DeclaredType,
+    val kind: DeclarationKind,
+)
 
 class Environment private constructor(
     private val memory: Map<String, VariableSymbol>,
@@ -16,6 +21,7 @@ class Environment private constructor(
         type: DeclaredType,
         value: PrintScriptValue?,
         range: Range,
+        kind: DeclarationKind,
     ): Result<Environment, InterpreterError> {
         if (memory.containsKey(name)) {
             return Result.Failure(InterpreterError("La variable '$name' ya fue declarada.", range))
@@ -26,7 +32,7 @@ class Environment private constructor(
             if (typeCheck is Result.Failure) return typeCheck
         }
 
-        val newMemory = memory + (name to VariableSymbol(value, type))
+        val newMemory = memory + (name to VariableSymbol(value, type, kind))
         return Result.Success(Environment(newMemory))
     }
 
@@ -39,10 +45,14 @@ class Environment private constructor(
             memory[name]
                 ?: return Result.Failure(InterpreterError("La variable '$name' no ha sido declarada.", range))
 
+        if (existing.kind == DeclarationKind.CONST) {
+            return Result.Failure(InterpreterError("La constante '$name' no se puede reasignar.", range))
+        }
+
         val typeCheck = checkType(existing.type, value, range)
         if (typeCheck is Result.Failure) return typeCheck
 
-        val newMemory = memory + (name to VariableSymbol(value, existing.type))
+        val newMemory = memory + (name to VariableSymbol(value, existing.type, existing.kind))
         return Result.Success(Environment(newMemory))
     }
 
@@ -67,6 +77,7 @@ class Environment private constructor(
             when (expectedType) {
                 DeclaredType.NUMBER -> value is PrintScriptValue.NumberValue
                 DeclaredType.STRING -> value is PrintScriptValue.StringValue
+                DeclaredType.BOOLEAN -> value is PrintScriptValue.BooleanValue
             }
         return if (!isValid) {
             Result.Failure(

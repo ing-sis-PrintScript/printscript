@@ -5,6 +5,7 @@ import org.printscript.analyzer.DiagnosticEmitter
 import org.printscript.ast.ASTNode
 import org.printscript.ast.AssignmentStatement
 import org.printscript.ast.BinaryExpression
+import org.printscript.ast.BooleanLiteral
 import org.printscript.ast.CallExpression
 import org.printscript.ast.ExpressionStatement
 import org.printscript.ast.Identifier
@@ -52,6 +53,6 @@ internal class PrintScriptAnalyzer(
             is BinaryExpression -> listOf(node.left, node.right)
             is UnaryExpression -> listOf(node.operand)
             is CallExpression -> listOf(node.callee) + node.arguments
-            is NumberLiteral, is StringLiteral, is Identifier -> emptyList()
+            is NumberLiteral, is StringLiteral, is BooleanLiteral, is Identifier -> emptyList()
         }
 }
