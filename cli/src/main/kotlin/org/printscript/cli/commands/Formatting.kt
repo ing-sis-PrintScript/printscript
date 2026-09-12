@@ -19,6 +19,8 @@ internal class Formatting : CliktCommand(name = "formatting") {
     private val config by option("--config", help = "Reglas de formato en .yaml, .yml o .json")
         .file(mustExist = true, canBeDir = false, mustBeReadable = true)
 
+    private val version by versionOption()
+
     override fun run() =
         when (val loaded = formatterConfig()) {
             is Result.Failure -> fail("config: ${loaded.error.message}")
@@ -33,7 +35,7 @@ internal class Formatting : CliktCommand(name = "formatting") {
 
     // Sin barra de progreso: formatear no parsea, asi que no hay sentencias que contar.
     private fun formatWith(config: FormatterConfig) {
-        for (result in FormatRunner(config).format { StreamSourceReader.of(source) }) {
+        for (result in FormatRunner(config, version).format { StreamSourceReader.of(source) }) {
             when (result) {
                 // Cada trozo ya trae sus separadores: se imprime crudo, sin agregar saltos.
                 is Result.Success -> echo(result.value.text, trailingNewline = false)

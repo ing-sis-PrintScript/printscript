@@ -1,12 +1,13 @@
 package org.printscript.runner
 
+import org.printscript.common.Version
 import org.printscript.lexer.source.StringSourceReader
 import org.printscript.runner.progress.Progress
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ValidateRunnerTest {
-    private fun validate(source: String) = ValidateRunner().validate { StringSourceReader(source) }
+    private fun validate(source: String) = ValidateRunner(Version.V10).validate { StringSourceReader(source) }
 
     @Test
     fun `un archivo sano no reporta errores`() {
@@ -53,7 +54,7 @@ class ValidateRunnerTest {
     fun `avisa una vez por cada sentencia parseada`() {
         var notices = 0
 
-        ValidateRunner(Progress { notices++ })
+        ValidateRunner(Version.V10, Progress { notices++ })
             .validate { StringSourceReader("let x: number = 1;\nlet y: number = 2;") }
 
         assertEquals(2, notices)

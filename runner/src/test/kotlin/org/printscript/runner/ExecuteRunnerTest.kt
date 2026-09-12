@@ -1,5 +1,6 @@
 package org.printscript.runner
 
+import org.printscript.common.Version
 import org.printscript.common.errorOrNull
 import org.printscript.lexer.source.StringSourceReader
 import org.printscript.runner.progress.Progress
@@ -11,7 +12,7 @@ import kotlin.test.assertNull
 class ExecuteRunnerTest {
     private val io = RecordingIO()
 
-    private fun run(source: String) = ExecuteRunner(io).execute { StringSourceReader(source) }
+    private fun run(source: String) = ExecuteRunner(Version.V10, io).execute { StringSourceReader(source) }
 
     @Test
     fun `ejemplo 1 de la consigna`() {
@@ -74,7 +75,7 @@ class ExecuteRunnerTest {
     fun `avisa una vez por cada sentencia parseada`() {
         var notices = 0
 
-        ExecuteRunner(io, Progress { notices++ })
+        ExecuteRunner(Version.V10, io, Progress { notices++ })
             .execute { StringSourceReader("let x: number = 1;\nlet y: number = 2;") }
 
         assertEquals(2, notices)

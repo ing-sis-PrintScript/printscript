@@ -12,9 +12,11 @@ internal class Execution : CliktCommand(name = "execution") {
     private val source by argument(help = "Archivo PrintScript a ejecutar")
         .file(mustExist = true, canBeDir = false, mustBeReadable = true)
 
+    private val version by versionOption()
+
     override fun run() {
         val progress = CountingProgress()
-        val result = ExecuteRunner(progress = progress).execute { StreamSourceReader.of(source) }
+        val result = ExecuteRunner(version, progress = progress).execute { StreamSourceReader.of(source) }
         progress.done()
 
         if (result is Result.Failure) {

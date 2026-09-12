@@ -26,6 +26,8 @@ internal class Analyzing : CliktCommand(name = "analyzing") {
         .file(mustExist = true, canBeDir = false, mustBeReadable = true)
         .required()
 
+    private val version by versionOption()
+
     override fun run() =
         when (val loaded = analyzerConfig()) {
             is Result.Failure -> fail("config: ${loaded.error.message}")
@@ -44,7 +46,7 @@ internal class Analyzing : CliktCommand(name = "analyzing") {
         var problems = 0
         val progress = CountingProgress()
 
-        AnalyzeRunner(config, progress).analyze({ StreamSourceReader.of(source) }) { diagnostic ->
+        AnalyzeRunner(config, version, progress).analyze({ StreamSourceReader.of(source) }) { diagnostic ->
             problems++
             echo(line(diagnostic), err = true)
         }
