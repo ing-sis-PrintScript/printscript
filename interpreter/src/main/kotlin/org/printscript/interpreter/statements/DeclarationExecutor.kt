@@ -11,7 +11,7 @@ import org.printscript.interpreter.PrintScriptValue
 import org.printscript.interpreter.io.PrintScriptIO
 
 /**
- * declaration = "let", identifier, ":", type, [ "=", expression ], ";" ;
+ * declaration = ( "let" | "const" ), identifier, ":", type, [ "=", expression ], ";" ;
  *
  * Si hay inicializador lo evalúa; si no, declara la variable sin valor (queda
  * "no inicializada", y leerla antes de asignarle algo es error de Environment).
@@ -30,7 +30,13 @@ class DeclarationExecutor(
             declaration.initializer?.let { evaluator.evaluate(it, env) } ?: Result.Success(null)
 
         return initialValue.flatMap { value ->
-            env.declare(declaration.identifier.name, declaration.declaredType, value, declaration.range)
+            env.declare(
+                declaration.identifier.name,
+                declaration.declaredType,
+                value,
+                declaration.range,
+                declaration.kind,
+            )
         }
     }
 }

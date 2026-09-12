@@ -1,5 +1,6 @@
 package org.printscript.interpreter.statements
 
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
 import org.printscript.ast.ExpressionStatement
@@ -31,7 +32,7 @@ class DeclarationExecutorTest {
         name: String,
         type: DeclaredType,
         initializer: Expression?,
-    ) = VariableDeclaration(Identifier(name, dummyRange), type, initializer, dummyRange)
+    ) = VariableDeclaration(Identifier(name, dummyRange), type, initializer, DeclarationKind.LET, dummyRange)
 
     private fun valueOf(result: Result<Environment, InterpreterError>?): Environment {
         assertIs<Result.Success<Environment>>(result, "esperaba Success y vino Failure o null")
@@ -83,7 +84,13 @@ class DeclarationExecutorTest {
     fun `propaga el error de Environment si la variable ya existia`() {
         val alreadyDeclared =
             (
-                Environment().declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(1.0), dummyRange)
+                Environment().declare(
+                    "x",
+                    DeclaredType.NUMBER,
+                    PrintScriptValue.NumberValue(1.0),
+                    dummyRange,
+                    DeclarationKind.LET,
+                )
                     as Result.Success
             ).value
         val declaration = declaration("x", DeclaredType.NUMBER, NumberLiteral(2.0, dummyRange))

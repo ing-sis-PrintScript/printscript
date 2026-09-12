@@ -14,4 +14,8 @@ sealed interface PrintScriptValue {
     data class StringValue(val value: String) : PrintScriptValue {
         override fun toString() = value
     }
+
+    data class BooleanValue(val value: Boolean) : PrintScriptValue {
+        override fun toString() = if (value) "true" else "false"
+    }
 }

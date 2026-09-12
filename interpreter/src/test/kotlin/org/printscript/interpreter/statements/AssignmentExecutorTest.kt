@@ -1,6 +1,7 @@
 package org.printscript.interpreter.statements
 
 import org.printscript.ast.AssignmentStatement
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
 import org.printscript.ast.ExpressionStatement
@@ -32,7 +33,7 @@ class AssignmentExecutorTest {
         name: String,
         type: DeclaredType,
         value: PrintScriptValue,
-    ): Environment = (Environment().declare(name, type, value, dummyRange) as Result.Success).value
+    ): Environment = (Environment().declare(name, type, value, dummyRange, DeclarationKind.LET) as Result.Success).value
 
     private fun assignment(
         name: String,

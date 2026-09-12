@@ -3,6 +3,7 @@ package org.printscript.interpreter
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.CallExpression
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
@@ -68,7 +69,13 @@ class ExpressionEvaluatorTest {
     @Test
     fun `un Identifier se resuelve contra el Environment`() {
         val declared =
-            Environment().declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(42.0), dummyRange)
+            Environment().declare(
+                "x",
+                DeclaredType.NUMBER,
+                PrintScriptValue.NumberValue(42.0),
+                dummyRange,
+                DeclarationKind.LET,
+            )
         val env = (declared as Result.Success).value
 
         assertEquals(PrintScriptValue.NumberValue(42.0), valueOf(eval(Identifier("x", dummyRange), env)))

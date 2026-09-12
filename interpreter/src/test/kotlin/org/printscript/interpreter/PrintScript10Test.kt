@@ -1,6 +1,7 @@
 package org.printscript.interpreter
 
 import org.printscript.ast.AssignmentStatement
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.ExpressionStatement
 import org.printscript.ast.Identifier
@@ -44,6 +45,7 @@ class PrintScript10Test {
                 Identifier("x", dummyRange),
                 DeclaredType.NUMBER,
                 NumberLiteral(1.0, dummyRange),
+                DeclarationKind.LET,
                 dummyRange,
             )
         val statements: List<Statement> =

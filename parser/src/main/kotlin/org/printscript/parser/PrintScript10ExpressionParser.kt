@@ -2,6 +2,7 @@ package org.printscript.parser
 
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
+import org.printscript.ast.BooleanLiteral
 import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
@@ -79,6 +80,11 @@ class PrintScript10ExpressionParser : ExpressionParser {
                 // token.value ya viene sin comillas: son delimitadores, no contenido.
                 TokenType.STRING_LITERAL ->
                     Result.Success(Parsed(StringLiteral(token.value, token.range), stream.advance()))
+
+                // El lexer solo produce BOOLEAN_LITERAL para "true" y "false", asi que
+                // comparar contra "true" cubre los dos casos y no puede fallar.
+                TokenType.BOOLEAN_LITERAL ->
+                    Result.Success(Parsed(BooleanLiteral(token.value == "true", token.range), stream.advance()))
 
                 TokenType.IDENTIFIER ->
                     Result.Success(Parsed(Identifier(token.value, token.range), stream.advance()))

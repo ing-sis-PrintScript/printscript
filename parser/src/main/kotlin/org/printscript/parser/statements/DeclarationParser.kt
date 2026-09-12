@@ -1,5 +1,6 @@
 package org.printscript.parser.statements
 
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
@@ -23,30 +24,35 @@ import org.printscript.token.TokenType
 class DeclarationParser(
     private val expressions: ExpressionParser,
 ) : StatementParser {
-    override fun canHandle(type: TokenType): Boolean = type == TokenType.LET
+    // El mismo parser sirve para las dos versiones y no necesita saber en cual esta:
+    // si ve un CONST es porque el lexer era el de 1.1. En 1.0 la palabra "const" no
+    // esta en el mapa de keywords y sale IDENTIFIER, asi que nunca llega aca.
+    override fun canHandle(type: TokenType): Boolean = type == TokenType.LET || type == TokenType.CONST
 
     override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> {
-        val letResult = stream.expect(TokenType.LET)
-        if (letResult is Result.Failure) return letResult
-        val (letToken, afterLet) = (letResult as Result.Success).value
+        val keywordResult = stream.next()
+        if (keywordResult is Result.Failure) return keywordResult
+        val (keyword, afterKeyword) = (keywordResult as Result.Success).value
 
-        val identifierResult = parseIdentifier(afterLet)
+        val identifierResult = parseIdentifier(afterKeyword)
         if (identifierResult is Result.Failure) return identifierResult
         val (identifier, afterIdentifier) = (identifierResult as Result.Success).value
 
-        return finishDeclaration(letToken.range.start, identifier, afterIdentifier)
+        val kind = if (keyword.type == TokenType.CONST) DeclarationKind.CONST else DeclarationKind.LET
+        return finishDeclaration(keyword.range.start, identifier, afterIdentifier, kind)
     }
 
     private fun finishDeclaration(
         start: Position,
         identifier: Identifier,
         stream: TokenStream,
+        kind: DeclarationKind,
     ): Result<Parsed<Statement>, PrintScriptError> {
         val typeResult = parseTypeAnnotation(stream)
         if (typeResult is Result.Failure) return typeResult
         val (declaredType, afterType) = (typeResult as Result.Success).value
 
-        val initializerResult = parseInitializer(afterType)
+        val initializerResult = parseInitializer(afterType, kind, identifier.range)
         if (initializerResult is Result.Failure) return initializerResult
         val (initializer, afterInitializer) = (initializerResult as Result.Success).value
 
@@ -59,6 +65,7 @@ class DeclarationParser(
                 identifier = identifier,
                 declaredType = declaredType,
                 initializer = initializer,
+                kind = kind,
                 range = Range(start, semicolon.range.end),
             )
         return Result.Success(Parsed(declaration, afterSemicolon))
@@ -81,13 +88,32 @@ class DeclarationParser(
         return when (token.type) {
             TokenType.TYPE_NUMBER -> Result.Success(Parsed(DeclaredType.NUMBER, afterType))
             TokenType.TYPE_STRING -> Result.Success(Parsed(DeclaredType.STRING, afterType))
-            else -> Result.Failure(SyntaxError("Se esperaba 'number' o 'string'", token.range))
+            TokenType.TYPE_BOOLEAN -> Result.Success(Parsed(DeclaredType.BOOLEAN, afterType))
+            // Sin listar los tipos: cuales existen depende de la version, y este parser
+            // es el mismo para las dos.
+            else -> Result.Failure(SyntaxError("Se esperaba un tipo", token.range))
         }
     }
 
-    // La gramática dice ["=", expression]: sin "=" no hay inicializador y el stream queda donde estaba.
-    private fun parseInitializer(stream: TokenStream): Result<Parsed<Expression?>, PrintScriptError> {
-        if (!stream.peekIs(TokenType.ASSIGN)) return Result.Success(Parsed(null, stream))
+    // La gramática dice ["=", expression]: sin "=" no hay inicializador y el stream queda
+    // donde estaba.
+    //
+    // La excepción es la constante: sin valor no se puede leer --nunca se inicializó-- ni
+    // escribir --es constante--, así que queda inservible. Se corta al parsear y no al
+    // ejecutar, y el error apunta al nombre de la variable.
+    private fun parseInitializer(
+        stream: TokenStream,
+        kind: DeclarationKind,
+        identifierRange: Range,
+    ): Result<Parsed<Expression?>, PrintScriptError> {
+        if (!stream.peekIs(TokenType.ASSIGN)) {
+            if (kind == DeclarationKind.CONST) {
+                return Result.Failure(
+                    SyntaxError("Una constante tiene que declararse con un valor", identifierRange),
+                )
+            }
+            return Result.Success(Parsed(null, stream))
+        }
 
         val assignResult = stream.skip(TokenType.ASSIGN)
         if (assignResult is Result.Failure) return assignResult

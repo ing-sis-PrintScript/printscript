@@ -20,6 +20,7 @@ class ASTNodeTest {
                 identifier = Identifier("name", range(1, 5, 8)),
                 declaredType = DeclaredType.STRING,
                 initializer = StringLiteral("Joe", range(1, 20, 24)),
+                kind = DeclarationKind.LET,
                 range = range(1, 1, 25),
             )
 
