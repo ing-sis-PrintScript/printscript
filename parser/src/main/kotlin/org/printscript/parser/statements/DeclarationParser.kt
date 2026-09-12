@@ -89,9 +89,10 @@ class DeclarationParser(
             TokenType.TYPE_NUMBER -> Result.Success(Parsed(DeclaredType.NUMBER, afterType))
             TokenType.TYPE_STRING -> Result.Success(Parsed(DeclaredType.STRING, afterType))
             TokenType.TYPE_BOOLEAN -> Result.Success(Parsed(DeclaredType.BOOLEAN, afterType))
-            // Sin listar los tipos: cuales existen depende de la version, y este parser
-            // es el mismo para las dos.
-            else -> Result.Failure(SyntaxError("Se esperaba un tipo", token.range))
+            // Nombra lo que vino en vez de listar los validos: cuales existen depende de
+            // la version, y este parser es el mismo para las dos. Ademas apunta al
+            // problema real en vez de hacer que el usuario compare contra una lista.
+            else -> Result.Failure(SyntaxError("'${token.value}' no es un tipo", token.range))
         }
     }
 

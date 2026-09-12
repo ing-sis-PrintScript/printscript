@@ -79,7 +79,7 @@ class ErrorMessageTest {
     @Test
     fun `el tipo declarado no es valido`() {
         assertEquals(
-            "Se esperaba 'number' o 'string'",
+            "'entero' no es un tipo",
             messageOf(let(), id("a"), colon(), id("entero"), semi()),
         )
     }
