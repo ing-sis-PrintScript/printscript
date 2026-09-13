@@ -15,8 +15,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class PrintlnArgumentRuleTest {
-    private val rule = PrintlnArgumentRule()
+class CallArgumentRuleTest {
+    private val rule = printlnArgumentRule()
 
     private fun diagnosticsOf(node: ASTNode): List<Diagnostic> {
         val found = mutableListOf<Diagnostic>()
@@ -82,5 +82,34 @@ class PrintlnArgumentRuleTest {
         val diagnostics = diagnosticsOf(call("println", expression))
 
         assertEquals(argumentRange, diagnostics.single().range)
+    }
+
+    // La misma clase con otro nombre de funcion: es toda la regla de 1.1.
+    @Test
+    fun `readInput con una expresion reporta un problema`() {
+        val found = mutableListOf<Diagnostic>()
+        val expression = binary(BinaryOperator.PLUS, string("Enter"), string("something"))
+
+        readInputArgumentRule().check(call("readInput", expression), DiagnosticEmitter { found.add(it) })
+
+        assertEquals(1, found.size)
+        assertEquals("read-input-argument", found.single().rule)
+    }
+
+    @Test
+    fun `readInput con un literal no reporta nada`() {
+        val found = mutableListOf<Diagnostic>()
+
+        readInputArgumentRule().check(call("readInput", string("Name:")), DiagnosticEmitter { found.add(it) })
+
+        assertTrue(found.isEmpty())
+    }
+
+    // Cada fabrica mira solo su funcion: la de println no opina de un readInput.
+    @Test
+    fun `la regla de println no revisa un readInput`() {
+        val expression = binary(BinaryOperator.PLUS, string("a"), string("b"))
+
+        assertTrue(diagnosticsOf(call("readInput", expression)).isEmpty())
     }
 }

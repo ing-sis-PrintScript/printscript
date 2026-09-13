@@ -2,8 +2,8 @@ package org.printscript.runner
 
 import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.DiagnosticEmitter
-import org.printscript.analyzer.PrintScript10
 import org.printscript.analyzer.Severity
+import org.printscript.analyzer.analyzerFor
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
@@ -23,7 +23,7 @@ class AnalyzeRunner(
         source: SourceFactory,
         emit: DiagnosticEmitter,
     ) {
-        val analyzer = PrintScript10.analyzer(config)
+        val analyzer = analyzerFor(version, config)
 
         for (step in statements(source, version, progress)) {
             when (step) {

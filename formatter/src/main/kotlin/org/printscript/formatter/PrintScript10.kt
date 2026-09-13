@@ -28,5 +28,6 @@ object PrintScript10 {
             SingleSpaceSeparationRule(config.singleSpaceSeparation),
         )
 
-    fun formatter(config: FormatterConfig): Formatter = TokenFormatter(SpacingMatcher(rules(config)))
+    fun formatter(config: FormatterConfig): Formatter =
+        TokenFormatter(SpacingMatcher(rules(config)), config.indentInsideIf)
 }

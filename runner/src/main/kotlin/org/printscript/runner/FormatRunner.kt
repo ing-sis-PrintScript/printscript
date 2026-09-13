@@ -4,8 +4,8 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.common.Version
 import org.printscript.formatter.FormattedCode
-import org.printscript.formatter.PrintScript10
 import org.printscript.formatter.config.FormatterConfig
+import org.printscript.formatter.formatterFor
 import org.printscript.lexer.lexerFor
 
 // Unico comando que NO parsea: formatear es preservar el espaciado del fuente, y el AST
@@ -15,5 +15,5 @@ class FormatRunner(
     private val version: Version,
 ) {
     fun format(source: SourceFactory): Sequence<Result<FormattedCode, PrintScriptError>> =
-        PrintScript10.formatter(config).format(lexerFor(version).tokenize(source.open()))
+        formatterFor(version, config).format(lexerFor(version).tokenize(source.open()))
 }

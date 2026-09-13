@@ -4,6 +4,7 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.formatter.FormattedCode
 import org.printscript.formatter.Formatter
+import org.printscript.formatter.config.Indent
 import org.printscript.formatter.rules.FormattingState
 import org.printscript.formatter.rules.SpacingMatcher
 import org.printscript.token.Token
@@ -21,9 +22,18 @@ import org.printscript.token.TokenType
 // que queda escrito aca.
 //
 // Sin reglas el matcher no contesta nunca, y entonces la salida es el fuente tal cual.
-class TokenFormatter(private val matcher: SpacingMatcher = SpacingMatcher()) : Formatter {
+//
+// La sangria NO es una regla, y esa es la unica cosa que el formatter decide por su
+// cuenta. Una regla contesta cuantos saltos de linea van; la sangria contesta con que
+// sigue el renglon despues del ultimo. No compiten: se componen. Si fuera una regla
+// mas, prender indent-inside-if junto con line-breaks-after-println haria que una le
+// pise las lineas en blanco a la otra.
+class TokenFormatter(
+    private val matcher: SpacingMatcher = SpacingMatcher(),
+    private val indent: Indent? = null,
+) : Formatter {
     override fun format(tokens: TokenSource): Sequence<Result<FormattedCode, PrintScriptError>> =
-        FormattedTokens(tokens, matcher)
+        FormattedTokens(tokens, matcher, indent)
 }
 
 // El lexer guarda el string sin comillas --son delimitadores, no contenido--, asi que
@@ -39,11 +49,37 @@ private fun sourceTextOf(token: Token): String =
 // El corazon del modelo incremental: si ninguna regla opina, va el espacio original.
 private fun render(
     matcher: SpacingMatcher,
+    indent: Indent?,
     prev: Token?,
     token: Token,
     state: FormattingState,
-): FormattedCode =
-    FormattedCode((matcher.spacingFor(prev, token, state) ?: token.leadingTrivia.text) + sourceTextOf(token))
+): FormattedCode {
+    val spacing = matcher.spacingFor(prev, token, state) ?: token.leadingTrivia.text
+    return FormattedCode(indented(spacing, indent, token, state) + sourceTextOf(token))
+}
+
+// La sangria del renglon que este espacio abre (indent-inside-if).
+//
+// Se aplica sobre el espacio YA decidido, venga de una regla o del fuente, y por eso
+// no compite con ninguna: reemplaza lo que haya despues del ultimo salto de linea y
+// deja los saltos intactos.
+//
+// Un espacio sin salto de linea no abre ningun renglon, asi que no se toca. Eso es lo
+// que deja quieto al "{" cuando va en la misma linea.
+private fun indented(
+    spacing: String,
+    indent: Indent?,
+    token: Token,
+    state: FormattingState,
+): String {
+    if (indent == null || !spacing.contains('\n')) return spacing
+
+    // El "}" cierra el bloque, asi que se escribe con la sangria de AFUERA. El estado
+    // todavia no bajo de nivel: baja recien despues de escribir el token.
+    val depth = if (token.type == TokenType.RBRACE) state.blockDepth - 1 else state.blockDepth
+
+    return spacing.substringBeforeLast('\n') + "\n" + indent.render(depth.coerceAtLeast(0))
+}
 
 // Misma razon que ParsedStatements en el parser: mientras alguien sostenga el primer
 // eslabon de la fuente, la cadena entera queda viva y el archivo no entra en memoria.
@@ -51,6 +87,7 @@ private fun render(
 private class FormattedTokens(
     source: TokenSource,
     private val matcher: SpacingMatcher,
+    private val indent: Indent?,
 ) : Sequence<Result<FormattedCode, PrintScriptError>> {
     // var y nullable a proposito: ponerlo en null es lo que corta la referencia.
     private var start: TokenSource? = source
@@ -78,7 +115,7 @@ private class FormattedTokens(
                         val token = read.token
                         // Se formatea con el estado que dejo la sentencia anterior, y
                         // recien despues se actualiza: si no, un ';' se veria a si mismo.
-                        val formatted = render(matcher, previous, token, state)
+                        val formatted = render(matcher, indent, previous, token, state)
                         pending = read.remaining
                         previous = token
                         advanceStatement(token)
@@ -95,12 +132,26 @@ private class FormattedTokens(
                 }
             }
 
+            // Una llave abre o cierra bloque, y ademas termina la sentencia en curso:
+            // lo que venga adentro arranca una nueva.
             private fun advanceStatement(token: Token) {
-                if (token.type == TokenType.SEMICOLON) {
-                    state = FormattingState(lastStatementHead = currentHead)
-                    currentHead = null
-                } else if (currentHead == null && token.type != TokenType.EOF) {
-                    currentHead = token.type
+                when (token.type) {
+                    TokenType.SEMICOLON -> {
+                        state = state.copy(lastStatementHead = currentHead)
+                        currentHead = null
+                    }
+
+                    TokenType.LBRACE -> {
+                        state = state.copy(blockDepth = state.blockDepth + 1)
+                        currentHead = null
+                    }
+
+                    TokenType.RBRACE -> {
+                        state = state.copy(blockDepth = state.blockDepth - 1)
+                        currentHead = null
+                    }
+
+                    else -> if (currentHead == null && token.type != TokenType.EOF) currentHead = token.type
                 }
             }
         }
