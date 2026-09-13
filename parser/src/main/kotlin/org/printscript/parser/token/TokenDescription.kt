@@ -29,5 +29,8 @@ internal fun TokenType.describe(): String =
         TokenType.SLASH -> "'/'"
         TokenType.LBRACE -> "'{'"
         TokenType.RBRACE -> "'}'"
+        // No deberia aparecer en un mensaje de error: TokenStream los descarta
+        // antes de que el parser los vea. Esta igual porque el when es exhaustivo.
+        TokenType.WHITESPACE -> "un espacio"
         TokenType.EOF -> "el fin del archivo"
     }

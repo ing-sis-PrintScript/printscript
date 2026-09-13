@@ -54,7 +54,7 @@ private fun render(
     token: Token,
     state: FormattingState,
 ): FormattedCode {
-    val spacing = matcher.spacingFor(prev, token, state) ?: token.leadingTrivia.text
+    val spacing = matcher.spacingFor(prev, token, state) ?: state.pendingWhitespace
     return FormattedCode(indented(spacing, indent, token, state) + sourceTextOf(token))
 }
 
@@ -109,27 +109,47 @@ private class FormattedTokens(
             private var currentHead: TokenType? = null
             private var state = FormattingState()
 
+            // El while esta porque un WHITESPACE no produce salida: se guarda y se
+            // sigue leyendo hasta encontrar un token que si se escriba.
             override fun computeNext() {
-                when (val read = pending?.nextToken()) {
-                    is TokenReadResult.Success -> {
-                        val token = read.token
-                        // Se formatea con el estado que dejo la sentencia anterior, y
-                        // recien despues se actualiza: si no, un ';' se veria a si mismo.
-                        val formatted = render(matcher, indent, previous, token, state)
-                        pending = read.remaining
-                        previous = token
-                        advanceStatement(token)
-                        setNext(Result.Success(formatted))
-                    }
+                while (true) {
+                    when (val read = pending?.nextToken()) {
+                        is TokenReadResult.Success -> {
+                            pending = read.remaining
+                            if (emit(read.token)) return
+                        }
 
-                    // Un error lexico corta: lo que sigue ya no es confiable.
-                    is TokenReadResult.Failure -> {
-                        pending = null
-                        setNext(Result.Failure(read.error))
-                    }
+                        // Un error lexico corta: lo que sigue ya no es confiable.
+                        is TokenReadResult.Failure -> {
+                            pending = null
+                            setNext(Result.Failure(read.error))
+                            return
+                        }
 
-                    TokenReadResult.EndOfInput, null -> done()
+                        TokenReadResult.EndOfInput, null -> {
+                            done()
+                            return
+                        }
+                    }
                 }
+            }
+
+            // true si el token produjo salida. El espacio no: se guarda para el token
+            // que venga, que es el que abre el renglon que ese espacio arma.
+            private fun emit(token: Token): Boolean {
+                if (token.type == TokenType.WHITESPACE) {
+                    state = state.copy(pendingWhitespace = token.value)
+                    return false
+                }
+
+                // Se formatea con el estado que dejo la sentencia anterior, y recien
+                // despues se actualiza: si no, un ';' se veria a si mismo.
+                val formatted = render(matcher, indent, previous, token, state)
+                previous = token
+                advanceStatement(token)
+                state = state.copy(pendingWhitespace = "")
+                setNext(Result.Success(formatted))
+                return true
             }
 
             // Una llave abre o cierra bloque, y ademas termina la sentencia en curso:

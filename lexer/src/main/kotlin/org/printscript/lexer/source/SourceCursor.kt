@@ -1,7 +1,7 @@
 package org.printscript.lexer.source
 
 import org.printscript.common.Position
-import org.printscript.token.Trivia
+import org.printscript.common.Range
 
 internal data class SourceCursor(
     private val lines: SourceReader,
@@ -9,13 +9,22 @@ internal data class SourceCursor(
     val lineNumber: Int,
     val index: Int,
     private val lastEnd: Position,
-    // Lo que se saltea desde el token anterior. Antes se tiraba; ahora se junta
-    // aca hasta que alguien la consume, y advanceTo la vacia.
-    val trivia: Trivia = Trivia.EMPTY,
+    // El espacio que se salteo desde el token anterior, y donde empieza. Antes se
+    // tiraba; ahora se junta aca hasta que LexingTokenSource lo emite como un token
+    // WHITESPACE, y clearSkipped lo vacia.
+    val skipped: String = "",
+    private val skippedStart: Position = Position(1, 1),
 ) {
+    // De donde a donde va el espacio. Termina donde arranca el token que sigue: es
+    // el unico final que se puede nombrar sin mirar el token, y el espacio no tiene
+    // otra cosa que lo delimite.
+    val skippedRange: Range get() = Range(skippedStart, Position(maxOf(lineNumber, 1), maxOf(index, 1)))
+
     fun moveToNextToken(): ScanResult = scan(this)
 
-    fun advanceTo(nextIndex: Int): SourceCursor = copy(index = nextIndex, trivia = Trivia.EMPTY)
+    fun advanceTo(nextIndex: Int): SourceCursor = copy(index = nextIndex, skipped = "")
+
+    fun clearSkipped(): SourceCursor = copy(skipped = "")
 
     private tailrec fun scan(cursor: SourceCursor): ScanResult {
         val atToken = cursor.skippingSpaces()
@@ -32,20 +41,28 @@ internal data class SourceCursor(
         stoppingAt((index until line.length).firstOrNull { !line[it].isWhitespace() } ?: line.length)
 
     private fun stoppingAt(next: Int): SourceCursor =
-        copy(index = next, trivia = triviaPlus(line.substring(index, next)))
+        plusSkipped(line.substring(index, next), Position(maxOf(lineNumber, 1), index + 1)).copy(index = next)
 
-    // Sin whitespace devolvemos la misma trivia: en un archivo de 32K lineas,
-    // no alocar por cada token pegado al anterior se nota.
-    private fun triviaPlus(more: String): Trivia = if (more.isEmpty()) trivia else Trivia(trivia.text + more)
+    // Sin espacio devolvemos el mismo cursor: en un archivo de 32K lineas, no alocar
+    // por cada token pegado al anterior se nota.
+    private fun plusSkipped(
+        more: String,
+        at: Position,
+    ): SourceCursor =
+        when {
+            more.isEmpty() -> this
+            skipped.isEmpty() -> copy(skipped = more, skippedStart = at)
+            else -> copy(skipped = skipped + more)
+        }
 
     // El separador se lo come el reader, asi que el salto lo agregamos nosotros.
     // lineNumber 0 es el estado previo a la primera linea: ahi no hay salto que
     // agregar, o el primer token del archivo arrancaria con un "\n" inventado.
-    private fun closingCurrentLine(): SourceCursor =
-        copy(
-            lastEnd = Position(maxOf(lineNumber, 1), line.length + 1),
-            trivia = if (lineNumber >= 1) triviaPlus("\n") else trivia,
-        )
+    private fun closingCurrentLine(): SourceCursor {
+        val end = Position(maxOf(lineNumber, 1), line.length + 1)
+        val closed = copy(lastEnd = end)
+        return if (lineNumber >= 1) closed.plusSkipped("\n", end) else closed
+    }
 
     private fun startingLine(
         next: String,

@@ -20,7 +20,7 @@ class SingleSpaceSeparationRule(private val mandatory: Boolean = false) : Spacin
     ): String? {
         if (!mandatory || prev == null) return null
         if (current.type == TokenType.SEMICOLON || current.type == TokenType.EOF) return ""
-        if (current.leadingTrivia.lineBreaks > 0) return null
+        if (state.pendingWhitespace.contains('\n')) return null
 
         return " "
     }

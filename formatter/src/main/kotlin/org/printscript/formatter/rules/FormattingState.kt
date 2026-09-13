@@ -10,7 +10,13 @@ import org.printscript.token.TokenType
 //
 // blockDepth: cuantos bloques abiertos hay. La usa la sangria, que no es una regla
 // sino un paso del formatter.
+//
+// pendingWhitespace: el espacio que el fuente traia delante del token que se esta
+// escribiendo. Llega como un token WHITESPACE que el formatter no emite: lo guarda
+// aca y lo usa como respaldo cuando ninguna regla opina. Es la unica pieza de
+// estado que existe porque el espacio es un token y no un campo de Token.
 data class FormattingState(
     val lastStatementHead: TokenType? = null,
     val blockDepth: Int = 0,
+    val pendingWhitespace: String = "",
 )

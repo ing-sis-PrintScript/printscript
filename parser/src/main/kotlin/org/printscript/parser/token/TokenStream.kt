@@ -15,7 +15,7 @@ data class TokenStream(
     private val current: TokenReadResult,
     private val lastRange: Range = START,
 ) {
-    constructor(source: TokenSource) : this(source.nextToken())
+    constructor(source: TokenSource) : this(skippingWhitespace(source.nextToken()))
 
     fun peek(): Result<Token, PrintScriptError> =
         when (current) {
@@ -26,8 +26,9 @@ data class TokenStream(
 
     fun advance(): TokenStream =
         when (current) {
-            is TokenReadResult.Success -> TokenStream(current.remaining.nextToken(), current.token.range)
-            is TokenReadResult.Failure -> TokenStream(current.remaining.nextToken(), lastRange)
+            is TokenReadResult.Success ->
+                TokenStream(skippingWhitespace(current.remaining.nextToken()), current.token.range)
+            is TokenReadResult.Failure -> TokenStream(skippingWhitespace(current.remaining.nextToken()), lastRange)
             TokenReadResult.EndOfInput -> this
         }
 
@@ -35,3 +36,14 @@ data class TokenStream(
         current is TokenReadResult.EndOfInput ||
             (current is TokenReadResult.Success && current.token.type == TokenType.EOF)
 }
+
+// El parser no ve los espacios: se descartan apenas se leen, en el unico lugar por
+// donde pasan todos los tokens. expect, skip, next y peekIs son extensiones sobre
+// peek y advance, asi que con esto alcanza para el modulo entero --no hay que
+// acordarse de saltearlos en cada regla--.
+private tailrec fun skippingWhitespace(read: TokenReadResult): TokenReadResult =
+    if (read is TokenReadResult.Success && read.token.type == TokenType.WHITESPACE) {
+        skippingWhitespace(read.remaining.nextToken())
+    } else {
+        read
+    }

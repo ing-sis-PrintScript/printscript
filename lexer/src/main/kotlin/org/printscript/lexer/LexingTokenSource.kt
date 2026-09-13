@@ -17,26 +17,37 @@ internal data class LexingTokenSource(
 ) : TokenSource {
     override fun nextToken(): TokenReadResult =
         when (val scan = cursor.moveToNextToken()) {
-            is ScanResult.Found -> readTokenAt(scan.cursor)
+            is ScanResult.Found -> foundAt(scan.cursor)
             is ScanResult.Exhausted -> endOfFileAt(scan.endPosition)
         }
+
+    // Si quedo espacio atras, sale primero y solo. El token que venia detras se
+    // entrega en la llamada siguiente: el cursor ya avanzo hasta el, lo unico que
+    // cambia es que ahora no tiene espacio pendiente.
+    private fun foundAt(at: SourceCursor): TokenReadResult =
+        if (at.skipped.isEmpty()) readTokenAt(at) else whitespaceAt(at)
+
+    private fun whitespaceAt(at: SourceCursor): TokenReadResult =
+        TokenReadResult.Success(
+            Token(TokenType.WHITESPACE, at.skipped, at.skippedRange),
+            LexingTokenSource(matcher, at.clearSkipped()),
+        )
 
     private fun readTokenAt(at: SourceCursor): TokenReadResult =
         when (val match = matcher.match(at.line, at.index, at.lineNumber)) {
             is Result.Success ->
                 TokenReadResult.Success(
-                    // La trivia la pega el lexer, no las reglas: ellas ven una
-                    // linea y un indice, no saben que quedo atras.
-                    match.value.token.copy(leadingTrivia = at.trivia),
+                    match.value.token,
                     LexingTokenSource(matcher, at.advanceTo(match.value.nextIndex)),
                 )
 
             is Result.Failure -> TokenReadResult.Failure(match.error, noMoreTokens())
         }
 
-    // El EOF va sin trivia a proposito: el salto final del archivo cierra la
-    // ultima linea, no abre una vacia. Si termina o no con salto lo decide una
-    // regla del formatter, no el lexer.
+    // El espacio del final del archivo no sale como token: scan() termina en
+    // Exhausted y lo descarta. Es a proposito --el salto final cierra la ultima
+    // linea, no abre una vacia-- y es lo que evita que el formatter escriba un
+    // salto de mas al final de cada golden.
     private fun endOfFileAt(end: Position): TokenReadResult =
         TokenReadResult.Success(Token(TokenType.EOF, "", Range(end, end)), noMoreTokens())
 
