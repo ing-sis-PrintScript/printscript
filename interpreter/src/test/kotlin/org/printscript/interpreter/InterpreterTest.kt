@@ -31,6 +31,8 @@ class InterpreterTest {
         }
 
         override fun read(prompt: String): String = ""
+
+        override fun env(name: String): String? = null
     }
 
     /** Desempaqueta un Success o falla el test — el paso previo de una cadena que sigue. */

@@ -13,39 +13,83 @@ import org.printscript.ast.UnaryOperator
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.common.flatMap
+import org.printscript.interpreter.io.PrintScriptIO
+import org.printscript.interpreter.statements.BuiltInFunction
 
-class ExpressionEvaluator {
+/**
+ * Evalúa una expresión y devuelve su valor.
+ *
+ * Recibe el io por parámetro, igual que StatementExecutor.execute: desde 1.1
+ * una expresión puede leer y escribir (readInput imprime su prompt y lee una
+ * línea), así que evaluar dejó de ser una operación puramente de lectura.
+ */
+class ExpressionEvaluator(
+    private val builtIns: Map<String, BuiltInFunction> = PrintScript10.BUILT_INS,
+) {
     fun evaluate(
         expression: Expression,
         env: Environment,
+        io: PrintScriptIO,
     ): Result<PrintScriptValue, InterpreterError> {
         return when (expression) {
             is NumberLiteral -> Result.Success(PrintScriptValue.NumberValue(expression.value))
             is StringLiteral -> Result.Success(PrintScriptValue.StringValue(expression.value))
             is BooleanLiteral -> Result.Success(PrintScriptValue.BooleanValue(expression.value))
             is Identifier -> env.get(expression.name, expression.range)
-            is BinaryExpression -> evaluateBinary(expression, env)
-            is UnaryExpression -> evaluateUnary(expression, env)
-            // Las llamadas conocidas (println) se despachan desde
-            // ExpressionStatementExecutor antes de llegar acá. Si una
-            // CallExpression sí llega a evaluate(), es porque apareció
-            // anidada dentro de otra expresión — algo que la gramática de
-            // 1.0 no produce, pero que 1.1 podría habilitar (ej "1 + f()").
-            is CallExpression ->
-                Result.Failure(
-                    InterpreterError(
-                        "No se puede usar la llamada a '${expression.callee.name}' dentro de una expresión.",
-                        expression.range,
-                    ),
-                )
+            is BinaryExpression -> evaluateBinary(expression, env, io)
+            is UnaryExpression -> evaluateUnary(expression, env, io)
+            is CallExpression -> valueOf(expression, env, io)
         }
     }
+
+    /**
+     * Ejecuta una llamada. El valor es nullable porque hay funciones que no
+     * devuelven nada.
+     *
+     * Es pública porque una llamada puede aparecer en dos lugares y el trabajo
+     * es el mismo: adentro de una expresión, donde el valor hace falta, y sola
+     * como statement, donde se descarta.
+     */
+    fun call(
+        expression: CallExpression,
+        env: Environment,
+        io: PrintScriptIO,
+    ): Result<PrintScriptValue?, InterpreterError> {
+        val builtIn =
+            builtIns[expression.callee.name]
+                ?: return Result.Failure(
+                    InterpreterError("No existe la función '${expression.callee.name}'.", expression.range),
+                )
+
+        // Los parsers de llamadas construyen SIEMPRE la llamada con exactamente
+        // un argumento: la gramática no permite otra cosa. No es un chequeo
+        // defensivo que falta — es una garantía del parser. Si algún día hay
+        // funciones con otra cantidad de argumentos, hay que volver a validar acá.
+        val argument = expression.arguments.first()
+
+        return evaluate(argument, env, io).flatMap { value -> builtIn.call(value, expression.range, io) }
+    }
+
+    // Una llamada usada adentro de una expresión tiene que dejar un valor. Si la
+    // función no devuelve nada, el programa está mal escrito y hay que decirlo.
+    private fun valueOf(
+        expression: CallExpression,
+        env: Environment,
+        io: PrintScriptIO,
+    ): Result<PrintScriptValue, InterpreterError> =
+        call(expression, env, io).flatMap { value ->
+            value?.let { Result.Success(it) }
+                ?: Result.Failure(
+                    InterpreterError("'${expression.callee.name}' no devuelve un valor.", expression.range),
+                )
+        }
 
     private fun evaluateUnary(
         node: UnaryExpression,
         env: Environment,
+        io: PrintScriptIO,
     ): Result<PrintScriptValue, InterpreterError> {
-        val operandResult = evaluate(node.operand, env)
+        val operandResult = evaluate(node.operand, env, io)
         if (operandResult is Result.Failure) return operandResult
 
         val operand = (operandResult as Result.Success).value
@@ -66,9 +110,10 @@ class ExpressionEvaluator {
     private fun evaluateBinary(
         node: BinaryExpression,
         env: Environment,
+        io: PrintScriptIO,
     ): Result<PrintScriptValue, InterpreterError> =
-        evaluate(node.left, env).flatMap { left ->
-            evaluate(node.right, env).flatMap { right ->
+        evaluate(node.left, env, io).flatMap { left ->
+            evaluate(node.right, env, io).flatMap { right ->
                 combine(node.operator, left, right, node.range)
             }
         }

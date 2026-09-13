@@ -25,7 +25,7 @@ class AssignmentExecutor(
     ): Result<Environment, InterpreterError>? {
         val assignment = statement as? AssignmentStatement ?: return null
 
-        return evaluator.evaluate(assignment.value, env).flatMap { value ->
+        return evaluator.evaluate(assignment.value, env, io).flatMap { value ->
             env.assign(assignment.target.name, value, assignment.range)
         }
     }

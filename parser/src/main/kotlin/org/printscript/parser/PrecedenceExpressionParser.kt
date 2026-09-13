@@ -2,11 +2,7 @@ package org.printscript.parser
 
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
-import org.printscript.ast.BooleanLiteral
 import org.printscript.ast.Expression
-import org.printscript.ast.Identifier
-import org.printscript.ast.NumberLiteral
-import org.printscript.ast.StringLiteral
 import org.printscript.ast.UnaryExpression
 import org.printscript.ast.UnaryOperator
 import org.printscript.common.PrintScriptError
@@ -16,11 +12,22 @@ import org.printscript.common.flatMap
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.peekIs
-import org.printscript.parser.token.skip
-import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-class PrintScript10ExpressionParser : ExpressionParser {
+/**
+ * La precedencia de los operadores: qué se agrupa con qué. Los valores sueltos
+ * sobre los que operan los reconoce el FactorParser.
+ *
+ * No se llama PrintScript10 porque no es de una versión: las dos la usan tal
+ * cual. La precedencia de PrintScript no cambió entre 1.0 y 1.1, y lo único
+ * que sí cambia — qué palabras empiezan una llamada — esta clase ni lo mira,
+ * solo se lo pasa al FactorParser.
+ */
+class PrecedenceExpressionParser(
+    callTokens: Set<TokenType> = emptySet(),
+) : ExpressionParser {
+    private val factors = FactorParser(callTokens)
+
     override fun parse(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> = parseExpression(stream)
 
     private fun parseExpression(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
@@ -62,7 +69,7 @@ class PrintScript10ExpressionParser : ExpressionParser {
         if (tokenResult is Result.Failure) return tokenResult
         val token = (tokenResult as Result.Success).value
 
-        if (token.type != TokenType.MINUS) return parseFactor(stream)
+        if (token.type != TokenType.MINUS) return factors.parse(stream, this)
 
         val operandResult = parseUnary(stream.advance())
         if (operandResult is Result.Failure) return operandResult
@@ -70,59 +77,6 @@ class PrintScript10ExpressionParser : ExpressionParser {
 
         val range = Range(token.range.start, operand.range.end)
         return Result.Success(Parsed(UnaryExpression(UnaryOperator.MINUS, operand, range), rest))
-    }
-
-    private fun parseFactor(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> =
-        stream.peek().flatMap { token ->
-            when (token.type) {
-                TokenType.NUMBER_LITERAL -> numberLiteral(token, stream.advance())
-
-                // token.value ya viene sin comillas: son delimitadores, no contenido.
-                TokenType.STRING_LITERAL ->
-                    Result.Success(Parsed(StringLiteral(token.value, token.range), stream.advance()))
-
-                // El lexer solo produce BOOLEAN_LITERAL para "true" y "false", asi que
-                // comparar contra "true" cubre los dos casos y no puede fallar.
-                TokenType.BOOLEAN_LITERAL ->
-                    Result.Success(Parsed(BooleanLiteral(token.value == "true", token.range), stream.advance()))
-
-                TokenType.IDENTIFIER ->
-                    Result.Success(Parsed(Identifier(token.value, token.range), stream.advance()))
-
-                TokenType.LPAREN -> parenthesized(stream)
-
-                else ->
-                    Result.Failure(
-                        SyntaxError("Se esperaba un valor, un identificador o '('", token.range),
-                    )
-            }
-        }
-
-    private fun numberLiteral(
-        token: Token,
-        rest: TokenStream,
-    ): Result<Parsed<Expression>, PrintScriptError> {
-        val number =
-            token.value.toDoubleOrNull()
-                ?: return Result.Failure(
-                    SyntaxError("'${token.value}' no es un número válido", token.range),
-                )
-
-        return Result.Success(Parsed(NumberLiteral(number, token.range), rest))
-    }
-
-    private fun parenthesized(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError> {
-        val openResult = stream.skip(TokenType.LPAREN)
-        if (openResult is Result.Failure) return openResult
-        val afterOpen = (openResult as Result.Success).value
-
-        val innerResult = parseExpression(afterOpen)
-        if (innerResult is Result.Failure) return innerResult
-        val (inner, afterInner) = (innerResult as Result.Success).value
-
-        val closeResult = afterInner.skip(TokenType.RPAREN)
-        if (closeResult is Result.Failure) return closeResult
-        return Result.Success(Parsed(inner, (closeResult as Result.Success).value))
     }
 
     private fun combine(

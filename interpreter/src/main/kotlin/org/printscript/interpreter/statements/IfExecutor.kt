@@ -28,7 +28,7 @@ class IfExecutor(
     ): Result<Environment, InterpreterError>? {
         val ifStatement = statement as? IfStatement ?: return null
 
-        val conditionResult = evaluator.evaluate(ifStatement.condition, env)
+        val conditionResult = evaluator.evaluate(ifStatement.condition, env, io)
         if (conditionResult is Result.Failure) return conditionResult
         val condition = (conditionResult as Result.Success).value
 

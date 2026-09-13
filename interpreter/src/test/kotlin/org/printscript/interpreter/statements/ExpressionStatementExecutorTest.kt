@@ -30,6 +30,8 @@ class ExpressionStatementExecutorTest {
         }
 
         override fun read(prompt: String): String = ""
+
+        override fun env(name: String): String? = null
     }
 
     private fun errorOf(result: Result<Environment, InterpreterError>?): InterpreterError {

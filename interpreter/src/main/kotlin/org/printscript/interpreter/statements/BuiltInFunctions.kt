@@ -1,39 +1,79 @@
 package org.printscript.interpreter.statements
 
+import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.common.flatMap
+import org.printscript.common.map
 import org.printscript.interpreter.InterpreterError
 import org.printscript.interpreter.PrintScriptValue
 import org.printscript.interpreter.io.PrintScriptIO
 
 /**
  * Una función del lenguaje que no se declara en PrintScript sino que provee el
- * intérprete (hoy solo println; en 1.1 se suman readInput/readEnv).
+ * intérprete: println en 1.0, readInput y readEnv en 1.1.
+ *
+ * El valor que devuelve es nullable porque no todas producen uno: println
+ * escribe y no deja nada. Es la misma convención que usa todo el proyecto —
+ * null es "no hay", no un error. Así "let x: string = println(...);" falla con
+ * un mensaje que dice la verdad, en vez de devolver un valor inventado.
+ *
+ * Recibe el Range de la llamada porque ahora puede fallar, y un
+ * InterpreterError sin posición no sirve para nada.
  */
 fun interface BuiltInFunction {
     fun call(
         argument: PrintScriptValue,
+        range: Range,
         io: PrintScriptIO,
-    ): Result<Unit, InterpreterError>
+    ): Result<PrintScriptValue?, InterpreterError>
 }
 
 /**
- * Qué funciones built-in existen en PrintScript 1.0 y qué hace cada una.
- *
- * Antes de esto, reconocer una llamada era un `if (name == "println")` metido
- * adentro de Interpreter — un string mágico comparado a mano, sin relación
- * con el resto del pipeline, que usa TokenType/enums para todo lo demás.
- *
- * Con el registro, reconocer una función es una búsqueda en un mapa, igual que
- * PrintScript10.KEYWORDS en el lexer. Sumar una función nueva en 1.1 es
- * agregar una entrada acá, no tocar el executor que la despacha.
+ * Las funciones built-in que existen, una por una. Cuáles conoce cada versión
+ * del lenguaje se arma en PrintScript10 / PrintScript11, igual que las
+ * KEYWORDS del lexer: la función es la misma, lo que cambia por versión es qué
+ * nombres están disponibles.
  */
 object BuiltInFunctions {
-    val REGISTRY: Map<String, BuiltInFunction> =
-        mapOf(
-            "println" to
-                BuiltInFunction { argument, io ->
-                    io.print(argument.toString())
-                    Result.Success(Unit)
-                },
-        )
+    val PRINTLN =
+        BuiltInFunction { argument, _, io ->
+            io.print(argument.toString())
+            Result.Success(null)
+        }
+
+    // El prompt lo imprime readInput, no el PrintScriptIO: que el prompt aparezca
+    // en la salida del programa es una regla del lenguaje, no de por dónde entra
+    // y sale el texto.
+    val READ_INPUT =
+        BuiltInFunction { argument, range, io ->
+            text(argument, "readInput", range).map { prompt ->
+                io.print(prompt)
+                PrintScriptValue.StringValue(io.read(prompt))
+            }
+        }
+
+    // Si la variable no existe falla, no devuelve string vacío: un programa que
+    // lee una variable que nadie definió está roto y tiene que enterarse.
+    val READ_ENV =
+        BuiltInFunction { argument, range, io ->
+            text(argument, "readEnv", range).flatMap { name ->
+                io.env(name)?.let { Result.Success(PrintScriptValue.StringValue(it)) }
+                    ?: Result.Failure(
+                        InterpreterError("La variable de entorno '$name' no está definida.", range),
+                    )
+            }
+        }
+
+    // Las dos funciones de 1.1 esperan un string. Que el argumento lo sea se
+    // sabe recién acá, con el valor ya evaluado.
+    private fun text(
+        argument: PrintScriptValue,
+        function: String,
+        range: Range,
+    ): Result<String, InterpreterError> =
+        if (argument is PrintScriptValue.StringValue) {
+            Result.Success(argument.value)
+        } else {
+            Result.Failure(InterpreterError("'$function' necesita un string y recibió '$argument'.", range))
+        }
 }
