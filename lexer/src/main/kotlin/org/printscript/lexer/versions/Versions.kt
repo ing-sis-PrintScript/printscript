@@ -1,6 +1,8 @@
-package org.printscript.lexer
+package org.printscript.lexer.versions
 
 import org.printscript.common.Version
+import org.printscript.lexer.Lexer
+import org.printscript.lexer.TokenMatcher
 
 // Que lexer corresponde a cada version del lenguaje.
 //

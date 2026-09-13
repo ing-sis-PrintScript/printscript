@@ -1,6 +1,7 @@
-package org.printscript.interpreter
+package org.printscript.interpreter.versions
 
 import org.printscript.common.Version
+import org.printscript.interpreter.Interpreter
 import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.io.StandardIO
 

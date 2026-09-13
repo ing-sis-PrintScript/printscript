@@ -15,6 +15,7 @@ import org.printscript.common.Result
 import org.printscript.common.flatMap
 import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.statements.BuiltInFunction
+import org.printscript.interpreter.versions.PrintScript10
 
 /**
  * Evalúa una expresión y devuelve su valor.

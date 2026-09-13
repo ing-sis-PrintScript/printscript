@@ -1,4 +1,4 @@
-package org.printscript.lexer
+package org.printscript.lexer.versions
 
 import org.printscript.lexer.rules.NumberRule
 import org.printscript.lexer.rules.StringRule

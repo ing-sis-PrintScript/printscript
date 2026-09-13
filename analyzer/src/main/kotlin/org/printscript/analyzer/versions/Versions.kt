@@ -1,5 +1,6 @@
-package org.printscript.analyzer
+package org.printscript.analyzer.versions
 
+import org.printscript.analyzer.Analyzer
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.common.Version
 

@@ -3,8 +3,8 @@ package org.printscript.runner
 import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.DiagnosticEmitter
 import org.printscript.analyzer.Severity
-import org.printscript.analyzer.analyzerFor
 import org.printscript.analyzer.config.AnalyzerConfig
+import org.printscript.analyzer.versions.analyzerFor
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.common.Version

@@ -4,9 +4,9 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.common.Version
 import org.printscript.interpreter.Environment
-import org.printscript.interpreter.interpreterFor
 import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.io.StandardIO
+import org.printscript.interpreter.versions.interpreterFor
 import org.printscript.runner.progress.Progress
 
 class ExecuteRunner(

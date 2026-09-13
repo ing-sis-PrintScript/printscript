@@ -1,4 +1,4 @@
-package org.printscript.formatter
+package org.printscript.formatter.versions
 
 import org.printscript.common.Result
 import org.printscript.formatter.config.BlankLines

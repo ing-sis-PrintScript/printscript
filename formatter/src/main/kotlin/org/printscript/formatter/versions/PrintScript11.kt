@@ -1,5 +1,6 @@
-package org.printscript.formatter
+package org.printscript.formatter.versions
 
+import org.printscript.formatter.Formatter
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.engine.TokenFormatter
 import org.printscript.formatter.rules.IfBraceRule

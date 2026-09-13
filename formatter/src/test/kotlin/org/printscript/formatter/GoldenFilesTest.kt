@@ -3,6 +3,7 @@ package org.printscript.formatter
 import org.printscript.common.Result
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.config.Spacing
+import org.printscript.formatter.versions.PrintScript10
 import org.printscript.lexer.Lexer
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,6 +1,7 @@
-package org.printscript.formatter
+package org.printscript.formatter.versions
 
 import org.printscript.common.Version
+import org.printscript.formatter.Formatter
 import org.printscript.formatter.config.FormatterConfig
 
 // Que formatter corresponde a cada version del lenguaje. Igual que en el lexer, el
