@@ -9,6 +9,7 @@ import org.printscript.ast.BooleanLiteral
 import org.printscript.ast.CallExpression
 import org.printscript.ast.ExpressionStatement
 import org.printscript.ast.Identifier
+import org.printscript.ast.IfStatement
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
 import org.printscript.ast.UnaryExpression
@@ -53,6 +54,9 @@ internal class PrintScriptAnalyzer(
             is BinaryExpression -> listOf(node.left, node.right)
             is UnaryExpression -> listOf(node.operand)
             is CallExpression -> listOf(node.callee) + node.arguments
+            // Se baja adentro de las dos ramas: si no, una variable declarada
+            // dentro de un if no la revisa ninguna regla.
+            is IfStatement -> listOf(node.condition) + node.thenBranch + node.elseBranch.orEmpty()
             is NumberLiteral, is StringLiteral, is BooleanLiteral, is Identifier -> emptyList()
         }
 }

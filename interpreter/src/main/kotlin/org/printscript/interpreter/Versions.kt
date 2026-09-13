@@ -13,6 +13,6 @@ fun interpreterFor(
     io: PrintScriptIO = StandardIO(),
 ): Interpreter =
     when (version) {
-        Version.V10 -> Interpreter(io, PrintScript10.statementExecutors())
-        Version.V11 -> Interpreter(io, PrintScript11.statementExecutors())
+        Version.V10 -> Interpreter(io, PrintScript10.executors())
+        Version.V11 -> Interpreter(io, PrintScript11.executors())
     }

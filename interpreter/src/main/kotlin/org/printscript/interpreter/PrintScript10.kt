@@ -4,6 +4,7 @@ import org.printscript.interpreter.statements.AssignmentExecutor
 import org.printscript.interpreter.statements.DeclarationExecutor
 import org.printscript.interpreter.statements.ExpressionStatementExecutor
 import org.printscript.interpreter.statements.StatementExecutor
+import org.printscript.interpreter.statements.StatementExecutors
 
 /**
  * Qué statements se saben ejecutar en PrintScript 1.0.
@@ -23,5 +24,12 @@ object PrintScript10 {
             AssignmentExecutor(evaluator),
             ExpressionStatementExecutor(evaluator),
         )
+    }
+
+    // La lista se arma una vez por interpreter y despues se consulta, no se
+    // rearma por cada statement ejecutado.
+    fun executors(): StatementExecutors {
+        val all = statementExecutors()
+        return StatementExecutors { all }
     }
 }
