@@ -4,7 +4,7 @@ import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.analyzer.engine.PrintScriptAnalyzer
 import org.printscript.analyzer.engine.Rule
 import org.printscript.analyzer.rules.IdentifierNamingRule
-import org.printscript.analyzer.rules.PrintlnArgumentRule
+import org.printscript.analyzer.rules.printlnArgumentRule
 
 /**
  * Qué reglas de estilo se aplican en PrintScript 1.0, armadas a partir de la
@@ -19,9 +19,9 @@ import org.printscript.analyzer.rules.PrintlnArgumentRule
 object PrintScript10 {
     fun analyzer(config: AnalyzerConfig): Analyzer = PrintScriptAnalyzer(rules(config))
 
-    private fun rules(config: AnalyzerConfig): List<Rule> =
+    internal fun rules(config: AnalyzerConfig): List<Rule> =
         listOfNotNull(
             config.namingConvention?.let { IdentifierNamingRule(it) },
-            PrintlnArgumentRule().takeIf { config.restrictPrintlnArguments },
+            printlnArgumentRule().takeIf { config.restrictPrintlnArguments },
         )
 }

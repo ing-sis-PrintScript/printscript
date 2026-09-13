@@ -63,6 +63,13 @@ class FormatterConfigLoader {
                 readBoolean(key, value).map { config.copy(spaceSurroundingOperations = it) }
             SINGLE_SPACE_SEPARATION ->
                 readBoolean(key, value).map { config.copy(singleSpaceSeparation = it) }
+            // Las dos claves de la llave gobiernan el mismo campo, igual que las dos
+            // del '='. Por eso no se pueden contradecir: la ultima que llega manda.
+            IF_BRACE_SAME_LINE ->
+                readBracePosition(key, value, BracePosition.SAME_LINE).map { config.copy(ifBrace = it) }
+            IF_BRACE_BELOW_LINE ->
+                readBracePosition(key, value, BracePosition.BELOW_LINE).map { config.copy(ifBrace = it) }
+            INDENT_INSIDE_IF -> readIndent(key, value).map { config.copy(indentInsideIf = it) }
             else -> Result.Failure(ConfigError.UnknownRule(key))
         }
 
@@ -74,6 +81,13 @@ class FormatterConfigLoader {
         onTrue: Spacing,
         onFalse: Spacing,
     ): Result<Spacing, ConfigError> = readBoolean(key, value).map { if (it) onTrue else onFalse }
+
+    // En false la clave queda como si no hubiera venido: no tocar donde esta la llave.
+    private fun readBracePosition(
+        key: String,
+        value: ConfigValue,
+        onTrue: BracePosition,
+    ): Result<BracePosition?, ConfigError> = readBoolean(key, value).map { if (it) onTrue else null }
 
     private fun readBoolean(
         key: String,
@@ -102,6 +116,24 @@ class FormatterConfigLoader {
             else -> Result.Success(blankLines)
         }
 
+    private fun readIndent(
+        key: String,
+        value: ConfigValue,
+    ): Result<Indent, ConfigError> =
+        when (value) {
+            is ConfigValue.IntValue -> indentOf(key, value.value)
+            is ConfigValue.BooleanValue -> Result.Failure(ConfigError.WrongType(key, INT))
+        }
+
+    private fun indentOf(
+        key: String,
+        spaces: Int,
+    ): Result<Indent, ConfigError> =
+        when (val indent = Indent.of(spaces)) {
+            null -> Result.Failure(ConfigError.OutOfRange(key, spaces, Indent.ALLOWED))
+            else -> Result.Success(indent)
+        }
+
     private companion object {
         const val SPACE_BEFORE_COLON = "enforce-spacing-before-colon-in-declaration"
         const val SPACE_AFTER_COLON = "enforce-spacing-after-colon-in-declaration"
@@ -111,6 +143,9 @@ class FormatterConfigLoader {
         const val LINE_BREAK_AFTER_STATEMENT = "mandatory-line-break-after-statement"
         const val SPACE_SURROUNDING_OPERATIONS = "mandatory-space-surrounding-operations"
         const val SINGLE_SPACE_SEPARATION = "mandatory-single-space-separation"
+        const val IF_BRACE_SAME_LINE = "if-brace-same-line"
+        const val IF_BRACE_BELOW_LINE = "if-brace-below-line"
+        const val INDENT_INSIDE_IF = "indent-inside-if"
 
         const val BOOLEAN = "boolean"
         const val INT = "int"
