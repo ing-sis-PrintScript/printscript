@@ -19,7 +19,6 @@ class AssignmentParser(
 ) : StatementParser {
     override fun canHandle(type: TokenType): Boolean = type == TokenType.IDENTIFIER
 
-    // El identificador de la izquierda es el destino, no un valor: no lo parsea el ExpressionParser.
     override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> {
         val nameResult = stream.expect(TokenType.IDENTIFIER, "como nombre de la variable")
         if (nameResult is Result.Failure) return nameResult

@@ -9,15 +9,9 @@ internal data class SourceCursor(
     val lineNumber: Int,
     val index: Int,
     private val lastEnd: Position,
-    // El espacio que se salteo desde el token anterior, y donde empieza. Antes se
-    // tiraba; ahora se junta aca hasta que LexingTokenSource lo emite como un token
-    // WHITESPACE, y clearSkipped lo vacia.
     val skipped: String = "",
     private val skippedStart: Position = Position(1, 1),
 ) {
-    // De donde a donde va el espacio. Termina donde arranca el token que sigue: es
-    // el unico final que se puede nombrar sin mirar el token, y el espacio no tiene
-    // otra cosa que lo delimite.
     val skippedRange: Range get() = Range(skippedStart, Position(maxOf(lineNumber, 1), maxOf(index, 1)))
 
     fun moveToNextToken(): ScanResult = scan(this)
@@ -43,8 +37,6 @@ internal data class SourceCursor(
     private fun stoppingAt(next: Int): SourceCursor =
         plusSkipped(line.substring(index, next), Position(maxOf(lineNumber, 1), index + 1)).copy(index = next)
 
-    // Sin espacio devolvemos el mismo cursor: en un archivo de 32K lineas, no alocar
-    // por cada token pegado al anterior se nota.
     private fun plusSkipped(
         more: String,
         at: Position,
@@ -55,9 +47,6 @@ internal data class SourceCursor(
             else -> copy(skipped = skipped + more)
         }
 
-    // El separador se lo come el reader, asi que el salto lo agregamos nosotros.
-    // lineNumber 0 es el estado previo a la primera linea: ahi no hay salto que
-    // agregar, o el primer token del archivo arrancaria con un "\n" inventado.
     private fun closingCurrentLine(): SourceCursor {
         val end = Position(maxOf(lineNumber, 1), line.length + 1)
         val closed = copy(lastEnd = end)

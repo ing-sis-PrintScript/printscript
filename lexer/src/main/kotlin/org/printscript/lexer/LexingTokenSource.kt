@@ -21,9 +21,6 @@ internal data class LexingTokenSource(
             is ScanResult.Exhausted -> endOfFileAt(scan.endPosition)
         }
 
-    // Si quedo espacio atras, sale primero y solo. El token que venia detras se
-    // entrega en la llamada siguiente: el cursor ya avanzo hasta el, lo unico que
-    // cambia es que ahora no tiene espacio pendiente.
     private fun foundAt(at: SourceCursor): TokenReadResult =
         if (at.skipped.isEmpty()) readTokenAt(at) else whitespaceAt(at)
 
@@ -44,10 +41,6 @@ internal data class LexingTokenSource(
             is Result.Failure -> TokenReadResult.Failure(match.error, noMoreTokens())
         }
 
-    // El espacio del final del archivo no sale como token: scan() termina en
-    // Exhausted y lo descarta. Es a proposito --el salto final cierra la ultima
-    // linea, no abre una vacia-- y es lo que evita que el formatter escriba un
-    // salto de mas al final de cada golden.
     private fun endOfFileAt(end: Position): TokenReadResult =
         TokenReadResult.Success(Token(TokenType.EOF, "", Range(end, end)), noMoreTokens())
 

@@ -4,9 +4,6 @@ import org.printscript.analyzer.Analyzer
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.common.Version
 
-// Que analyzer corresponde a cada version del lenguaje. Igual que en los otros modulos:
-// la clase que recorre el arbol no sabe que existen versiones, recibe las reglas ya
-// armadas.
 fun analyzerFor(
     version: Version,
     config: AnalyzerConfig,

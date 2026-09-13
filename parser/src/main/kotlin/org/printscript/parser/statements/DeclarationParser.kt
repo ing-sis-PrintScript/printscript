@@ -24,9 +24,6 @@ import org.printscript.token.TokenType
 class DeclarationParser(
     private val expressions: ExpressionParser,
 ) : StatementParser {
-    // El mismo parser sirve para las dos versiones y no necesita saber en cual esta:
-    // si ve un CONST es porque el lexer era el de 1.1. En 1.0 la palabra "const" no
-    // esta en el mapa de keywords y sale IDENTIFIER, asi que nunca llega aca.
     override fun canHandle(type: TokenType): Boolean = type == TokenType.LET || type == TokenType.CONST
 
     override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> {
@@ -89,19 +86,11 @@ class DeclarationParser(
             TokenType.TYPE_NUMBER -> Result.Success(Parsed(DeclaredType.NUMBER, afterType))
             TokenType.TYPE_STRING -> Result.Success(Parsed(DeclaredType.STRING, afterType))
             TokenType.TYPE_BOOLEAN -> Result.Success(Parsed(DeclaredType.BOOLEAN, afterType))
-            // Nombra lo que vino en vez de listar los validos: cuales existen depende de
-            // la version, y este parser es el mismo para las dos. Ademas apunta al
-            // problema real en vez de hacer que el usuario compare contra una lista.
+
             else -> Result.Failure(SyntaxError("'${token.value}' no es un tipo", token.range))
         }
     }
 
-    // La gramática dice ["=", expression]: sin "=" no hay inicializador y el stream queda
-    // donde estaba.
-    //
-    // La excepción es la constante: sin valor no se puede leer --nunca se inicializó-- ni
-    // escribir --es constante--, así que queda inservible. Se corta al parsear y no al
-    // ejecutar, y el error apunta al nombre de la variable.
     private fun parseInitializer(
         stream: TokenStream,
         kind: DeclarationKind,

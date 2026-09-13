@@ -27,17 +27,14 @@ internal class Formatting : CliktCommand(name = "formatting") {
             is Result.Success -> formatWith(loaded.value)
         }
 
-    // Sin --config valen los defaults, que no es un error sino el caso normal.
     private fun formatterConfig(): Result<FormatterConfig, ConfigReadError> {
         val file = config ?: return Result.Success(FormatterConfig())
         return configText(file).flatMap { loadFormatterConfig(it) }
     }
 
-    // Sin barra de progreso: formatear no parsea, asi que no hay sentencias que contar.
     private fun formatWith(config: FormatterConfig) {
         for (result in FormatRunner(config, version).format { StreamSourceReader.of(source) }) {
             when (result) {
-                // Cada trozo ya trae sus separadores: se imprime crudo, sin agregar saltos.
                 is Result.Success -> echo(result.value.text, trailingNewline = false)
                 is Result.Failure -> fail("${source.name}:${result.error.range.start}  ${result.error.message}")
             }

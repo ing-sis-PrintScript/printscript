@@ -17,8 +17,6 @@ class AnalyzeRunner(
     private val version: Version,
     private val progress: Progress = Progress.NONE,
 ) {
-    // Por cada sentencia: si fallo reporto el error, si salio bien la analizo.
-    // Todo sale por el mismo emitter, en el orden en que aparece en el archivo.
     fun analyze(
         source: SourceFactory,
         emit: DiagnosticEmitter,

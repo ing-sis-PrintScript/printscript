@@ -7,9 +7,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import org.printscript.common.Result
 
-// Un solo mapper para los dos formatos: JSON es un subconjunto de YAML, asi que el
-// parser de YAML lee los dos. No hay nada que detectar, y por eso esta clase no
-// necesita saber como se llamaba el archivo: el TCK entrega un stream sin nombre.
 internal class ConfigReader {
     fun readTree(text: String): Result<JsonNode, ConfigReadError> =
         try {

@@ -37,10 +37,6 @@ data class TokenStream(
             (current is TokenReadResult.Success && current.token.type == TokenType.EOF)
 }
 
-// El parser no ve los espacios: se descartan apenas se leen, en el unico lugar por
-// donde pasan todos los tokens. expect, skip, next y peekIs son extensiones sobre
-// peek y advance, asi que con esto alcanza para el modulo entero --no hay que
-// acordarse de saltearlos en cada regla--.
 private tailrec fun skippingWhitespace(read: TokenReadResult): TokenReadResult =
     if (read is TokenReadResult.Success && read.token.type == TokenType.WHITESPACE) {
         skippingWhitespace(read.remaining.nextToken())

@@ -10,12 +10,6 @@ import org.printscript.interpreter.InterpreterError
 import org.printscript.interpreter.PrintScriptValue
 import org.printscript.interpreter.io.PrintScriptIO
 
-/**
- * declaration = ( "let" | "const" ), identifier, ":", type, [ "=", expression ], ";" ;
- *
- * Si hay inicializador lo evalúa; si no, declara la variable sin valor (queda
- * "no inicializada", y leerla antes de asignarle algo es error de Environment).
- */
 class DeclarationExecutor(
     private val evaluator: ExpressionEvaluator = ExpressionEvaluator(),
 ) : StatementExecutor {

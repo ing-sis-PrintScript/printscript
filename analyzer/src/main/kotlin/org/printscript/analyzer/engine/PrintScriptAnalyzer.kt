@@ -29,7 +29,6 @@ internal class PrintScriptAnalyzer(
         }
     }
 
-    /** Aplica todas las reglas al nodo y después baja a sus hijos, sin acumular nada. */
     private fun visit(
         node: ASTNode,
         emitter: DiagnosticEmitter,
@@ -38,14 +37,6 @@ internal class PrintScriptAnalyzer(
         children(node).forEach { visit(it, emitter) }
     }
 
-    /**
-     * Los hijos directos de un nodo, para bajar recursivamente.
-     *
-     * A propósito exhaustivo sobre ASTNode: si 1.1 suma un nodo nuevo, esto
-     * no compila hasta que alguien decida cómo bajar por él. Es lo opuesto
-     * de Rule a propósito — el árbol que se recorre es cerrado (lo define
-     * :ast), la lista de reglas que lo revisan es abierta.
-     */
     private fun children(node: ASTNode): List<ASTNode> =
         when (node) {
             is VariableDeclaration -> listOfNotNull(node.identifier, node.initializer)
@@ -54,8 +45,7 @@ internal class PrintScriptAnalyzer(
             is BinaryExpression -> listOf(node.left, node.right)
             is UnaryExpression -> listOf(node.operand)
             is CallExpression -> listOf(node.callee) + node.arguments
-            // Se baja adentro de las dos ramas: si no, una variable declarada
-            // dentro de un if no la revisa ninguna regla.
+
             is IfStatement -> listOf(node.condition) + node.thenBranch + node.elseBranch.orEmpty()
             is NumberLiteral, is StringLiteral, is BooleanLiteral, is Identifier -> emptyList()
         }

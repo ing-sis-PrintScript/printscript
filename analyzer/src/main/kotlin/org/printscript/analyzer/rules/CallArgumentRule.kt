@@ -12,18 +12,6 @@ import org.printscript.ast.Identifier
 import org.printscript.ast.NumberLiteral
 import org.printscript.ast.StringLiteral
 
-/**
- * El argumento de una llamada tiene que ser un identificador o un literal, nunca una
- * expresión que haya que evaluar primero.
- *
- * Es la forma que comparten mandatory-variable-or-literal-in-println (1.0) y
- * mandatory-variable-or-literal-in-readInput (1.1), así que va una sola vez y se
- * parametriza con el nombre de la función. Sumar otra es agregar una fábrica abajo, no
- * una clase nueva — mismo criterio que SurroundingSpacing en el formatter.
- *
- * Recorre TODOS los argumentos y no corta en el primero que falla, por si algún día
- * una de estas funciones admite más de uno.
- */
 internal class CallArgumentRule(
     private val function: String,
     private val ruleId: String,
@@ -54,8 +42,6 @@ internal class CallArgumentRule(
         )
 }
 
-// mandatory-variable-or-literal-in-println
 internal fun printlnArgumentRule(): Rule = CallArgumentRule("println", "println-argument")
 
-// mandatory-variable-or-literal-in-readInput
 internal fun readInputArgumentRule(): Rule = CallArgumentRule("readInput", "read-input-argument")

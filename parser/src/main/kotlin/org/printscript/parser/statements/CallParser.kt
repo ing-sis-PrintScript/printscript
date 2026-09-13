@@ -54,7 +54,7 @@ class CallParser(
                 arguments = listOf(argument),
                 range = Range(callee.range.start, rparen.range.end),
             )
-        // El statement incluye el ";", la llamada no.
+
         val statement =
             ExpressionStatement(
                 expression = call,
