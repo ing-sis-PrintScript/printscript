@@ -5,8 +5,8 @@ import org.printscript.common.Result
 import org.printscript.common.Version
 import org.printscript.formatter.FormattedCode
 import org.printscript.formatter.config.FormatterConfig
-import org.printscript.formatter.formatterFor
-import org.printscript.lexer.lexerFor
+import org.printscript.formatter.versions.formatterFor
+import org.printscript.lexer.versions.lexerFor
 
 // Unico comando que NO parsea: formatear es preservar el espaciado del fuente, y el AST
 // no lo tiene. Por eso tampoco avisa progreso: no hay sentencias que contar.

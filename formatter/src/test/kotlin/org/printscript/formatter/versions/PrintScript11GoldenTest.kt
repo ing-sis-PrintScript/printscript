@@ -1,4 +1,4 @@
-package org.printscript.formatter
+package org.printscript.formatter.versions
 
 import org.printscript.common.Result
 import org.printscript.common.Version
@@ -6,7 +6,7 @@ import org.printscript.formatter.config.BlankLines
 import org.printscript.formatter.config.BracePosition
 import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.config.Indent
-import org.printscript.lexer.lexerFor
+import org.printscript.lexer.versions.lexerFor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail

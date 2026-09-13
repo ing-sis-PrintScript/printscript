@@ -1,5 +1,7 @@
-package org.printscript.lexer
+package org.printscript.lexer.versions
 
+import org.printscript.lexer.Lexer
+import org.printscript.lexer.TokenMatcher
 import org.printscript.token.Token
 import org.printscript.token.TokenReadResult
 import org.printscript.token.TokenSource

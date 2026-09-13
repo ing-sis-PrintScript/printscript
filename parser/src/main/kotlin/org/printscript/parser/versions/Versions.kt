@@ -1,6 +1,7 @@
-package org.printscript.parser
+package org.printscript.parser.versions
 
 import org.printscript.common.Version
+import org.printscript.parser.Parser
 
 // Que parser corresponde a cada version del lenguaje. Ver el comentario de
 // lexer/Versions.kt: la clase Parser no sabe que existen versiones.

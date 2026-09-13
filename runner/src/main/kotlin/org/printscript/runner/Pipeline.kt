@@ -4,8 +4,8 @@ import org.printscript.ast.Statement
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Result
 import org.printscript.common.Version
-import org.printscript.lexer.lexerFor
-import org.printscript.parser.parserFor
+import org.printscript.lexer.versions.lexerFor
+import org.printscript.parser.versions.parserFor
 import org.printscript.runner.progress.Progress
 
 // Lexer y despues parser: la parte que comparten los cuatro comandos.

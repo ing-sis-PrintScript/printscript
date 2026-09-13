@@ -1,8 +1,16 @@
-package org.printscript.analyzer
+package org.printscript.analyzer.versions
 
+import org.printscript.analyzer.binary
+import org.printscript.analyzer.call
+import org.printscript.analyzer.collectDiagnostics
 import org.printscript.analyzer.config.AnalyzerConfig
 import org.printscript.analyzer.config.CamelCase
 import org.printscript.analyzer.config.SnakeCase
+import org.printscript.analyzer.declaration
+import org.printscript.analyzer.expressionStatement
+import org.printscript.analyzer.id
+import org.printscript.analyzer.number
+import org.printscript.analyzer.program
 import org.printscript.ast.BinaryOperator
 import kotlin.test.Test
 import kotlin.test.assertEquals

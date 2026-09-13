@@ -3,6 +3,7 @@ package org.printscript.lexer
 import org.printscript.common.Result
 import org.printscript.lexer.rules.TokenRule
 import org.printscript.lexer.rules.errorOf
+import org.printscript.lexer.versions.PrintScript10
 
 data class TokenMatcher(private val rules: List<TokenRule> = PrintScript10.RULES) {
     fun match(

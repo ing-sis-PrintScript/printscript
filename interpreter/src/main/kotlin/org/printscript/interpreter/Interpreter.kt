@@ -5,6 +5,7 @@ import org.printscript.common.Result
 import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.io.StandardIO
 import org.printscript.interpreter.statements.StatementExecutors
+import org.printscript.interpreter.versions.PrintScript10
 
 /**
  * Ejecuta un Statement y devuelve el Environment que dejó — sin guardar nada
