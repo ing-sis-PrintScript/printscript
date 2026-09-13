@@ -1,4 +1,4 @@
-package org.printscript.parser
+package org.printscript.parser.expressions
 
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator

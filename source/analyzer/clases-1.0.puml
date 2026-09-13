@@ -1,0 +1,129 @@
+@startuml analyzer-clases-1-0
+title Modulo analyzer - clases (PrintScript 1.0)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "ast / common (compartidos)" #F0F4F4 {
+  interface ASTNode
+  class Range
+  interface PrintScriptError
+}
+
+package "analyzer" {
+
+  interface Analyzer {
+    +analyze(program: Sequence<Result<ASTNode, PrintScriptError>>, emit: DiagnosticEmitter)
+  }
+
+  class Diagnostic {
+    +rule: String
+    +message: String
+    +range: Range
+    +severity: Severity
+  }
+  enum Severity {
+    ERROR
+    WARNING
+  }
+  interface DiagnosticEmitter <<fun interface>> {
+    +emit(diagnostic: Diagnostic)
+  }
+
+  package "analyzer.engine" {
+    class PrintScriptAnalyzer <<internal>> {
+      -rules: List<Rule>
+      -visit(node, emitter)
+      -children(node): List<ASTNode>
+    }
+    interface Rule {
+      +check(node: ASTNode, emitter: DiagnosticEmitter)
+    }
+  }
+
+  package "analyzer.rules" {
+    class IdentifierNamingRule {
+      -convention: NamingConvention
+    }
+    class CallArgumentRule <<internal>> {
+      -function: String
+      -ruleId: String
+    }
+  }
+
+  package "analyzer.config" {
+    class AnalyzerConfig {
+      +namingConvention: NamingConvention?
+      +restrictPrintlnArguments: Boolean
+      +restrictReadInputArguments: Boolean
+    }
+    interface NamingConvention <<fun interface>> {
+      +matches(name: String): Boolean
+    }
+    class CamelCase <<object>>
+    class SnakeCase <<object>>
+  }
+
+  package "analyzer.versions" {
+    class PrintScript10 <<object>> {
+      +analyzer(config): Analyzer
+      +rules(config): List<Rule>
+    }
+  }
+}
+
+PrintScriptAnalyzer ..|> Analyzer
+PrintScriptAnalyzer --> "0..*" Rule
+PrintScriptAnalyzer ..> ASTNode : recorre
+IdentifierNamingRule ..|> Rule
+CallArgumentRule ..|> Rule
+IdentifierNamingRule --> NamingConvention
+CamelCase ..|> NamingConvention
+SnakeCase ..|> NamingConvention
+Rule ..> DiagnosticEmitter : reporta por
+DiagnosticEmitter ..> Diagnostic
+Diagnostic --> Severity
+AnalyzerConfig --> NamingConvention
+PrintScript10 ..> AnalyzerConfig : lee
+PrintScript10 ..> IdentifierNamingRule : arma
+PrintScript10 ..> CallArgumentRule : arma
+PrintScript10 ..> PrintScriptAnalyzer : arma
+
+note right of Analyzer
+  El input es la misma forma que
+  produce Parser.parse(), pero este
+  modulo NO depende de :parser.
+  Solo de :common y :ast.
+end note
+
+note bottom of PrintScriptAnalyzer
+  Un Result.Failure en el medio no
+  corta el analisis: es un error de
+  sintaxis que el parser ya reporto.
+  Un linter que frena en el primer
+  error deja de avisar del resto.
+
+  children() es un when exhaustivo:
+  un nodo nuevo del AST no compila
+  hasta que alguien decida como
+  bajar por el.
+end note
+
+note bottom of Rule
+  A diferencia del lexer, aca pueden
+  matchear VARIAS reglas sobre el
+  mismo nodo. Eso es lo que hace un
+  linter: reglas independientes que
+  conviven sin conocerse.
+end note
+
+note right of PrintScript10
+  Apagar una regla es SACARLA de la
+  lista, no un if adentro de la
+  regla. Por eso una convencion en
+  null no arma la regla, en vez de
+  armar una que no reporta nada.
+end note
+
+@enduml

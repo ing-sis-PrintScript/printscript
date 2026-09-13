@@ -1,0 +1,64 @@
+@startuml lexer-secuencia
+title Modulo lexer - tokenizar "let x"
+
+participant "cliente" as C
+participant "Lexer" as L
+participant "LexingTokenSource" as S
+participant "SourceCursor" as Cur
+participant "TokenMatcher" as M
+participant "WordRule" as R
+
+C -> L : tokenize(source)
+activate L
+L --> C : TokenSource
+deactivate L
+
+C -> S : nextToken()
+activate S
+S -> Cur : moveToNextToken()
+activate Cur
+Cur --> S : Found(index=0, skipped="")
+deactivate Cur
+S -> M : match("let x", 0, 1)
+activate M
+M -> R : match("let x", 0, 1)
+R --> M : Success(Token(LET,"let"), nextIndex=3)
+M --> S : Success(TokenMatch)
+deactivate M
+S --> C : Success(Token(LET,"let"), remaining)
+deactivate S
+
+C -> S : nextToken()
+activate S
+S -> Cur : moveToNextToken()
+activate Cur
+Cur --> S : Found(index=4, skipped=" ")
+deactivate Cur
+S --> C : Success(Token(WHITESPACE," "), remaining)
+deactivate S
+
+C -> S : nextToken()
+activate S
+S -> Cur : moveToNextToken()
+activate Cur
+Cur --> S : Found(index=4, skipped="")
+deactivate Cur
+S -> M : match("let x", 4, 1)
+activate M
+M -> R : match("let x", 4, 1)
+R --> M : Success(Token(IDENTIFIER,"x"), nextIndex=5)
+M --> S : Success(TokenMatch)
+deactivate M
+S --> C : Success(Token(IDENTIFIER,"x"), remaining)
+deactivate S
+
+C -> S : nextToken()
+activate S
+S -> Cur : moveToNextToken()
+activate Cur
+Cur --> S : Exhausted(pos)
+deactivate Cur
+S --> C : Success(Token(EOF,""), vacio)
+deactivate S
+
+@enduml

@@ -1,0 +1,71 @@
+@startuml analyzer-clases-1-1
+title Modulo analyzer - que agrega PrintScript 1.1
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+legend top
+  Blanco = clase nueva o modificada en 1.1
+  Gris   = ya estaba en 1.0 y no se toco
+endlegend
+
+package "analyzer" {
+
+  interface Analyzer #F0F4F4
+  interface Rule #F0F4F4
+  class IdentifierNamingRule #F0F4F4
+
+  class PrintScriptAnalyzer <<internal>> {
+    -children(node): List<ASTNode>
+  }
+
+  class CallArgumentRule <<internal>> {
+    -function: String
+    -ruleId: String
+  }
+  class printlnArgumentRule <<factory>>
+  class readInputArgumentRule <<factory>>
+
+  package "analyzer.versions" {
+    class PrintScript10 <<object>> #F0F4F4
+    class PrintScript11 <<object>> {
+      +rules(config) = PrintScript10.rules(config) + readInputArgumentRule
+      +analyzer(config): Analyzer
+    }
+    class Versions <<file>> {
+      +analyzerFor(version, config): Analyzer
+    }
+  }
+}
+
+CallArgumentRule ..|> Rule
+printlnArgumentRule ..> CallArgumentRule : "println"
+readInputArgumentRule ..> CallArgumentRule : "readInput"
+PrintScript11 ..> PrintScript10 : "suma sobre"
+PrintScript11 ..> readInputArgumentRule : arma
+Versions ..> PrintScript10
+Versions ..> PrintScript11
+
+note right of CallArgumentRule
+  mandatory-variable-or-literal-in-println (1.0)
+  y ...-in-readInput (1.1) son LA MISMA regla
+  con otro nombre de funcion. Una clase
+  parametrizada y dos fabricas, no dos clases.
+end note
+
+note bottom of PrintScriptAnalyzer
+  children() ahora baja adentro de las
+  dos ramas del if. Si no, una variable
+  declarada dentro de un bloque no la
+  revisa ninguna regla.
+end note
+
+note bottom of PrintScript11
+  El orden no importa: a diferencia de
+  las del formatter, dos reglas del
+  analyzer no compiten por nada. Cada
+  una mira sus nodos y reporta.
+end note
+
+@enduml

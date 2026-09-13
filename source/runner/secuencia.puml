@@ -1,0 +1,52 @@
+@startuml runner-secuencia
+title Modulo runner - ExecuteRunner sobre un archivo
+
+participant "cli" as CLI
+participant "ExecuteRunner" as R
+participant "statements()" as P
+participant "Lexer" as L
+participant "Parser" as PA
+participant "Interpreter" as I
+
+CLI -> R : execute(SourceFactory)
+activate R
+
+R -> R : environment = Environment()
+R -> P : statements(source, version, progress)
+activate P
+P -> P : source.open()
+note right : recien aca se abre el archivo
+P -> L : lexerFor(version).tokenize(reader)
+L --> P : TokenSource
+P -> PA : parserFor(version).parse(tokens)
+PA --> P : Sequence<Result<Statement, ...>>
+P --> R : Sequence perezosa
+deactivate P
+
+loop por cada statement, de a uno
+  R -> P : next()
+  P --> R : Success(Statement) | Failure(PrintScriptError)
+
+  alt vino un error de sintaxis
+    R --> CLI : Failure(error)
+    note right : corta: lo que sigue ya no es confiable
+  else vino un statement
+    R -> I : execute(statement, environment)
+    I --> R : Success(Environment nuevo) | Failure(InterpreterError)
+    R -> R : environment = el nuevo
+  end
+end
+
+R --> CLI : Success(Unit)
+deactivate R
+
+note over CLI, I
+  Entra:  una SourceFactory y una Version
+  Sale:   Result<Unit, PrintScriptError>
+
+  El archivo NO se lee entero: se lee una linea cuando hace falta
+  un token, se arma un token cuando hace falta un statement, y se
+  ejecuta un statement cuando el bucle lo pide.
+end note
+
+@enduml

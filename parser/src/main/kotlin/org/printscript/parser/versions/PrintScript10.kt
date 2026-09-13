@@ -1,9 +1,9 @@
 package org.printscript.parser.versions
 
-import org.printscript.parser.ExpressionParser
 import org.printscript.parser.Parser
-import org.printscript.parser.PrecedenceExpressionParser
 import org.printscript.parser.SkipToSemicolon
+import org.printscript.parser.expressions.ExpressionParser
+import org.printscript.parser.expressions.PrecedenceExpressionParser
 import org.printscript.parser.statements.AssignmentParser
 import org.printscript.parser.statements.CallParser
 import org.printscript.parser.statements.DeclarationParser

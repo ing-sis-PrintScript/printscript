@@ -1,0 +1,75 @@
+@startuml interpreter-secuencia
+title Modulo interpreter - ejecutar "const n: string = readInput(\"Nombre:\"); println(n);"
+
+participant "ExecuteRunner" as R
+participant "Interpreter" as I
+participant "StatementExecutors" as SE
+participant "DeclarationExecutor" as DE
+participant "ExpressionEvaluator" as EV
+participant "BuiltInFunction" as BF
+participant "PrintScriptIO" as IO
+participant "Environment" as ENV
+
+note over R : environment = Environment() (vacio)
+
+R -> I : execute(VariableDeclaration, env)
+activate I
+I -> SE : execute(statement, env, io)
+activate SE
+SE -> SE : firstNotNullOfOrNull { ... }
+SE -> DE : execute(statement, env, io)
+activate DE
+
+DE -> EV : evaluate(CallExpression(readInput), env, io)
+activate EV
+EV -> EV : call(expression, env, io)
+EV -> BF : call(StringValue("Nombre:"), range, io)
+activate BF
+BF -> IO : print("Nombre:")
+BF -> IO : read("Nombre:")
+IO --> BF : "Joe"
+BF --> EV : Success(StringValue("Joe"))
+deactivate BF
+EV --> DE : Success(StringValue("Joe"))
+deactivate EV
+
+DE -> ENV : declare("n", STRING, "Joe", range, CONST)
+activate ENV
+ENV --> DE : Success(Environment nuevo)
+deactivate ENV
+
+DE --> SE : Success(Environment nuevo)
+deactivate DE
+SE --> I : Success(Environment nuevo)
+deactivate SE
+I --> R : Success(Environment nuevo)
+deactivate I
+
+note over R : environment = el nuevo. El viejo se descarta.
+
+R -> I : execute(ExpressionStatement(println(n)), env)
+activate I
+I -> SE : execute(statement, env, io)
+SE -> EV : call(CallExpression(println), env, io)
+activate EV
+EV -> ENV : get("n", range)
+ENV --> EV : Success(StringValue("Joe"))
+EV -> BF : call(StringValue("Joe"), range, io)
+BF -> IO : print("Joe")
+BF --> EV : Success(null)
+note right : null = println no deja valor
+EV --> SE : Success(null)
+deactivate EV
+SE --> I : Success(env sin cambios)
+I --> R : Success(env sin cambios)
+deactivate I
+
+note over R, ENV
+  Entra:  un Statement y un Environment
+  Sale:   el Environment que quedo, o un InterpreterError
+
+  El Interpreter no guarda nada: el estado viaja como valor
+  y lo hila el ExecuteRunner.
+end note
+
+@enduml

@@ -1,8 +1,8 @@
 package org.printscript.parser.versions
 
 import org.printscript.parser.Parser
-import org.printscript.parser.PrecedenceExpressionParser
 import org.printscript.parser.SkipToSemicolon
+import org.printscript.parser.expressions.PrecedenceExpressionParser
 import org.printscript.parser.statements.BlockParser
 import org.printscript.parser.statements.IfParser
 import org.printscript.parser.statements.StatementParser

@@ -6,7 +6,7 @@ import org.printscript.ast.Statement
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
-import org.printscript.parser.ExpressionParser
+import org.printscript.parser.expressions.ExpressionParser
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.expect
