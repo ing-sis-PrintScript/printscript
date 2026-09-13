@@ -29,5 +29,7 @@ internal fun TokenType.describe(): String =
         TokenType.SLASH -> "'/'"
         TokenType.LBRACE -> "'{'"
         TokenType.RBRACE -> "'}'"
+
+        TokenType.WHITESPACE -> "un espacio"
         TokenType.EOF -> "el fin del archivo"
     }

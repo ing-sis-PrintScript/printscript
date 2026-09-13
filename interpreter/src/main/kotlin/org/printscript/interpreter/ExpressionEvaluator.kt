@@ -17,13 +17,6 @@ import org.printscript.interpreter.io.PrintScriptIO
 import org.printscript.interpreter.statements.BuiltInFunction
 import org.printscript.interpreter.versions.PrintScript10
 
-/**
- * Evalúa una expresión y devuelve su valor.
- *
- * Recibe el io por parámetro, igual que StatementExecutor.execute: desde 1.1
- * una expresión puede leer y escribir (readInput imprime su prompt y lee una
- * línea), así que evaluar dejó de ser una operación puramente de lectura.
- */
 class ExpressionEvaluator(
     private val builtIns: Map<String, BuiltInFunction> = PrintScript10.BUILT_INS,
 ) {
@@ -43,14 +36,6 @@ class ExpressionEvaluator(
         }
     }
 
-    /**
-     * Ejecuta una llamada. El valor es nullable porque hay funciones que no
-     * devuelven nada.
-     *
-     * Es pública porque una llamada puede aparecer en dos lugares y el trabajo
-     * es el mismo: adentro de una expresión, donde el valor hace falta, y sola
-     * como statement, donde se descarta.
-     */
     fun call(
         expression: CallExpression,
         env: Environment,
@@ -62,17 +47,11 @@ class ExpressionEvaluator(
                     InterpreterError("No existe la función '${expression.callee.name}'.", expression.range),
                 )
 
-        // Los parsers de llamadas construyen SIEMPRE la llamada con exactamente
-        // un argumento: la gramática no permite otra cosa. No es un chequeo
-        // defensivo que falta — es una garantía del parser. Si algún día hay
-        // funciones con otra cantidad de argumentos, hay que volver a validar acá.
         val argument = expression.arguments.first()
 
         return evaluate(argument, env, io).flatMap { value -> builtIn.call(value, expression.range, io) }
     }
 
-    // Una llamada usada adentro de una expresión tiene que dejar un valor. Si la
-    // función no devuelve nada, el programa está mal escrito y hay que decirlo.
     private fun valueOf(
         expression: CallExpression,
         env: Environment,
@@ -103,11 +82,6 @@ class ExpressionEvaluator(
         }
     }
 
-    /**
-     * Evalúa los dos lados y, si ambos salen bien, decide qué operación
-     * corresponde. flatMap corta solo en el primer Failure — nada de
-     * `if (... is Failure) return ...` a mano ni de castear el Success.
-     */
     private fun evaluateBinary(
         node: BinaryExpression,
         env: Environment,
@@ -119,7 +93,6 @@ class ExpressionEvaluator(
             }
         }
 
-    /** Decide QUÉ operación aplica según los tipos de los dos valores, ya evaluados. */
     private fun combine(
         operator: BinaryOperator,
         left: PrintScriptValue,
@@ -145,7 +118,6 @@ class ExpressionEvaluator(
         operator == BinaryOperator.PLUS &&
             (left is PrintScriptValue.StringValue || right is PrintScriptValue.StringValue)
 
-    /** Las cuatro operaciones aritméticas, ya sabiendo que los dos lados son números. */
     private fun arithmetic(
         operator: BinaryOperator,
         left: Double,

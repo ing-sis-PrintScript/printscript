@@ -14,15 +14,6 @@ import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.peekIs
 import org.printscript.token.TokenType
 
-/**
- * La precedencia de los operadores: qué se agrupa con qué. Los valores sueltos
- * sobre los que operan los reconoce el FactorParser.
- *
- * No se llama PrintScript10 porque no es de una versión: las dos la usan tal
- * cual. La precedencia de PrintScript no cambió entre 1.0 y 1.1, y lo único
- * que sí cambia — qué palabras empiezan una llamada — esta clase ni lo mira,
- * solo se lo pasa al FactorParser.
- */
 class PrecedenceExpressionParser(
     callTokens: Set<TokenType> = emptySet(),
 ) : ExpressionParser {

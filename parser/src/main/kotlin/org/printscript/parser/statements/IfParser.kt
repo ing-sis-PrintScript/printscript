@@ -15,10 +15,6 @@ import org.printscript.parser.token.skip
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-// Parsea "if (condicion) { ... }" con un "else { ... }" opcional.
-//
-// No sabe nada de llaves: eso es del BlockParser. Solo sabe que un if tiene una
-// condicion entre parentesis, un bloque, y a veces otro bloque detras del else.
 class IfParser(
     private val expressions: ExpressionParser,
     private val blocks: BlockParser,
@@ -55,8 +51,6 @@ class IfParser(
         return Result.Success(Parsed(condition, (closeResult as Result.Success).value))
     }
 
-    // El else es opcional, y recien se sabe si esta despues de cerrar el bloque
-    // del then. Si no esta, el if termina donde termino ese bloque.
     private fun finishIf(
         keyword: Token,
         condition: Expression,
@@ -88,8 +82,6 @@ class IfParser(
             condition = condition,
             thenBranch = thenBranch,
             elseBranch = elseBranch,
-            // Del "if" hasta el "}" que cierra. Si hay else, el que cierra es el
-            // del else, no el del then.
             range = Range(keyword.range.start, close.range.end),
         )
 }

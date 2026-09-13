@@ -68,10 +68,6 @@ class Environment private constructor(
             ?: Result.Failure(InterpreterError("La variable '$name' no ha sido inicializada.", range))
     }
 
-    // Al salir de un bloque, las variables declaradas adentro dejan de existir,
-    // pero las asignaciones a variables de afuera tienen que quedar. Por eso no
-    // alcanza con tirar el Environment del bloque: hay que quedarse con sus
-    // valores y soltar los nombres que antes no estaban.
     fun endScope(outer: Environment): Environment = Environment(memory.filterKeys { outer.memory.containsKey(it) })
 
     private fun checkType(

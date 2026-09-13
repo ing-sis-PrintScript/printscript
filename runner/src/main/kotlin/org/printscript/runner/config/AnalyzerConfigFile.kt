@@ -9,8 +9,6 @@ import org.printscript.common.Result
 import org.printscript.common.flatMap
 import org.printscript.common.map
 
-// Los nombres los fija el TCK, no nosotros: son la especificacion. Ojo el guion bajo
-// de identifier_format y el ESPACIO en los valores: "camel case", no "camelCase".
 private const val NAMING = "identifier_format"
 private const val PRINTLN_ARGUMENTS = "mandatory-variable-or-literal-in-println"
 private const val READ_INPUT_ARGUMENTS = "mandatory-variable-or-literal-in-readInput"

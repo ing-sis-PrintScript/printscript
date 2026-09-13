@@ -8,8 +8,6 @@ import org.printscript.formatter.config.FormatterConfig
 import org.printscript.formatter.versions.formatterFor
 import org.printscript.lexer.versions.lexerFor
 
-// Unico comando que NO parsea: formatear es preservar el espaciado del fuente, y el AST
-// no lo tiene. Por eso tampoco avisa progreso: no hay sentencias que contar.
 class FormatRunner(
     private val config: FormatterConfig,
     private val version: Version,

@@ -24,19 +24,10 @@ class Parser(
     }
 }
 
-// Se recorre UNA sola vez, y esa es la razon de que exista en vez de un
-// generateSequence: apenas alguien pide el iterador, la secuencia suelta el primer
-// eslabon. Mientras lo sostenga sostiene tambien todos los siguientes --cada eslabon
-// apunta al que sigue-- y un programa grande no entra en memoria.
-//
-// generateSequence no sirve para esto: guarda la lambda del seed adentro del objeto
-// Sequence, y esa lambda captura la fuente mientras dure la iteracion.
 private class ParsedStatements(
     source: TokenSource,
     private val step: (TokenStream) -> Parsed<Result<Statement, PrintScriptError>>?,
 ) : Sequence<Result<Statement, PrintScriptError>> {
-    // var y nullable a proposito: ponerlo en null es lo que corta la referencia.
-    // Sin val en el parametro del constructor, esta es la unica que queda.
     private var start: TokenSource? = source
 
     override fun iterator(): Iterator<Result<Statement, PrintScriptError>> {
@@ -44,10 +35,6 @@ private class ParsedStatements(
         start = null
 
         return object : AbstractIterator<Result<Statement, PrintScriptError>>() {
-            // Donde hay que seguir parseando. Se calcula uno recien cuando lo piden:
-            // eso es lo que hace que entregar un statement no lea los tokens del que
-            // sigue. Y cada paso PISA al anterior, que es lo que deja sin apuntadores
-            // al eslabon de la fuente ya consumido.
             private var pending: TokenStream? = TokenStream(first)
 
             override fun computeNext() {

@@ -21,7 +21,7 @@ class PrintScript11Test {
             TokenReadResult.EndOfInput -> emptyList()
         }
 
-    private fun tokensOf(
+    private fun allTokensOf(
         lexer: Lexer,
         source: String,
     ): List<Token> {
@@ -29,6 +29,13 @@ class PrintScript11Test {
         assertTrue(resultados.all { it is TokenReadResult.Success }, "esperaba que funcione y falló")
         return resultados.filterIsInstance<TokenReadResult.Success>().map { it.token }
     }
+
+    // Solo los tokens con contenido: estos tests son sobre que palabra produce que
+    // tipo, no sobre el espaciado.
+    private fun tokensOf(
+        lexer: Lexer,
+        source: String,
+    ): List<Token> = allTokensOf(lexer, source).filterNot { it.type == TokenType.WHITESPACE }
 
     private fun typesOf(
         lexer: Lexer,
@@ -115,9 +122,9 @@ class PrintScript11Test {
     }
 
     @Test
-    fun `la trivia se sigue guardando en 1_1`() {
-        val tokens = tokensOf(lexer11, "if  (activo)")
+    fun `los espacios tambien salen como tokens en 1_1`() {
+        val tokens = allTokensOf(lexer11, "if  (activo)")
 
-        assertEquals(listOf("", "  ", "", ""), tokens.dropLast(1).map { it.leadingTrivia.text })
+        assertEquals(listOf("  "), tokens.filter { it.type == TokenType.WHITESPACE }.map { it.value })
     }
 }

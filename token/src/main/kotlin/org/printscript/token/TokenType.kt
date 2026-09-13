@@ -29,6 +29,12 @@ enum class TokenType {
     // simbolos de 1.1
     LBRACE, RBRACE,
 
+    // El espacio entre dos tokens. Es un token mas y no un campo de Token: el
+    // lexer transcribe el archivo entero, y cada consumidor decide si le importa.
+    // El parser no lo ve --TokenStream lo descarta al leerlo-- y el formatter si,
+    // porque es lo unico que tiene para preservar el espaciado del fuente.
+    WHITESPACE,
+
     // control
     EOF,
 }

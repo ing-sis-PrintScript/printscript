@@ -10,13 +10,6 @@ import org.printscript.ast.VariableDeclaration
 
 private const val RULE_ID = "identifier-naming"
 
-/**
- * El único lugar donde PrintScript 1.0 introduce un nombre nuevo es una
- * declaración (`let`): una asignación o un uso dentro de una expresión solo
- * referencian un nombre que ya existe. Revisar esos otros lugares de nuevo
- * no encontraría nada distinto — sería el mismo hallazgo repetido por cada
- * vez que se lee la variable, no un problema nuevo.
- */
 internal class IdentifierNamingRule(
     private val convention: NamingConvention,
 ) : Rule {

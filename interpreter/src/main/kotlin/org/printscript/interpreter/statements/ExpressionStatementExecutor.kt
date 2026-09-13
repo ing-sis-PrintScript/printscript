@@ -10,14 +10,6 @@ import org.printscript.interpreter.ExpressionEvaluator
 import org.printscript.interpreter.InterpreterError
 import org.printscript.interpreter.io.PrintScriptIO
 
-/**
- * Ejecuta una expresión usada como statement: sola en su línea, sin que nadie
- * use su valor.
- *
- * Las dos ramas evalúan lo mismo y descartan el resultado; la diferencia es que
- * una llamada acá puede no devolver nada (println), y evaluate() exige un
- * valor. Por eso call() y no evaluate() cuando es una llamada.
- */
 class ExpressionStatementExecutor(
     private val evaluator: ExpressionEvaluator = ExpressionEvaluator(),
 ) : StatementExecutor {

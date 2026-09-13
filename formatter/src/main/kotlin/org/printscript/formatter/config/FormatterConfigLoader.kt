@@ -53,7 +53,7 @@ class FormatterConfigLoader {
                 readSpacing(key, value, Spacing.SINGLE, Spacing.NONE).map { config.copy(spaceAfterColon = it) }
             SPACE_AROUND_EQUALS ->
                 readSpacing(key, value, Spacing.SINGLE, Spacing.NONE).map { config.copy(spaceAroundAssignment = it) }
-            // La clave inversa gobierna el mismo campo, solo que al reves.
+
             NO_SPACE_AROUND_EQUALS ->
                 readSpacing(key, value, Spacing.NONE, Spacing.SINGLE).map { config.copy(spaceAroundAssignment = it) }
             PRINTLN_LINE_BREAKS -> readBlankLines(key, value).map { config.copy(lineBreaksAfterPrintln = it) }
@@ -63,8 +63,7 @@ class FormatterConfigLoader {
                 readBoolean(key, value).map { config.copy(spaceSurroundingOperations = it) }
             SINGLE_SPACE_SEPARATION ->
                 readBoolean(key, value).map { config.copy(singleSpaceSeparation = it) }
-            // Las dos claves de la llave gobiernan el mismo campo, igual que las dos
-            // del '='. Por eso no se pueden contradecir: la ultima que llega manda.
+
             IF_BRACE_SAME_LINE ->
                 readBracePosition(key, value, BracePosition.SAME_LINE).map { config.copy(ifBrace = it) }
             IF_BRACE_BELOW_LINE ->
@@ -73,8 +72,6 @@ class FormatterConfigLoader {
             else -> Result.Failure(ConfigError.UnknownRule(key))
         }
 
-    // onTrue y onFalse los pone quien llama porque hay claves que dicen lo contrario
-    // entre si: enforce-spacing-around-equals y enforce-no-spacing-around-equals.
     private fun readSpacing(
         key: String,
         value: ConfigValue,
@@ -82,7 +79,6 @@ class FormatterConfigLoader {
         onFalse: Spacing,
     ): Result<Spacing, ConfigError> = readBoolean(key, value).map { if (it) onTrue else onFalse }
 
-    // En false la clave queda como si no hubiera venido: no tocar donde esta la llave.
     private fun readBracePosition(
         key: String,
         value: ConfigValue,

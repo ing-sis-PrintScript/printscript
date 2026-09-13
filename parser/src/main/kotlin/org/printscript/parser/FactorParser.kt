@@ -17,23 +17,6 @@ import org.printscript.parser.token.skip
 import org.printscript.token.Token
 import org.printscript.token.TokenType
 
-/**
- * Un valor suelto: un literal, un identificador, una expresión entre paréntesis
- * o una llamada a una función que devuelve un valor.
- *
- * Está separado de PrecedenceExpressionParser porque son dos trabajos
- * distintos: uno arma el árbol según la precedencia de los operadores, éste
- * reconoce los valores sobre los que esos operadores trabajan.
- *
- * Recibe el parser de expresiones por parámetro y no en el constructor porque
- * quien lo usa es el mismo que se lo pasa: un paréntesis y el argumento de una
- * llamada vuelven a ser expresiones completas.
- *
- * callTokens es lo único que cambia entre versiones. En 1.0 no hay ninguna
- * función que se pueda usar como valor; 1.1 suma readInput y readEnv. La forma
- * de parsear la llamada es la misma, lo que cambia es qué palabras la empiezan
- * — la misma idea que las KEYWORDS del lexer.
- */
 internal class FactorParser(
     private val callTokens: Set<TokenType>,
 ) {
@@ -45,12 +28,9 @@ internal class FactorParser(
             when (token.type) {
                 TokenType.NUMBER_LITERAL -> numberLiteral(token, stream.advance())
 
-                // token.value ya viene sin comillas: son delimitadores, no contenido.
                 TokenType.STRING_LITERAL ->
                     Result.Success(Parsed(StringLiteral(token.value, token.range), stream.advance()))
 
-                // El lexer solo produce BOOLEAN_LITERAL para "true" y "false", asi que
-                // comparar contra "true" cubre los dos casos y no puede fallar.
                 TokenType.BOOLEAN_LITERAL ->
                     Result.Success(Parsed(BooleanLiteral(token.value == "true", token.range), stream.advance()))
 
@@ -68,13 +48,6 @@ internal class FactorParser(
             }
         }
 
-    /**
-     * Una llamada usada como valor: readInput("Nombre:").
-     *
-     * El nombre sale del token y no de un Identifier previo porque readInput y
-     * readEnv son palabras del lenguaje, no identificadores — igual que hace
-     * CallParser con println.
-     */
     private fun call(
         callee: Token,
         stream: TokenStream,
