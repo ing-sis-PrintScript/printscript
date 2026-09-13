@@ -30,7 +30,7 @@ import kotlin.test.assertTrue
  * hay que escribir posiciones exactas en cada árbol esperado.
  */
 class ExpressionParserTest {
-    private val parser = PrintScript10ExpressionParser()
+    private val parser = PrecedenceExpressionParser()
 
     // ---- helpers ----
 

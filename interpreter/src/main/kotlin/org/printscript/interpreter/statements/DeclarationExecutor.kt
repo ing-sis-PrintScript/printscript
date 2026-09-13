@@ -27,7 +27,7 @@ class DeclarationExecutor(
         val declaration = statement as? VariableDeclaration ?: return null
 
         val initialValue: Result<PrintScriptValue?, InterpreterError> =
-            declaration.initializer?.let { evaluator.evaluate(it, env) } ?: Result.Success(null)
+            declaration.initializer?.let { evaluator.evaluate(it, env, io) } ?: Result.Success(null)
 
         return initialValue.flatMap { value ->
             env.declare(

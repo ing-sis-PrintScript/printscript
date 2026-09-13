@@ -26,6 +26,8 @@ class DeclarationExecutorTest {
         override fun print(message: String) = Unit
 
         override fun read(prompt: String): String = ""
+
+        override fun env(name: String): String? = null
     }
 
     private fun declaration(

@@ -54,6 +54,8 @@ class LargeProgramMemoryTest {
         }
 
         override fun read(prompt: String): String = ""
+
+        override fun env(name: String): String? = null
     }
 
     private fun fuente(): SourceReader = StreamSourceReader.of(RepeatedLineStream(PROGRAMA, LINES))
