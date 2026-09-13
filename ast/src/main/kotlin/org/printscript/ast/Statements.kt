@@ -20,3 +20,10 @@ data class ExpressionStatement(
     val expression: Expression,
     override val range: Range,
 ) : Statement
+
+data class IfStatement(
+    val condition: Expression,
+    val thenBranch: List<Statement>,
+    val elseBranch: List<Statement>?,
+    override val range: Range,
+) : Statement
