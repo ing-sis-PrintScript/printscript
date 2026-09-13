@@ -2,8 +2,8 @@ package org.printscript.analyzer.engine
 
 import org.printscript.analyzer.Analyzer
 import org.printscript.analyzer.DiagnosticEmitter
-import org.printscript.ast.ASTNode
 import org.printscript.ast.AssignmentStatement
+import org.printscript.ast.AstNode
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BooleanLiteral
 import org.printscript.ast.CallExpression
@@ -21,7 +21,7 @@ internal class PrintScriptAnalyzer(
     private val rules: List<Rule>,
 ) : Analyzer {
     override fun analyze(
-        program: Sequence<Result<ASTNode, PrintScriptError>>,
+        program: Sequence<Result<AstNode, PrintScriptError>>,
         emit: DiagnosticEmitter,
     ) {
         program.forEach { element ->
@@ -30,14 +30,14 @@ internal class PrintScriptAnalyzer(
     }
 
     private fun visit(
-        node: ASTNode,
+        node: AstNode,
         emitter: DiagnosticEmitter,
     ) {
         rules.forEach { it.check(node, emitter) }
         children(node).forEach { visit(it, emitter) }
     }
 
-    private fun children(node: ASTNode): List<ASTNode> =
+    private fun children(node: AstNode): List<AstNode> =
         when (node) {
             is VariableDeclaration -> listOfNotNull(node.identifier, node.initializer)
             is AssignmentStatement -> listOf(node.target, node.value)

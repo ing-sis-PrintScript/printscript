@@ -1,15 +1,15 @@
 package org.printscript.analyzer
 
-import org.printscript.ast.ASTNode
+import org.printscript.ast.AstNode
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
 
-internal fun program(vararg nodes: ASTNode): Sequence<Result<ASTNode, PrintScriptError>> =
+internal fun program(vararg nodes: AstNode): Sequence<Result<AstNode, PrintScriptError>> =
     nodes.asSequence().map { Result.Success(it) }
 
 /** Un programa con un error de sintaxis intercalado, para probar que no corta el análisis. */
-internal fun programWithSyntaxError(vararg nodes: ASTNode): Sequence<Result<ASTNode, PrintScriptError>> =
+internal fun programWithSyntaxError(vararg nodes: AstNode): Sequence<Result<AstNode, PrintScriptError>> =
     sequenceOf(Result.Failure(FakeSyntaxError)) + program(*nodes)
 
 private object FakeSyntaxError : PrintScriptError {
@@ -18,7 +18,7 @@ private object FakeSyntaxError : PrintScriptError {
 }
 
 /** Junta los Diagnostic emitidos por un Analyzer.analyze() en una lista, para poder assertear sobre ella. */
-internal fun Analyzer.collectDiagnostics(program: Sequence<Result<ASTNode, PrintScriptError>>): List<Diagnostic> {
+internal fun Analyzer.collectDiagnostics(program: Sequence<Result<AstNode, PrintScriptError>>): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     analyze(program, DiagnosticEmitter { diagnostics.add(it) })
     return diagnostics

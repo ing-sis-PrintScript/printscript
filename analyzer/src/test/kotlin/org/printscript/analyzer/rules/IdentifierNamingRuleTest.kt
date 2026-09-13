@@ -8,13 +8,13 @@ import org.printscript.analyzer.config.SnakeCase
 import org.printscript.analyzer.declaration
 import org.printscript.analyzer.number
 import org.printscript.analyzer.rangeAt
-import org.printscript.ast.ASTNode
+import org.printscript.ast.AstNode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class IdentifierNamingRuleTest {
-    private fun checkedBy(rule: IdentifierNamingRule): (ASTNode) -> Diagnostic? {
+    private fun checkedBy(rule: IdentifierNamingRule): (AstNode) -> Diagnostic? {
         var found: Diagnostic? = null
         return { node ->
             found = null

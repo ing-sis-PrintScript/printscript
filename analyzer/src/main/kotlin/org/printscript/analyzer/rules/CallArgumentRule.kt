@@ -4,7 +4,7 @@ import org.printscript.analyzer.Diagnostic
 import org.printscript.analyzer.DiagnosticEmitter
 import org.printscript.analyzer.Severity
 import org.printscript.analyzer.engine.Rule
-import org.printscript.ast.ASTNode
+import org.printscript.ast.AstNode
 import org.printscript.ast.BooleanLiteral
 import org.printscript.ast.CallExpression
 import org.printscript.ast.Expression
@@ -17,7 +17,7 @@ internal class CallArgumentRule(
     private val ruleId: String,
 ) : Rule {
     override fun check(
-        node: ASTNode,
+        node: AstNode,
         emitter: DiagnosticEmitter,
     ) {
         if (node !is CallExpression || node.callee.name != function) return

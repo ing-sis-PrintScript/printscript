@@ -5,7 +5,7 @@ import org.printscript.common.Range
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ASTNodeTest {
+class AstNodeTest {
     private fun range(
         line: Int,
         from: Int,
