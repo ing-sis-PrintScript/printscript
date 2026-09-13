@@ -1,0 +1,125 @@
+@startuml interpreter-clases-1-1
+title Modulo interpreter - que agrega PrintScript 1.1
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+legend top
+  Blanco = clase nueva o modificada en 1.1
+  Gris   = ya estaba en 1.0 y no se toco
+endlegend
+
+package "ast" #F0F4F4 {
+  class IfStatement
+  class BooleanLiteral
+  enum DeclarationKind {
+    LET
+    CONST
+  }
+  enum DeclaredType {
+    NUMBER
+    STRING
+    BOOLEAN
+  }
+}
+
+package "interpreter" {
+
+  class Interpreter #F0F4F4
+  class ExpressionEvaluator #F0F4F4
+
+  class Environment {
+    +endScope(outer: Environment): Environment
+  }
+
+  package "interpreter.io" {
+    interface PrintScriptIO {
+      +print(message)
+      +read(prompt)
+      +env(name): String?
+    }
+    class StandardIO
+  }
+
+  package "interpreter.statements" {
+    interface StatementExecutor #F0F4F4
+    interface StatementExecutors <<fun interface>> #F0F4F4
+    class DeclarationExecutor #F0F4F4
+    class AssignmentExecutor #F0F4F4
+    class ExpressionStatementExecutor #F0F4F4
+
+    class IfExecutor {
+      -executors: StatementExecutors
+      +execute(statement, env, io)
+    }
+    class BuiltInFunctions <<object>> {
+      +PRINTLN
+      +READ_INPUT
+      +READ_ENV
+    }
+  }
+
+  package "interpreter.versions" {
+    class PrintScript10 <<object>> #F0F4F4
+    class PrintScript11 <<object>> {
+      +BUILT_INS = PrintScript10.BUILT_INS + readInput + readEnv
+      -all: List<StatementExecutor> <<by lazy>>
+      +executors(): StatementExecutors
+    }
+    class Versions <<file>> {
+      +interpreterFor(version, io): Interpreter
+    }
+  }
+}
+
+IfExecutor ..|> StatementExecutor
+IfExecutor --> StatementExecutors
+IfExecutor ..> IfStatement : ejecuta
+IfExecutor ..> Environment : endScope al salir del bloque
+StandardIO ..|> PrintScriptIO
+
+PrintScript11 ..> PrintScript10 : "suma sobre"
+PrintScript11 ..> IfExecutor : arma
+PrintScript11 ..> BuiltInFunctions : registra readInput y readEnv
+Versions ..> PrintScript10
+Versions ..> PrintScript11
+
+note right of IfExecutor
+  Mismo ciclo que el IfParser:
+  necesita la lista de executors
+  y esta adentro de ella. Se
+  rompe con 'by lazy' en
+  PrintScript11.
+end note
+
+note bottom of Environment
+  endScope: al salir de un bloque,
+  las variables declaradas adentro
+  dejan de existir, PERO las
+  asignaciones a las de afuera
+  quedan. Por eso no alcanza con
+  tirar el Environment del bloque.
+end note
+
+note right of PrintScriptIO
+  env(name) es una puerta mas de la
+  interfaz y no un System.getenv
+  suelto: asi un test da las
+  variables que quiere sin tocar
+  el entorno real.
+end note
+
+note bottom of BuiltInFunctions
+  El const NO necesita executor
+  nuevo: lo ejecuta el mismo
+  DeclarationExecutor, y que no se
+  pueda reasignar es cosa de
+  Environment.
+
+  readInput imprime su prompt: que
+  aparezca en la salida es una regla
+  del lenguaje, no del IO.
+end note
+
+@enduml

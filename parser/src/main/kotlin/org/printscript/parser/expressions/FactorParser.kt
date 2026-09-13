@@ -1,4 +1,4 @@
-package org.printscript.parser
+package org.printscript.parser.expressions
 
 import org.printscript.ast.BooleanLiteral
 import org.printscript.ast.CallExpression
@@ -10,6 +10,7 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.common.flatMap
+import org.printscript.parser.SyntaxError
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.expect

@@ -1,0 +1,78 @@
+@startuml printscript-end-to-end
+title PrintScript de punta a punta - "printscript execute main.ps --version 1.1"
+
+skinparam sequenceMessageAlign center
+
+participant "cli\n(Clikt)" as CLI
+participant "runner\nExecuteRunner" as RUN
+participant "lexer\nLexer" as LEX
+participant "parser\nParser" as PAR
+participant "interpreter\nInterpreter" as INT
+participant "StandardIO" as IO
+
+CLI -> CLI : versionOption() -> Version.V11
+CLI -> RUN : execute { StreamSourceReader.of(archivo) }
+activate RUN
+
+note over RUN
+  Recibe una SourceFactory: COMO abrir
+  el archivo, no el archivo abierto.
+end note
+
+RUN -> LEX : lexerFor(V11).tokenize(reader)
+LEX --> RUN : TokenSource
+RUN -> PAR : parserFor(V11).parse(tokens)
+PAR --> RUN : Sequence<Result<Statement, PrintScriptError>>
+
+note over RUN, PAR : Nada se leyo todavia. Las tres etapas son perezosas.
+
+loop hasta el fin del archivo
+
+  RUN -> PAR : next()
+  activate PAR
+
+  PAR -> LEX : nextToken()
+  activate LEX
+  LEX -> LEX : lee una linea si hace falta
+  LEX --> PAR : Token  (los WHITESPACE los descarta TokenStream)
+  deactivate LEX
+  note right of PAR : pide tokens hasta cerrar un statement
+
+  PAR --> RUN : Success(Statement) | Failure(SyntaxError)
+  deactivate PAR
+
+  RUN -> INT : execute(statement, environment)
+  activate INT
+  INT -> IO : print(...)  <i>(si el statement escribe)</i>
+  INT --> RUN : Success(Environment nuevo) | Failure(InterpreterError)
+  deactivate INT
+  RUN -> RUN : environment = el nuevo
+
+end
+
+RUN --> CLI : Success(Unit) | Failure(error)
+deactivate RUN
+CLI -> CLI : imprime el error con archivo:linea:columna
+
+== Los otros tres comandos, sobre la misma cadena ==
+
+note over CLI, IO
+  validate   : cli -> ValidateRunner -> lexer -> parser                (junta los errores)
+  analyze    : cli -> AnalyzeRunner  -> lexer -> parser -> analyzer    (emite Diagnostics)
+  format     : cli -> FormatRunner   -> lexer ->        -> formatter   (SIN parser)
+
+  El formatter es el unico que no parsea: formatear es preservar el
+  espaciado del fuente, y el AST no lo tiene.
+end note
+
+note over CLI, IO
+  Un archivo de 32K lineas nunca esta entero en memoria:
+    - StreamSourceReader tiene una linea por vez
+    - el parser entrega un statement por vez
+    - el interpreter lo ejecuta y descarta el Environment viejo
+
+  Lo que lo hace posible es que nadie sostenga el PRIMER eslabon:
+  SourceFactory y las secuencias que sueltan su referencia.
+end note
+
+@enduml

@@ -1,4 +1,4 @@
-package org.printscript.parser
+package org.printscript.parser.expressions
 
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
@@ -12,6 +12,8 @@ import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.parser.ResultTokenSource
+import org.printscript.parser.SyntaxError
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.token.Token

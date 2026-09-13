@@ -1,0 +1,136 @@
+@startuml lexer-clases-1-0
+title Modulo lexer - clases (PrintScript 1.0)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "token (vocabulario compartido)" #F0F4F4 {
+  interface TokenSource {
+    +nextToken(): TokenReadResult
+  }
+  class Token {
+    +type: TokenType
+    +value: String
+    +range: Range
+  }
+  class ListTokenSource
+}
+
+package "lexer" {
+
+  class Lexer {
+    +tokenize(source: SourceReader): TokenSource
+    +tokenize(source: String): TokenSource
+  }
+
+  class TokenMatcher {
+    -rules: List<TokenRule>
+    +match(line, from, lineNumber): Result<TokenMatch, LexicalError>
+  }
+
+  class TokenMatch {
+    +token: Token
+    +nextIndex: Int
+  }
+
+  class LexicalError
+
+  class LexingTokenSource <<internal>> {
+    +nextToken(): TokenReadResult
+  }
+
+  package "lexer.rules" {
+    interface TokenRule {
+      +match(line, from, lineNumber): Result<TokenMatch, LexicalError>?
+    }
+    class NumberRule <<object>>
+    class StringRule <<object>>
+    class WordRule {
+      -keywords: Map<String, TokenType>
+    }
+    class SymbolRule {
+      -symbols: Map<String, TokenType>
+    }
+  }
+
+  package "lexer.source" {
+    interface SourceReader {
+      +nextLine(): LineReadResult
+    }
+    class StringSourceReader
+    class StreamSourceReader
+    class SourceCursor <<internal>> {
+      +line: String
+      +index: Int
+      +skipped: String
+      +skippedRange: Range
+      +moveToNextToken(): ScanResult
+      +advanceTo(nextIndex): SourceCursor
+      +clearSkipped(): SourceCursor
+    }
+    class ScanResult <<sealed>>
+  }
+
+  package "lexer.versions" {
+    class PrintScript10 <<object>> {
+      +KEYWORDS: Map<String, TokenType>
+      +SYMBOLS: Map<String, TokenType>
+      +RULES: List<TokenRule>
+    }
+  }
+}
+
+Lexer --> TokenMatcher
+Lexer ..> LexingTokenSource : crea
+LexingTokenSource ..|> TokenSource
+LexingTokenSource --> TokenMatcher
+LexingTokenSource --> SourceCursor
+LexingTokenSource ..> Token : construye
+LexingTokenSource ..> ListTokenSource : "vacia, al terminar"
+
+TokenMatcher --> "1..*" TokenRule
+TokenRule ..> TokenMatch : devuelve
+TokenRule ..> LexicalError : devuelve
+TokenMatch --> Token
+
+NumberRule ..|> TokenRule
+StringRule ..|> TokenRule
+WordRule ..|> TokenRule
+SymbolRule ..|> TokenRule
+
+SourceCursor --> SourceReader
+SourceCursor ..> ScanResult : devuelve
+StringSourceReader ..|> SourceReader
+StreamSourceReader ..|> SourceReader
+
+PrintScript10 ..> WordRule : configura
+PrintScript10 ..> SymbolRule : configura
+TokenMatcher ..> PrintScript10 : "RULES por defecto"
+
+note right of TokenRule
+  Tres respuestas:
+  null     = "no es lo mio"
+  Success  = token + nextIndex
+  Failure  = "es mio pero esta mal"
+end note
+
+note bottom of PrintScript10
+  Lo unico que cambia entre versiones.
+  Las reglas son las mismas: cambia
+  que palabras hay en los mapas.
+end note
+
+note right of SourceCursor
+  Junta el espacio que se saltea.
+  LexingTokenSource lo emite como
+  un token WHITESPACE aparte.
+end note
+
+note left of StreamSourceReader
+  Un eslabon por linea.
+  Nunca hay mas de una linea
+  en memoria.
+end note
+
+@enduml

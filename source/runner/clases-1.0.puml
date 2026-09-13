@@ -1,0 +1,101 @@
+@startuml runner-clases-1-0
+title Modulo runner - clases (PrintScript 1.0)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "modulos del lenguaje" #F0F4F4 {
+  class Lexer
+  class Parser
+  interface PrintScriptInterpreter
+  interface Formatter
+  interface Analyzer
+}
+
+package "runner" {
+
+  interface SourceFactory <<fun interface>> {
+    +open(): SourceReader
+  }
+
+  class Pipeline <<file>> {
+    +statements(source, version, progress): Sequence<Result<Statement, PrintScriptError>>
+  }
+
+  class ValidateRunner {
+    +validate(source): List<PrintScriptError>
+  }
+  class ExecuteRunner {
+    +execute(source): Result<Unit, PrintScriptError>
+  }
+  class FormatRunner {
+    +format(source): Sequence<Result<FormattedCode, PrintScriptError>>
+  }
+  class AnalyzeRunner {
+    +analyze(source, emit: DiagnosticEmitter)
+  }
+
+  interface Progress <<fun interface>> {
+    +parsed()
+  }
+
+  package "runner.config" {
+    interface ConfigReader {
+      +read(text: String): Result<ConfigValues, ConfigReadError>
+    }
+    class ConfigValues
+    class FormatterConfigFile
+    class AnalyzerConfigFile
+  }
+}
+
+ValidateRunner ..> Pipeline
+ExecuteRunner ..> Pipeline
+AnalyzeRunner ..> Pipeline
+Pipeline ..> Lexer : lexerFor(version)
+Pipeline ..> Parser : parserFor(version)
+
+ExecuteRunner --> PrintScriptInterpreter
+FormatRunner --> Formatter
+FormatRunner ..> Lexer : "sin parser"
+AnalyzeRunner --> Analyzer
+
+ValidateRunner --> SourceFactory
+ExecuteRunner --> SourceFactory
+FormatRunner --> SourceFactory
+AnalyzeRunner --> SourceFactory
+
+ValidateRunner --> Progress
+ExecuteRunner --> Progress
+AnalyzeRunner --> Progress
+
+FormatterConfigFile ..> ConfigReader
+AnalyzerConfigFile ..> ConfigReader
+ConfigReader ..> ConfigValues : devuelve
+
+note right of SourceFactory
+  Se pasa COMO abrir la fuente, no
+  la fuente abierta. Quien la recibe
+  no puede quedarse con el primer
+  eslabon de la cadena perezosa
+  --y por eso el archivo no queda
+  vivo entero en memoria--.
+end note
+
+note bottom of FormatRunner
+  Unico comando que NO parsea:
+  formatear es preservar el
+  espaciado del fuente, y el AST
+  no lo tiene. Por eso tampoco
+  avisa progreso: no hay sentencias
+  que contar.
+end note
+
+note right of Pipeline
+  El unico lugar donde se arma la
+  cadena lexer -> parser. Los cuatro
+  runners la reusan.
+end note
+
+@enduml

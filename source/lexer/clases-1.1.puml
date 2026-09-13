@@ -1,0 +1,84 @@
+@startuml lexer-clases-1-1
+title Modulo lexer - que agrega PrintScript 1.1
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+legend top
+  Blanco = clase nueva o modificada en 1.1
+  Gris   = ya estaba en 1.0 y no se toco
+endlegend
+
+package "lexer" {
+
+  class Lexer #F0F4F4 {
+    +tokenize(source): TokenSource
+  }
+
+  class TokenMatcher #F0F4F4 {
+    -rules: List<TokenRule>
+  }
+
+  package "lexer.rules" #F0F4F4 {
+    interface TokenRule
+    class NumberRule <<object>>
+    class StringRule <<object>>
+    class WordRule
+    class SymbolRule
+  }
+
+  package "lexer.versions" {
+
+    class PrintScript10 <<object>> #F0F4F4 {
+      +KEYWORDS
+      +SYMBOLS
+      +RULES
+    }
+
+    class PrintScript11 <<object>> {
+      +KEYWORDS = PrintScript10.KEYWORDS + 8 palabras
+      +SYMBOLS  = PrintScript10.SYMBOLS + { } 
+      +RULES: List<TokenRule>
+    }
+
+    class Versions <<file>> {
+      +lexerFor(version: Version): Lexer
+    }
+  }
+}
+
+PrintScript11 ..> PrintScript10 : "suma sobre"
+PrintScript11 ..> WordRule : configura
+PrintScript11 ..> SymbolRule : configura
+Versions ..> PrintScript10
+Versions ..> PrintScript11
+Versions ..> Lexer : arma
+
+note right of PrintScript11
+  Palabras nuevas:
+    const, if, else, boolean
+    true / false  -> BOOLEAN_LITERAL
+    readInput, readEnv
+  Simbolos nuevos:
+    {  }
+
+  NO hay ninguna TokenRule nueva.
+  WordRule ya busca la palabra en
+  el mapa y usa IDENTIFIER si no
+  esta; true y false son dos
+  entradas mas, igual que un numero
+  produce NUMBER_LITERAL.
+end note
+
+note bottom of Versions
+  when exhaustivo sobre Version.
+  Si manana hay una 1.2, el
+  compilador avisa aca.
+
+  La clase Lexer no sabe que
+  existen versiones: recibe un
+  TokenMatcher ya armado.
+end note
+
+@enduml

@@ -1,0 +1,146 @@
+@startuml formatter-clases-1-0
+title Modulo formatter - clases (PrintScript 1.0)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "token (compartido)" #F0F4F4 {
+  interface TokenSource
+  class Token
+  enum TokenType
+}
+
+package "formatter" {
+
+  interface Formatter {
+    +format(tokens: TokenSource): Sequence<Result<FormattedCode, PrintScriptError>>
+  }
+
+  class FormattedCode {
+    +text: String
+  }
+
+  package "formatter.engine" {
+    class TokenFormatter {
+      -matcher: SpacingMatcher
+      -indent: Indent?
+    }
+    class FormattedTokens <<private>>
+  }
+
+  package "formatter.rules" {
+    interface SpacingRule <<fun interface>> {
+      +spacingFor(prev: Token?, current: Token, state: FormattingState): String?
+    }
+    class SpacingMatcher {
+      -rules: List<SpacingRule>
+    }
+    class FormattingState {
+      +lastStatementHead: TokenType?
+      +blockDepth: Int
+      +pendingWhitespace: String
+    }
+    class SurroundingSpacing {
+      -types: Set<TokenType>
+      -before: Spacing?
+      -after: Spacing?
+    }
+    class LineBreakAfterStatementRule
+    class LineBreaksAfterPrintlnRule
+    class SingleSpaceSeparationRule
+  }
+
+  package "formatter.config" {
+    class FormatterConfig {
+      +spaceBeforeColon: Spacing?
+      +spaceAfterColon: Spacing?
+      +spaceAroundAssignment: Spacing?
+      +lineBreaksAfterPrintln: BlankLines?
+      +lineBreakAfterStatement: Boolean
+      +spaceSurroundingOperations: Boolean
+      +singleSpaceSeparation: Boolean
+    }
+    enum Spacing {
+      NONE
+      SINGLE
+    }
+    enum BlankLines {
+      NONE
+      ONE
+      TWO
+    }
+    class FormatterConfigLoader {
+      +load(values: Map<String, ConfigValue>): Result<FormatterConfig, ConfigError>
+    }
+  }
+
+  package "formatter.versions" {
+    class PrintScript10 <<object>> {
+      +rules(config): List<SpacingRule>
+      +formatter(config): Formatter
+    }
+  }
+}
+
+TokenFormatter ..|> Formatter
+TokenFormatter --> SpacingMatcher
+TokenFormatter ..> FormattedTokens : devuelve
+FormattedTokens --> TokenSource : "suelta la referencia"
+FormattedTokens ..> FormattedCode : produce
+FormattedTokens --> FormattingState
+
+SpacingMatcher --> "0..*" SpacingRule
+SurroundingSpacing ..|> SpacingRule
+LineBreakAfterStatementRule ..|> SpacingRule
+LineBreaksAfterPrintlnRule ..|> SpacingRule
+SingleSpaceSeparationRule ..|> SpacingRule
+SpacingRule ..> FormattingState : consulta
+
+FormatterConfigLoader ..> FormatterConfig : arma
+FormatterConfig --> Spacing
+FormatterConfig --> BlankLines
+PrintScript10 ..> FormatterConfig : lee
+PrintScript10 ..> SurroundingSpacing : arma
+PrintScript10 ..> TokenFormatter : arma
+
+note right of TokenFormatter
+  Recorre los TOKENS, no el AST.
+  El AST no tiene el espaciado del
+  fuente, y los goldens del TCK
+  conservan espaciado que ninguna
+  clave pidio tocar.
+end note
+
+note bottom of SpacingRule
+  spacing = regla.spacingFor(...)
+            ?: state.pendingWhitespace
+
+  Ese "?:" es el modelo entero:
+  si ninguna regla opina, va el
+  espacio original.
+
+  Sin parametro "next": el espacio
+  DESPUES de un token se escribe
+  como el espacio ANTES del que
+  sigue.
+end note
+
+note right of SpacingMatcher
+  Gana la primera regla que
+  contesta. El orden importa solo
+  si dos opinan del mismo espacio:
+  de la mas especifica a la mas
+  amplia. singleSpaceSeparation
+  opina de TODOS, por eso va
+  ultima.
+end note
+
+note bottom of FormatterConfig
+  null = "esa clave no vino en el
+  config" = NO TOCAR ese espacio.
+  Es el tercer estado que necesita
+  un formatter incremental.
+end note
+
+@enduml

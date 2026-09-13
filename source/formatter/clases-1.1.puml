@@ -1,0 +1,120 @@
+@startuml formatter-clases-1-1
+title Modulo formatter - que agrega PrintScript 1.1
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+legend top
+  Blanco = clase nueva o modificada en 1.1
+  Gris   = ya estaba en 1.0 y no se toco
+endlegend
+
+package "formatter" {
+
+  interface Formatter #F0F4F4
+
+  package "formatter.engine" {
+    class TokenFormatter {
+      -matcher: SpacingMatcher
+      -indent: Indent?
+      -indented(spacing, indent, token, state): String
+    }
+  }
+
+  package "formatter.rules" {
+    interface SpacingRule <<fun interface>> #F0F4F4
+    class SpacingMatcher #F0F4F4
+    class SurroundingSpacing #F0F4F4
+    class LineBreakAfterStatementRule #F0F4F4
+    class LineBreaksAfterPrintlnRule #F0F4F4
+    class SingleSpaceSeparationRule #F0F4F4
+
+    class IfBraceRule {
+      -position: BracePosition?
+    }
+    class FormattingState {
+      +lastStatementHead: TokenType?
+      +blockDepth: Int
+      +pendingWhitespace: String
+    }
+  }
+
+  package "formatter.config" {
+    class FormatterConfig {
+      +ifBrace: BracePosition?
+      +indentInsideIf: Indent?
+    }
+    enum BracePosition {
+      SAME_LINE
+      BELOW_LINE
+    }
+    class Indent {
+      -spaces: Int
+      +render(depth: Int): String
+    }
+    class FormatterConfigLoader
+  }
+
+  package "formatter.versions" {
+    class PrintScript10 <<object>> #F0F4F4
+    class PrintScript11 <<object>> {
+      +rules(config) = IfBraceRule + PrintScript10.rules(config)
+      +formatter(config): Formatter
+    }
+    class Versions <<file>> {
+      +formatterFor(version, config): Formatter
+    }
+  }
+}
+
+IfBraceRule ..|> SpacingRule
+IfBraceRule --> BracePosition
+FormatterConfig --> BracePosition
+FormatterConfig --> Indent
+TokenFormatter --> Indent
+FormatterConfigLoader ..> FormatterConfig : arma
+PrintScript11 ..> PrintScript10 : "suma sobre"
+PrintScript11 ..> IfBraceRule : arma
+Versions ..> PrintScript10
+Versions ..> PrintScript11
+
+note right of BracePosition
+  if-brace-same-line e
+  if-brace-below-line NO son dos
+  reglas: son una perilla con tres
+  estados (arriba, abajo, no tocar).
+  Dos claves, un solo campo, una
+  sola regla. Asi no se pueden
+  contradecir.
+end note
+
+note bottom of TokenFormatter
+  indent-inside-if NO es una regla.
+  Una regla decide CUANTOS saltos
+  van; la sangria decide CON QUE
+  sigue el renglon despues del
+  ultimo. No compiten: se componen.
+
+  Si fuera una regla mas, prender
+  indent-inside-if junto con
+  line-breaks-after-println haria
+  que una le pise las lineas en
+  blanco a la otra.
+end note
+
+note right of PrintScript11
+  IfBraceRule va ADELANTE de las de
+  1.0: singleSpaceSeparation opina
+  de todos los espacios, asi que si
+  quedara detras le pisaria la llave.
+end note
+
+note left of FormattingState
+  blockDepth lo agrega 1.1: lo usa
+  la sangria para saber en que
+  nivel esta. El "}" se escribe con
+  la sangria de AFUERA.
+end note
+
+@enduml

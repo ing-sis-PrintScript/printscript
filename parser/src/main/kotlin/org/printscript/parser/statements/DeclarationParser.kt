@@ -11,8 +11,8 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.common.map
-import org.printscript.parser.ExpressionParser
 import org.printscript.parser.SyntaxError
+import org.printscript.parser.expressions.ExpressionParser
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.expect

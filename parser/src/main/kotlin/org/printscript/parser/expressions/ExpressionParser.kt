@@ -1,4 +1,4 @@
-package org.printscript.parser
+package org.printscript.parser.expressions
 
 import org.printscript.ast.Expression
 import org.printscript.common.PrintScriptError

@@ -1,0 +1,65 @@
+@startuml formatter-secuencia
+title Modulo formatter - formatear "let  x=5;" con enforce-spacing-around-equals
+
+participant "FormatRunner" as R
+participant "TokenFormatter" as F
+participant "FormattedTokens" as Seq
+participant "SpacingMatcher" as M
+participant "SurroundingSpacing" as Rule
+
+R -> F : format(tokens: TokenSource)
+activate F
+F --> R : Sequence<Result<FormattedCode, PrintScriptError>>
+deactivate F
+
+== Token LET, sin espacio adelante ==
+
+R -> Seq : next()
+activate Seq
+Seq -> M : spacingFor(prev=null, LET, state)
+M -> Rule : spacingFor(...)
+Rule --> M : null
+M --> Seq : null
+Seq -> Seq : usa state.pendingWhitespace = ""
+Seq --> R : FormattedCode("let")
+deactivate Seq
+
+== Token WHITESPACE, no se emite ==
+
+R -> Seq : next()
+activate Seq
+note right of Seq
+  Lee Token(WHITESPACE, "  "),
+  lo guarda en state.pendingWhitespace
+  y sigue leyendo sin devolver nada.
+end note
+Seq -> M : spacingFor(prev=LET, IDENTIFIER, state)
+M --> Seq : null
+Seq -> Seq : usa state.pendingWhitespace = "  "
+Seq --> R : FormattedCode("  x")
+deactivate Seq
+
+== Token ASSIGN, aca SI opina una regla ==
+
+R -> Seq : next()
+activate Seq
+Seq -> M : spacingFor(prev=IDENTIFIER, ASSIGN, state)
+M -> Rule : spacingFor(...)
+Rule --> M : " "
+note right of Rule : ASSIGN esta en mis types
+M --> Seq : " "
+Seq --> R : FormattedCode(" =")
+deactivate Seq
+
+note over R, Rule
+  Entra:  un TokenSource (los tokens CON los WHITESPACE)
+  Sale:   una Sequence perezosa de FormattedCode, de a un token
+
+  El corazon del modelo:
+    spacing = matcher.spacingFor(prev, token, state)
+              ?: state.pendingWhitespace
+
+  Sin reglas activas, la salida es el archivo tal cual.
+end note
+
+@enduml
