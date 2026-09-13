@@ -13,7 +13,7 @@ import org.printscript.analyzer.number
 import org.printscript.analyzer.program
 import org.printscript.analyzer.programWithSyntaxError
 import org.printscript.analyzer.rangeAt
-import org.printscript.ast.ASTNode
+import org.printscript.ast.AstNode
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.VariableDeclaration
@@ -25,7 +25,7 @@ class PrintScriptAnalyzerTest {
     /** Una regla de prueba que reporta cualquier VariableDeclaration, sin importar el nombre. */
     private object FlagsEveryDeclaration : Rule {
         override fun check(
-            node: ASTNode,
+            node: AstNode,
             emit: DiagnosticEmitter,
         ) {
             if (node is VariableDeclaration) {
@@ -37,7 +37,7 @@ class PrintScriptAnalyzerTest {
     /** Una regla de prueba que reporta cualquier BinaryExpression que encuentre, a cualquier profundidad. */
     private object FlagsEveryBinary : Rule {
         override fun check(
-            node: ASTNode,
+            node: AstNode,
             emit: DiagnosticEmitter,
         ) {
             if (node is BinaryExpression) {

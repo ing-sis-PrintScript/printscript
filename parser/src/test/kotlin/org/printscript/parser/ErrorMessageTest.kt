@@ -1,6 +1,6 @@
 package org.printscript.parser
 
-import org.printscript.ast.ASTNode
+import org.printscript.ast.AstNode
 import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
@@ -31,7 +31,7 @@ class ErrorMessageTest {
     private fun eof() = Token(TokenType.EOF, "", Range(Position(1, column), Position(1, column)))
 
     private fun messageOf(vararg tokens: Token): String {
-        val results: List<Result<ASTNode, PrintScriptError>> =
+        val results: List<Result<AstNode, PrintScriptError>> =
             parser.parse(ListTokenSource(tokens.toList() + eof())).toList()
         val failure =
             results.filterIsInstance<Result.Failure<PrintScriptError>>().firstOrNull()

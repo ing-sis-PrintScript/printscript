@@ -9,7 +9,7 @@ import org.printscript.analyzer.id
 import org.printscript.analyzer.number
 import org.printscript.analyzer.rangeAt
 import org.printscript.analyzer.string
-import org.printscript.ast.ASTNode
+import org.printscript.ast.AstNode
 import org.printscript.ast.BinaryOperator
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
 class CallArgumentRuleTest {
     private val rule = printlnArgumentRule()
 
-    private fun diagnosticsOf(node: ASTNode): List<Diagnostic> {
+    private fun diagnosticsOf(node: AstNode): List<Diagnostic> {
         val found = mutableListOf<Diagnostic>()
         rule.check(node, DiagnosticEmitter { found.add(it) })
         return found
