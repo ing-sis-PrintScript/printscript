@@ -4,8 +4,13 @@ plugins {
 
 dependencies {
     api(project(":common"))
+    // statements() devuelve Sequence<Result<Statement, ...>>, y Statement es de
+    // :ast. Antes llegaba de prestado por el api(parser); ahora se declara.
+    api(project(":ast"))
     api(project(":lexer"))
-    api(project(":parser"))
+    // implementation y no api: ningun tipo publico de runner viene de :parser.
+    // statements() devuelve Statement, que es de :ast. El parser se usa adentro.
+    implementation(project(":parser"))
     api(project(":interpreter"))
     api(project(":formatter"))
     api(project(":analyzer"))
