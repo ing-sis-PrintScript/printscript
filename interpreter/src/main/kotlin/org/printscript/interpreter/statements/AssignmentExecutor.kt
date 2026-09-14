@@ -9,12 +9,6 @@ import org.printscript.interpreter.ExpressionEvaluator
 import org.printscript.interpreter.InterpreterError
 import org.printscript.interpreter.io.PrintScriptIO
 
-/**
- * assignment = identifier, "=", expression, ";" ;
- *
- * La variable ya existe y su tipo quedó fijado en la declaración: Environment
- * es quien valida que exista y que el tipo coincida.
- */
 class AssignmentExecutor(
     private val evaluator: ExpressionEvaluator = ExpressionEvaluator(),
 ) : StatementExecutor {
@@ -25,7 +19,7 @@ class AssignmentExecutor(
     ): Result<Environment, InterpreterError>? {
         val assignment = statement as? AssignmentStatement ?: return null
 
-        return evaluator.evaluate(assignment.value, env).flatMap { value ->
+        return evaluator.evaluate(assignment.value, env, io).flatMap { value ->
             env.assign(assignment.target.name, value, assignment.range)
         }
     }

@@ -1,6 +1,7 @@
 package org.printscript.lexer.source
 
 import org.printscript.common.Position
+import org.printscript.common.Range
 
 internal data class SourceCursor(
     private val lines: SourceReader,
@@ -8,10 +9,16 @@ internal data class SourceCursor(
     val lineNumber: Int,
     val index: Int,
     private val lastEnd: Position,
+    val skipped: String = "",
+    private val skippedStart: Position = Position(1, 1),
 ) {
+    val skippedRange: Range get() = Range(skippedStart, Position(maxOf(lineNumber, 1), maxOf(index, 1)))
+
     fun moveToNextToken(): ScanResult = scan(this)
 
-    fun advanceTo(nextIndex: Int): SourceCursor = copy(index = nextIndex)
+    fun advanceTo(nextIndex: Int): SourceCursor = copy(index = nextIndex, skipped = "")
+
+    fun clearSkipped(): SourceCursor = copy(skipped = "")
 
     private tailrec fun scan(cursor: SourceCursor): ScanResult {
         val atToken = cursor.skippingSpaces()
@@ -25,9 +32,26 @@ internal data class SourceCursor(
     }
 
     private fun skippingSpaces(): SourceCursor =
-        copy(index = (index until line.length).firstOrNull { !line[it].isWhitespace() } ?: line.length)
+        stoppingAt((index until line.length).firstOrNull { !line[it].isWhitespace() } ?: line.length)
 
-    private fun closingCurrentLine(): SourceCursor = copy(lastEnd = Position(maxOf(lineNumber, 1), line.length + 1))
+    private fun stoppingAt(next: Int): SourceCursor =
+        plusSkipped(line.substring(index, next), Position(maxOf(lineNumber, 1), index + 1)).copy(index = next)
+
+    private fun plusSkipped(
+        more: String,
+        at: Position,
+    ): SourceCursor =
+        when {
+            more.isEmpty() -> this
+            skipped.isEmpty() -> copy(skipped = more, skippedStart = at)
+            else -> copy(skipped = skipped + more)
+        }
+
+    private fun closingCurrentLine(): SourceCursor {
+        val end = Position(maxOf(lineNumber, 1), line.length + 1)
+        val closed = copy(lastEnd = end)
+        return if (lineNumber >= 1) closed.plusSkipped("\n", end) else closed
+    }
 
     private fun startingLine(
         next: String,

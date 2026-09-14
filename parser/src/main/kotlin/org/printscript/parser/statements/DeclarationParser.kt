@@ -1,5 +1,6 @@
 package org.printscript.parser.statements
 
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
@@ -10,8 +11,8 @@ import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
 import org.printscript.common.map
-import org.printscript.parser.ExpressionParser
 import org.printscript.parser.SyntaxError
+import org.printscript.parser.expressions.ExpressionParser
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.expect
@@ -23,30 +24,32 @@ import org.printscript.token.TokenType
 class DeclarationParser(
     private val expressions: ExpressionParser,
 ) : StatementParser {
-    override fun canHandle(type: TokenType): Boolean = type == TokenType.LET
+    override fun canHandle(type: TokenType): Boolean = type == TokenType.LET || type == TokenType.CONST
 
     override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> {
-        val letResult = stream.expect(TokenType.LET)
-        if (letResult is Result.Failure) return letResult
-        val (letToken, afterLet) = (letResult as Result.Success).value
+        val keywordResult = stream.next()
+        if (keywordResult is Result.Failure) return keywordResult
+        val (keyword, afterKeyword) = (keywordResult as Result.Success).value
 
-        val identifierResult = parseIdentifier(afterLet)
+        val identifierResult = parseIdentifier(afterKeyword)
         if (identifierResult is Result.Failure) return identifierResult
         val (identifier, afterIdentifier) = (identifierResult as Result.Success).value
 
-        return finishDeclaration(letToken.range.start, identifier, afterIdentifier)
+        val kind = if (keyword.type == TokenType.CONST) DeclarationKind.CONST else DeclarationKind.LET
+        return finishDeclaration(keyword.range.start, identifier, afterIdentifier, kind)
     }
 
     private fun finishDeclaration(
         start: Position,
         identifier: Identifier,
         stream: TokenStream,
+        kind: DeclarationKind,
     ): Result<Parsed<Statement>, PrintScriptError> {
         val typeResult = parseTypeAnnotation(stream)
         if (typeResult is Result.Failure) return typeResult
         val (declaredType, afterType) = (typeResult as Result.Success).value
 
-        val initializerResult = parseInitializer(afterType)
+        val initializerResult = parseInitializer(afterType, kind, identifier.range)
         if (initializerResult is Result.Failure) return initializerResult
         val (initializer, afterInitializer) = (initializerResult as Result.Success).value
 
@@ -59,6 +62,7 @@ class DeclarationParser(
                 identifier = identifier,
                 declaredType = declaredType,
                 initializer = initializer,
+                kind = kind,
                 range = Range(start, semicolon.range.end),
             )
         return Result.Success(Parsed(declaration, afterSemicolon))
@@ -81,13 +85,25 @@ class DeclarationParser(
         return when (token.type) {
             TokenType.TYPE_NUMBER -> Result.Success(Parsed(DeclaredType.NUMBER, afterType))
             TokenType.TYPE_STRING -> Result.Success(Parsed(DeclaredType.STRING, afterType))
-            else -> Result.Failure(SyntaxError("Se esperaba 'number' o 'string'", token.range))
+            TokenType.TYPE_BOOLEAN -> Result.Success(Parsed(DeclaredType.BOOLEAN, afterType))
+
+            else -> Result.Failure(SyntaxError("'${token.value}' no es un tipo", token.range))
         }
     }
 
-    // La gramática dice ["=", expression]: sin "=" no hay inicializador y el stream queda donde estaba.
-    private fun parseInitializer(stream: TokenStream): Result<Parsed<Expression?>, PrintScriptError> {
-        if (!stream.peekIs(TokenType.ASSIGN)) return Result.Success(Parsed(null, stream))
+    private fun parseInitializer(
+        stream: TokenStream,
+        kind: DeclarationKind,
+        identifierRange: Range,
+    ): Result<Parsed<Expression?>, PrintScriptError> {
+        if (!stream.peekIs(TokenType.ASSIGN)) {
+            if (kind == DeclarationKind.CONST) {
+                return Result.Failure(
+                    SyntaxError("Una constante tiene que declararse con un valor", identifierRange),
+                )
+            }
+            return Result.Success(Parsed(null, stream))
+        }
 
         val assignResult = stream.skip(TokenType.ASSIGN)
         if (assignResult is Result.Failure) return assignResult

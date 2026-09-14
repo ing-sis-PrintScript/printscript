@@ -39,11 +39,20 @@ class LexerTest {
             }
         }
 
-    private fun tokensOf(source: String): List<Token> {
+    private fun allTokensOf(source: String): List<Token> {
         val resultados = drain(lexer.tokenize(source))
         assertTrue(resultados.all { it is TokenReadResult.Success }, "esperaba que funcione y falló")
         return resultados.filterIsInstance<TokenReadResult.Success>().map { it.token }
     }
+
+    // Solo los tokens con contenido. La mayoria de los tests son sobre que palabra
+    // produce que tipo, no sobre el espaciado; los que si miran el espacio usan
+    // allTokensOf o whitespaceOf.
+    private fun tokensOf(source: String): List<Token> =
+        allTokensOf(source).filterNot { it.type == TokenType.WHITESPACE }
+
+    private fun whitespaceOf(source: String): List<String> =
+        allTokensOf(source).filter { it.type == TokenType.WHITESPACE }.map { it.value }
 
     private fun typesOf(source: String): List<TokenType> = tokensOf(source).map { it.type }
 
@@ -199,6 +208,39 @@ class LexerTest {
 
         val failure = assertIs<TokenReadResult.Failure>(ultimo)
         assertEquals(TokenReadResult.EndOfInput, failure.remaining.nextToken())
+    }
+
+    @Test
+    fun `el espacio entre dos tokens sale como un token propio`() {
+        assertEquals(listOf("  ", " ", "\n  "), whitespaceOf("let  x =\n  5;"))
+    }
+
+    @Test
+    fun `el archivo no arranca con un token de espacio que no existe`() {
+        assertEquals(TokenType.LET, allTokensOf("let x;").first().type)
+    }
+
+    // La propiedad que hace que el formatter pueda preservar: la tira de tokens es
+    // una transcripcion del archivo, sin nada perdido en el medio.
+    @Test
+    fun `los tokens reconstruyen el fuente`() {
+        val fuente = "let  x : number = 5;\n\nprintln( x );"
+
+        assertEquals(fuente, allTokensOf(fuente).joinToString("") { it.value })
+    }
+
+    @Test
+    fun `las lineas en blanco quedan adentro de un solo token de espacio`() {
+        val antesDelPrintln = whitespaceOf("let x = 5;\n\n\nprintln(x);").last()
+
+        assertEquals("\n\n\n", antesDelPrintln)
+    }
+
+    // El espacio del final del archivo no sale como token: si saliera, el formatter
+    // lo escribiria y todos los goldens terminarian con un salto de mas.
+    @Test
+    fun `el espacio del final del archivo no sale como token`() {
+        assertEquals(emptyList(), whitespaceOf("5;\n"))
     }
 
     @Test

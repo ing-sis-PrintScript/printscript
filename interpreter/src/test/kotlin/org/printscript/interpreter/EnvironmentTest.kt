@@ -1,5 +1,6 @@
 package org.printscript.interpreter
 
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.common.Position
 import org.printscript.common.Range
@@ -27,7 +28,14 @@ class EnvironmentTest {
     fun `declarar una variable nueva es exitoso`() {
         val env = Environment()
 
-        val result = env.declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(5.0), dummyRange)
+        val result =
+            env.declare(
+                "x",
+                DeclaredType.NUMBER,
+                PrintScriptValue.NumberValue(5.0),
+                dummyRange,
+                DeclarationKind.LET,
+            )
 
         valueOf(result)
     }
@@ -36,7 +44,7 @@ class EnvironmentTest {
     fun `declarar no muta el Environment original`() {
         val env = Environment()
 
-        env.declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(5.0), dummyRange)
+        env.declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(5.0), dummyRange, DeclarationKind.LET)
 
         // El env original nunca tuvo "x": declare devolvió uno nuevo, no lo mutó.
         val result = env.get("x", dummyRange)
@@ -45,16 +53,39 @@ class EnvironmentTest {
 
     @Test
     fun `declarar una variable dos veces falla`() {
-        val env = valueOf(env().declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(1.0), dummyRange))
+        val env =
+            valueOf(
+                env().declare(
+                    "x",
+                    DeclaredType.NUMBER,
+                    PrintScriptValue.NumberValue(1.0),
+                    dummyRange,
+                    DeclarationKind.LET,
+                ),
+            )
 
-        val result = env.declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(2.0), dummyRange)
+        val result =
+            env.declare(
+                "x",
+                DeclaredType.NUMBER,
+                PrintScriptValue.NumberValue(2.0),
+                dummyRange,
+                DeclarationKind.LET,
+            )
 
         assertEquals("La variable 'x' ya fue declarada.", errorOf(result).message)
     }
 
     @Test
     fun `declarar con un valor de tipo distinto al declarado falla`() {
-        val result = env().declare("x", DeclaredType.NUMBER, PrintScriptValue.StringValue("hola"), dummyRange)
+        val result =
+            env().declare(
+                "x",
+                DeclaredType.NUMBER,
+                PrintScriptValue.StringValue("hola"),
+                dummyRange,
+                DeclarationKind.LET,
+            )
 
         assertEquals(
             "Se esperaba un tipo 'NUMBER' pero se obtuvo un valor distinto.",
@@ -64,7 +95,7 @@ class EnvironmentTest {
 
     @Test
     fun `declarar sin inicializador no chequea tipo y queda no inicializada`() {
-        val env = valueOf(env().declare("x", DeclaredType.STRING, null, dummyRange))
+        val env = valueOf(env().declare("x", DeclaredType.STRING, null, dummyRange, DeclarationKind.LET))
 
         val result = env.get("x", dummyRange)
 
@@ -80,7 +111,16 @@ class EnvironmentTest {
 
     @Test
     fun `assign con tipo incompatible falla`() {
-        val env = valueOf(env().declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(1.0), dummyRange))
+        val env =
+            valueOf(
+                env().declare(
+                    "x",
+                    DeclaredType.NUMBER,
+                    PrintScriptValue.NumberValue(1.0),
+                    dummyRange,
+                    DeclarationKind.LET,
+                ),
+            )
 
         val result = env.assign("x", PrintScriptValue.StringValue("hola"), dummyRange)
 
@@ -92,7 +132,16 @@ class EnvironmentTest {
 
     @Test
     fun `assign no muta el Environment original`() {
-        val declared = valueOf(env().declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(1.0), dummyRange))
+        val declared =
+            valueOf(
+                env().declare(
+                    "x",
+                    DeclaredType.NUMBER,
+                    PrintScriptValue.NumberValue(1.0),
+                    dummyRange,
+                    DeclarationKind.LET,
+                ),
+            )
 
         declared.assign("x", PrintScriptValue.NumberValue(99.0), dummyRange)
 
@@ -102,7 +151,16 @@ class EnvironmentTest {
 
     @Test
     fun `assign exitoso actualiza el valor para el Environment devuelto`() {
-        val declared = valueOf(env().declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(1.0), dummyRange))
+        val declared =
+            valueOf(
+                env().declare(
+                    "x",
+                    DeclaredType.NUMBER,
+                    PrintScriptValue.NumberValue(1.0),
+                    dummyRange,
+                    DeclarationKind.LET,
+                ),
+            )
 
         val reassigned = valueOf(declared.assign("x", PrintScriptValue.NumberValue(99.0), dummyRange))
 
@@ -118,7 +176,16 @@ class EnvironmentTest {
 
     @Test
     fun `get sobre variable declarada e inicializada devuelve su valor`() {
-        val env = valueOf(env().declare("x", DeclaredType.STRING, PrintScriptValue.StringValue("hola"), dummyRange))
+        val env =
+            valueOf(
+                env().declare(
+                    "x",
+                    DeclaredType.STRING,
+                    PrintScriptValue.StringValue("hola"),
+                    dummyRange,
+                    DeclarationKind.LET,
+                ),
+            )
 
         assertEquals(PrintScriptValue.StringValue("hola"), valueOf(env.get("x", dummyRange)))
     }

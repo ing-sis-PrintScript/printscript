@@ -12,6 +12,11 @@ data class StringLiteral(
     override val range: Range,
 ) : Expression
 
+data class BooleanLiteral(
+    val value: Boolean,
+    override val range: Range,
+) : Expression
+
 data class Identifier(
     val name: String,
     override val range: Range,

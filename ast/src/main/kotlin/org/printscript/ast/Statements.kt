@@ -6,6 +6,7 @@ data class VariableDeclaration(
     val identifier: Identifier,
     val declaredType: DeclaredType,
     val initializer: Expression?,
+    val kind: DeclarationKind,
     override val range: Range,
 ) : Statement
 
@@ -17,5 +18,12 @@ data class AssignmentStatement(
 
 data class ExpressionStatement(
     val expression: Expression,
+    override val range: Range,
+) : Statement
+
+data class IfStatement(
+    val condition: Expression,
+    val thenBranch: List<Statement>,
+    val elseBranch: List<Statement>?,
     override val range: Range,
 ) : Statement

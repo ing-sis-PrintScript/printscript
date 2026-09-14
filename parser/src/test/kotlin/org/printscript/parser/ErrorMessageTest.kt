@@ -1,10 +1,11 @@
 package org.printscript.parser
 
-import org.printscript.ast.ASTNode
+import org.printscript.ast.AstNode
 import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.parser.versions.PrintScript10
 import org.printscript.token.ListTokenSource
 import org.printscript.token.Token
 import org.printscript.token.TokenType
@@ -30,7 +31,7 @@ class ErrorMessageTest {
     private fun eof() = Token(TokenType.EOF, "", Range(Position(1, column), Position(1, column)))
 
     private fun messageOf(vararg tokens: Token): String {
-        val results: List<Result<ASTNode, PrintScriptError>> =
+        val results: List<Result<AstNode, PrintScriptError>> =
             parser.parse(ListTokenSource(tokens.toList() + eof())).toList()
         val failure =
             results.filterIsInstance<Result.Failure<PrintScriptError>>().firstOrNull()
@@ -79,7 +80,7 @@ class ErrorMessageTest {
     @Test
     fun `el tipo declarado no es valido`() {
         assertEquals(
-            "Se esperaba 'number' o 'string'",
+            "'entero' no es un tipo",
             messageOf(let(), id("a"), colon(), id("entero"), semi()),
         )
     }

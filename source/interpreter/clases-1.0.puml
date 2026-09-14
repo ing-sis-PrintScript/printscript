@@ -1,0 +1,151 @@
+@startuml interpreter-clases-1-0
+title Modulo interpreter - clases (PrintScript 1.0)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "ast (compartido)" #F0F4F4 {
+  interface Statement
+  interface Expression
+  enum DeclaredType
+  enum DeclarationKind
+}
+
+package "interpreter" {
+
+  interface PrintScriptInterpreter {
+    +execute(statement: Statement, env: Environment): Result<Environment, InterpreterError>
+  }
+
+  class Interpreter {
+    -io: PrintScriptIO
+    -executors: StatementExecutors
+  }
+
+  class Environment {
+    -memory: Map<String, VariableSymbol>
+    +declare(name, type, value, range, kind): Result<Environment, InterpreterError>
+    +assign(name, value, range): Result<Environment, InterpreterError>
+    +get(name, range): Result<PrintScriptValue, InterpreterError>
+    +endScope(outer: Environment): Environment
+  }
+
+  class VariableSymbol <<private>> {
+    +value: PrintScriptValue?
+    +type: DeclaredType
+    +kind: DeclarationKind
+  }
+
+  class ExpressionEvaluator {
+    -builtIns: Map<String, BuiltInFunction>
+    +evaluate(expression, env, io): Result<PrintScriptValue, InterpreterError>
+    +call(expression, env, io): Result<PrintScriptValue?, InterpreterError>
+  }
+
+  class PrintScriptValue <<sealed>> {
+    NumberValue
+    StringValue
+    BooleanValue
+  }
+
+  class InterpreterError
+
+  package "interpreter.io" {
+    interface PrintScriptIO {
+      +print(message: String)
+      +read(prompt: String): String
+      +env(name: String): String?
+    }
+    class StandardIO
+  }
+
+  package "interpreter.statements" {
+    interface StatementExecutor {
+      +execute(statement, env, io): Result<Environment, InterpreterError>?
+    }
+    interface StatementExecutors <<fun interface>> {
+      +all(): List<StatementExecutor>
+      +execute(statement, env, io): Result<Environment, InterpreterError>
+    }
+    class DeclarationExecutor
+    class AssignmentExecutor
+    class ExpressionStatementExecutor
+    interface BuiltInFunction <<fun interface>> {
+      +call(argument, range, io): Result<PrintScriptValue?, InterpreterError>
+    }
+    class BuiltInFunctions <<object>> {
+      +PRINTLN
+    }
+  }
+
+  package "interpreter.versions" {
+    class PrintScript10 <<object>> {
+      +BUILT_INS: Map<String, BuiltInFunction>
+      +statementExecutors(): List<StatementExecutor>
+      +executors(): StatementExecutors
+    }
+  }
+}
+
+Interpreter ..|> PrintScriptInterpreter
+Interpreter --> StatementExecutors
+Interpreter --> PrintScriptIO
+
+StatementExecutors --> "1..*" StatementExecutor
+DeclarationExecutor ..|> StatementExecutor
+AssignmentExecutor ..|> StatementExecutor
+ExpressionStatementExecutor ..|> StatementExecutor
+
+DeclarationExecutor --> ExpressionEvaluator
+AssignmentExecutor --> ExpressionEvaluator
+ExpressionStatementExecutor --> ExpressionEvaluator
+
+ExpressionEvaluator --> "0..*" BuiltInFunction
+ExpressionEvaluator ..> PrintScriptValue : devuelve
+ExpressionEvaluator --> Environment : consulta
+BuiltInFunctions ..> BuiltInFunction : provee
+BuiltInFunction --> PrintScriptIO
+
+Environment --> "0..*" VariableSymbol
+VariableSymbol --> PrintScriptValue
+VariableSymbol --> DeclaredType
+VariableSymbol --> DeclarationKind
+
+StandardIO ..|> PrintScriptIO
+PrintScript10 ..> DeclarationExecutor : arma
+PrintScript10 ..> AssignmentExecutor : arma
+PrintScript10 ..> ExpressionStatementExecutor : arma
+PrintScript10 ..> BuiltInFunctions : registra
+
+note right of Interpreter
+  Sin estado. El Environment entra
+  y sale como valor, y lo hila
+  quien llama. Mismo giro que
+  Parser con TokenStream.
+end note
+
+note right of Environment
+  declare y assign NO mutan:
+  devuelven la version nueva.
+end note
+
+note bottom of StatementExecutor
+  null = "este statement no es mio".
+  Agregar uno nuevo es una clase mas
+  y una linea en la lista.
+
+  El precio: si nadie lo registra,
+  compila igual. Por eso existe
+  PrintScript10Test.
+end note
+
+note bottom of BuiltInFunction
+  Devuelve PrintScriptValue?
+  null = la funcion no deja valor
+  (println). Asi
+  "let x: string = println(...)"
+  falla diciendo la verdad.
+end note
+
+@enduml

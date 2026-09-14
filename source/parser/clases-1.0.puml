@@ -1,0 +1,148 @@
+@startuml parser-clases-1-0
+title Modulo parser - clases (PrintScript 1.0)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "token / ast (compartidos)" #F0F4F4 {
+  interface TokenSource
+  class Token
+  interface Statement
+  interface Expression
+}
+
+package "parser" {
+
+  class Parser {
+    -statements: StatementParsers
+    -recovery: RecoveryStrategy
+    +parse(source: TokenSource): Sequence<Result<Statement, PrintScriptError>>
+  }
+
+  class ParsedStatements <<private>>
+
+  interface RecoveryStrategy {
+    +recover(stream: TokenStream): TokenStream
+  }
+  class SkipToSemicolon <<object>>
+
+  class SyntaxError
+
+  package "parser.expressions" {
+    interface ExpressionParser {
+      +parse(stream: TokenStream): Result<Parsed<Expression>, PrintScriptError>
+    }
+    class PrecedenceExpressionParser {
+      -factors: FactorParser
+    }
+    class FactorParser <<internal>> {
+      -callTokens: Set<TokenType>
+    }
+  }
+
+  package "parser.statements" {
+    interface StatementParser {
+      +canHandle(type: TokenType): Boolean
+      +parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError>
+    }
+    interface StatementParsers <<fun interface>> {
+      +all(): List<StatementParser>
+      +parse(stream): Result<Parsed<Statement>, PrintScriptError>
+    }
+    class DeclarationParser
+    class AssignmentParser
+    class CallParser
+  }
+
+  package "parser.token" {
+    class TokenStream {
+      +peek(): Result<Token, PrintScriptError>
+      +advance(): TokenStream
+      +atEnd(): Boolean
+    }
+    class Parsed<T> {
+      +value: T
+      +rest: TokenStream
+    }
+    class UnexpectedEndOfInput
+  }
+
+  package "parser.versions" {
+    class PrintScript10 <<object>> {
+      +statementParsers(): List<StatementParser>
+      +parser(): Parser
+    }
+  }
+}
+
+Parser --> StatementParsers
+Parser --> RecoveryStrategy
+Parser ..> ParsedStatements : devuelve
+ParsedStatements --> TokenSource : "suelta la referencia"
+SkipToSemicolon ..|> RecoveryStrategy
+
+StatementParsers --> "1..*" StatementParser
+DeclarationParser ..|> StatementParser
+AssignmentParser ..|> StatementParser
+CallParser ..|> StatementParser
+
+DeclarationParser --> ExpressionParser
+AssignmentParser --> ExpressionParser
+CallParser --> ExpressionParser
+
+PrecedenceExpressionParser ..|> ExpressionParser
+PrecedenceExpressionParser --> FactorParser
+FactorParser ..> ExpressionParser : "recibe por parametro"
+
+StatementParser ..> Parsed : devuelve
+StatementParser ..> SyntaxError : devuelve
+Parsed --> TokenStream
+TokenStream --> Token
+TokenStream ..> UnexpectedEndOfInput
+
+PrintScript10 ..> DeclarationParser : arma
+PrintScript10 ..> AssignmentParser : arma
+PrintScript10 ..> CallParser : arma
+PrintScript10 ..> PrecedenceExpressionParser : arma
+PrintScript10 ..> Parser : arma
+
+note right of TokenStream
+  Inmutable: advance() devuelve
+  uno nuevo. Es el unico lugar
+  donde se descartan los tokens
+  WHITESPACE.
+end note
+
+note right of Parsed
+  "lo que parsee + donde quede".
+  Es lo que permite que nada
+  mute: cada paso devuelve el
+  resto del stream.
+end note
+
+note bottom of ParsedStatements
+  Se recorre UNA sola vez y pone
+  su referencia en null al dar el
+  iterador. Sin eso, sostener el
+  primer eslabon mantiene vivo el
+  archivo entero.
+end note
+
+note top of Parser
+  La raiz del modulo tiene solo tres
+  archivos: el coordinador, su politica
+  de recuperacion y su error. Las dos
+  mitades de la gramatica viven en
+  paquetes espejo: statements y
+  expressions.
+end note
+
+note bottom of SkipToSemicolon
+  Tras un error, avanza hasta
+  pasar el ";". Asi un statement
+  roto no invalida el resto del
+  archivo.
+end note
+
+@enduml

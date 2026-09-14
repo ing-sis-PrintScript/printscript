@@ -1,0 +1,17 @@
+package org.printscript.runner
+
+import org.printscript.common.PrintScriptError
+import org.printscript.common.Result
+import org.printscript.common.Version
+import org.printscript.formatter.FormattedCode
+import org.printscript.formatter.config.FormatterConfig
+import org.printscript.formatter.versions.formatterFor
+import org.printscript.lexer.versions.lexerFor
+
+class FormatRunner(
+    private val config: FormatterConfig,
+    private val version: Version,
+) {
+    fun format(source: SourceFactory): Sequence<Result<FormattedCode, PrintScriptError>> =
+        formatterFor(version, config).format(lexerFor(version).tokenize(source.open()))
+}

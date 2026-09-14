@@ -6,15 +6,12 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":runner"))
     implementation(project(":common"))
     implementation(project(":lexer"))
-    implementation(project(":parser"))
-    implementation(project(":interpreter"))
     implementation(project(":formatter"))
     implementation(project(":analyzer"))
     implementation(libs.clikt)
-    implementation(libs.jackson.databind)
-    implementation(libs.jackson.yaml)
 }
 
 application {

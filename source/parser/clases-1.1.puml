@@ -1,0 +1,112 @@
+@startuml parser-clases-1-1
+title Modulo parser - que agrega PrintScript 1.1
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+legend top
+  Blanco = clase nueva o modificada en 1.1
+  Gris   = ya estaba en 1.0 y no se toco
+endlegend
+
+package "ast" #F0F4F4 {
+  class IfStatement {
+    +condition: Expression
+    +thenBranch: List<Statement>
+    +elseBranch: List<Statement>?
+  }
+}
+
+package "parser" {
+
+  class Parser #F0F4F4
+
+  package "parser.expressions" {
+    class PrecedenceExpressionParser #F0F4F4
+    class FactorParser {
+      -callTokens: Set<TokenType>
+    }
+  }
+
+  package "parser.statements" {
+    interface StatementParser #F0F4F4
+    interface StatementParsers <<fun interface>> #F0F4F4
+    class DeclarationParser
+    class AssignmentParser #F0F4F4
+    class CallParser #F0F4F4
+
+    class IfParser {
+      +canHandle(type) = IF
+      +parse(stream): Result<Parsed<Statement>, ...>
+    }
+    class BlockParser {
+      +parse(stream): Result<Parsed<Block>, ...>
+    }
+    class Block {
+      +statements: List<Statement>
+      +close: Token
+    }
+  }
+
+  package "parser.versions" {
+    class PrintScript10 <<object>> #F0F4F4
+    class PrintScript11 <<object>> {
+      -parsers: List<StatementParser> <<by lazy>>
+      +parser(): Parser
+    }
+    class Versions <<file>> {
+      +parserFor(version: Version): Parser
+    }
+  }
+}
+
+IfParser ..|> StatementParser
+IfParser --> BlockParser
+IfParser ..> IfStatement : construye
+BlockParser --> StatementParsers
+BlockParser ..> Block : devuelve
+
+PrintScript11 ..> PrintScript10 : "suma sobre"
+PrintScript11 ..> IfParser : arma
+PrintScript11 ..> BlockParser : arma
+PrintScript11 ..> FactorParser : "callTokens = readInput, readEnv"
+Versions ..> PrintScript10
+Versions ..> PrintScript11
+
+note right of IfParser
+  No sabe nada de llaves: eso es
+  del BlockParser. El else recien
+  se sabe DESPUES de cerrar el
+  bloque del then.
+end note
+
+note bottom of BlockParser
+  Se guarda el "}" ademas de los
+  statements: es lo unico con lo
+  que se puede cerrar el Range del
+  if. Si hay else, el que cierra
+  es el del else.
+end note
+
+note bottom of PrintScript11
+  El ciclo: IfParser necesita la
+  lista de parsers, y esta ADENTRO
+  de esa lista. 'by lazy' lo rompe:
+  el lambda corre recien al parsear,
+  cuando la lista ya existe.
+
+  El const NO tiene parser propio:
+  lo maneja DeclarationParser, que
+  acepta LET y CONST.
+end note
+
+note right of FactorParser
+  En 1.0 callTokens esta vacio.
+  En 1.1 trae readInput y readEnv,
+  que devuelven un valor y por eso
+  se pueden usar dentro de una
+  expresion.
+end note
+
+@enduml

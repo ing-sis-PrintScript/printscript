@@ -4,6 +4,7 @@ import org.printscript.ast.AssignmentStatement
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.CallExpression
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
 import org.printscript.ast.ExpressionStatement
@@ -53,7 +54,7 @@ internal fun declaration(
     type: DeclaredType = DeclaredType.NUMBER,
     initializer: Expression? = null,
     identifierRange: Range = ANY_RANGE,
-) = VariableDeclaration(id(name, identifierRange), type, initializer, ANY_RANGE)
+) = VariableDeclaration(id(name, identifierRange), type, initializer, DeclarationKind.LET, ANY_RANGE)
 
 internal fun assignment(
     name: String,

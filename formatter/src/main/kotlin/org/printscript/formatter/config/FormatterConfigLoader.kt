@@ -47,23 +47,52 @@ class FormatterConfigLoader {
         value: ConfigValue,
     ): Result<FormatterConfig, ConfigError> =
         when (key) {
-            SPACE_BEFORE_COLON -> readSpacing(key, value).map { config.copy(spaceBeforeColon = it) }
-            SPACE_AFTER_COLON -> readSpacing(key, value).map { config.copy(spaceAfterColon = it) }
-            SPACE_AROUND_EQUALS -> readSpacing(key, value).map { config.copy(spaceAroundAssignment = it) }
-            PRINTLN_LINE_BREAKS -> readBlankLines(key, value).map { config.copy(blankLinesBeforePrintln = it) }
+            SPACE_BEFORE_COLON ->
+                readSpacing(key, value, Spacing.SINGLE, Spacing.NONE).map { config.copy(spaceBeforeColon = it) }
+            SPACE_AFTER_COLON ->
+                readSpacing(key, value, Spacing.SINGLE, Spacing.NONE).map { config.copy(spaceAfterColon = it) }
+            SPACE_AROUND_EQUALS ->
+                readSpacing(key, value, Spacing.SINGLE, Spacing.NONE).map { config.copy(spaceAroundAssignment = it) }
+
+            NO_SPACE_AROUND_EQUALS ->
+                readSpacing(key, value, Spacing.NONE, Spacing.SINGLE).map { config.copy(spaceAroundAssignment = it) }
+            PRINTLN_LINE_BREAKS -> readBlankLines(key, value).map { config.copy(lineBreaksAfterPrintln = it) }
+            LINE_BREAK_AFTER_STATEMENT ->
+                readBoolean(key, value).map { config.copy(lineBreakAfterStatement = it) }
+            SPACE_SURROUNDING_OPERATIONS ->
+                readBoolean(key, value).map { config.copy(spaceSurroundingOperations = it) }
+            SINGLE_SPACE_SEPARATION ->
+                readBoolean(key, value).map { config.copy(singleSpaceSeparation = it) }
+
+            IF_BRACE_SAME_LINE ->
+                readBracePosition(key, value, BracePosition.SAME_LINE).map { config.copy(ifBrace = it) }
+            IF_BRACE_BELOW_LINE ->
+                readBracePosition(key, value, BracePosition.BELOW_LINE).map { config.copy(ifBrace = it) }
+            INDENT_INSIDE_IF -> readIndent(key, value).map { config.copy(indentInsideIf = it) }
             else -> Result.Failure(ConfigError.UnknownRule(key))
         }
 
     private fun readSpacing(
         key: String,
         value: ConfigValue,
-    ): Result<Spacing, ConfigError> =
+        onTrue: Spacing,
+        onFalse: Spacing,
+    ): Result<Spacing, ConfigError> = readBoolean(key, value).map { if (it) onTrue else onFalse }
+
+    private fun readBracePosition(
+        key: String,
+        value: ConfigValue,
+        onTrue: BracePosition,
+    ): Result<BracePosition?, ConfigError> = readBoolean(key, value).map { if (it) onTrue else null }
+
+    private fun readBoolean(
+        key: String,
+        value: ConfigValue,
+    ): Result<Boolean, ConfigError> =
         when (value) {
-            is ConfigValue.BooleanValue -> Result.Success(spacingOf(value.value))
+            is ConfigValue.BooleanValue -> Result.Success(value.value)
             is ConfigValue.IntValue -> Result.Failure(ConfigError.WrongType(key, BOOLEAN))
         }
-
-    private fun spacingOf(enforced: Boolean): Spacing = if (enforced) Spacing.SINGLE else Spacing.NONE
 
     private fun readBlankLines(
         key: String,
@@ -83,11 +112,36 @@ class FormatterConfigLoader {
             else -> Result.Success(blankLines)
         }
 
+    private fun readIndent(
+        key: String,
+        value: ConfigValue,
+    ): Result<Indent, ConfigError> =
+        when (value) {
+            is ConfigValue.IntValue -> indentOf(key, value.value)
+            is ConfigValue.BooleanValue -> Result.Failure(ConfigError.WrongType(key, INT))
+        }
+
+    private fun indentOf(
+        key: String,
+        spaces: Int,
+    ): Result<Indent, ConfigError> =
+        when (val indent = Indent.of(spaces)) {
+            null -> Result.Failure(ConfigError.OutOfRange(key, spaces, Indent.ALLOWED))
+            else -> Result.Success(indent)
+        }
+
     private companion object {
         const val SPACE_BEFORE_COLON = "enforce-spacing-before-colon-in-declaration"
         const val SPACE_AFTER_COLON = "enforce-spacing-after-colon-in-declaration"
         const val SPACE_AROUND_EQUALS = "enforce-spacing-around-equals"
+        const val NO_SPACE_AROUND_EQUALS = "enforce-no-spacing-around-equals"
         const val PRINTLN_LINE_BREAKS = "line-breaks-after-println"
+        const val LINE_BREAK_AFTER_STATEMENT = "mandatory-line-break-after-statement"
+        const val SPACE_SURROUNDING_OPERATIONS = "mandatory-space-surrounding-operations"
+        const val SINGLE_SPACE_SEPARATION = "mandatory-single-space-separation"
+        const val IF_BRACE_SAME_LINE = "if-brace-same-line"
+        const val IF_BRACE_BELOW_LINE = "if-brace-below-line"
+        const val INDENT_INSIDE_IF = "indent-inside-if"
 
         const val BOOLEAN = "boolean"
         const val INT = "int"

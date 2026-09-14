@@ -17,9 +17,18 @@ internal data class LexingTokenSource(
 ) : TokenSource {
     override fun nextToken(): TokenReadResult =
         when (val scan = cursor.moveToNextToken()) {
-            is ScanResult.Found -> readTokenAt(scan.cursor)
+            is ScanResult.Found -> foundAt(scan.cursor)
             is ScanResult.Exhausted -> endOfFileAt(scan.endPosition)
         }
+
+    private fun foundAt(at: SourceCursor): TokenReadResult =
+        if (at.skipped.isEmpty()) readTokenAt(at) else whitespaceAt(at)
+
+    private fun whitespaceAt(at: SourceCursor): TokenReadResult =
+        TokenReadResult.Success(
+            Token(TokenType.WHITESPACE, at.skipped, at.skippedRange),
+            LexingTokenSource(matcher, at.clearSkipped()),
+        )
 
     private fun readTokenAt(at: SourceCursor): TokenReadResult =
         when (val match = matcher.match(at.line, at.index, at.lineNumber)) {

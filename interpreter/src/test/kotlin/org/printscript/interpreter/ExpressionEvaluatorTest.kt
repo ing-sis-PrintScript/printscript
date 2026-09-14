@@ -3,6 +3,7 @@ package org.printscript.interpreter
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.CallExpression
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.Expression
 import org.printscript.ast.Identifier
@@ -13,6 +14,7 @@ import org.printscript.ast.UnaryOperator
 import org.printscript.common.Position
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.interpreter.io.PrintScriptIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -20,6 +22,14 @@ import kotlin.test.assertIs
 class ExpressionEvaluatorTest {
     private val dummyRange = Range(Position(1, 1), Position(1, 10))
     private val evaluator = ExpressionEvaluator()
+
+    private object NoOpIO : PrintScriptIO {
+        override fun print(message: String) = Unit
+
+        override fun read(prompt: String): String = ""
+
+        override fun env(name: String): String? = null
+    }
 
     /** Desempaqueta un Success o falla el test. */
     private fun valueOf(result: Result<PrintScriptValue, InterpreterError>): PrintScriptValue {
@@ -36,7 +46,7 @@ class ExpressionEvaluatorTest {
     private fun eval(
         expression: Expression,
         env: Environment = Environment(),
-    ) = evaluator.evaluate(expression, env)
+    ) = evaluator.evaluate(expression, env, NoOpIO)
 
     private fun number(value: Double) = NumberLiteral(value, dummyRange)
 
@@ -68,7 +78,13 @@ class ExpressionEvaluatorTest {
     @Test
     fun `un Identifier se resuelve contra el Environment`() {
         val declared =
-            Environment().declare("x", DeclaredType.NUMBER, PrintScriptValue.NumberValue(42.0), dummyRange)
+            Environment().declare(
+                "x",
+                DeclaredType.NUMBER,
+                PrintScriptValue.NumberValue(42.0),
+                dummyRange,
+                DeclarationKind.LET,
+            )
         val env = (declared as Result.Success).value
 
         assertEquals(PrintScriptValue.NumberValue(42.0), valueOf(eval(Identifier("x", dummyRange), env)))
@@ -143,12 +159,23 @@ class ExpressionEvaluatorTest {
         assertEquals("No se puede negar 'hola'.", error.message)
     }
 
+    // println existe, pero no deja ningun valor: usarlo donde se espera uno es
+    // un error, y el mensaje dice exactamente eso.
     @Test
-    fun `una CallExpression anidada dentro de otra expresion no es soportada`() {
+    fun `una funcion que no devuelve nada no se puede usar dentro de una expresion`() {
         val call = CallExpression(Identifier("println", dummyRange), listOf(number(1.0)), dummyRange)
 
         val error = errorOf(eval(call))
 
-        assertEquals("No se puede usar la llamada a 'println' dentro de una expresión.", error.message)
+        assertEquals("'println' no devuelve un valor.", error.message)
+    }
+
+    @Test
+    fun `una funcion que no existe falla`() {
+        val call = CallExpression(Identifier("readInput", dummyRange), listOf(string("x")), dummyRange)
+
+        val error = errorOf(eval(call))
+
+        assertEquals("No existe la función 'readInput'.", error.message)
     }
 }

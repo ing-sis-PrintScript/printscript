@@ -10,12 +10,6 @@ import org.printscript.interpreter.InterpreterError
 import org.printscript.interpreter.PrintScriptValue
 import org.printscript.interpreter.io.PrintScriptIO
 
-/**
- * declaration = "let", identifier, ":", type, [ "=", expression ], ";" ;
- *
- * Si hay inicializador lo evalúa; si no, declara la variable sin valor (queda
- * "no inicializada", y leerla antes de asignarle algo es error de Environment).
- */
 class DeclarationExecutor(
     private val evaluator: ExpressionEvaluator = ExpressionEvaluator(),
 ) : StatementExecutor {
@@ -27,10 +21,16 @@ class DeclarationExecutor(
         val declaration = statement as? VariableDeclaration ?: return null
 
         val initialValue: Result<PrintScriptValue?, InterpreterError> =
-            declaration.initializer?.let { evaluator.evaluate(it, env) } ?: Result.Success(null)
+            declaration.initializer?.let { evaluator.evaluate(it, env, io) } ?: Result.Success(null)
 
         return initialValue.flatMap { value ->
-            env.declare(declaration.identifier.name, declaration.declaredType, value, declaration.range)
+            env.declare(
+                declaration.identifier.name,
+                declaration.declaredType,
+                value,
+                declaration.range,
+                declaration.kind,
+            )
         }
     }
 }

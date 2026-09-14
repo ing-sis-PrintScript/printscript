@@ -6,7 +6,7 @@ import org.printscript.ast.Statement
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
-import org.printscript.parser.ExpressionParser
+import org.printscript.parser.expressions.ExpressionParser
 import org.printscript.parser.token.Parsed
 import org.printscript.parser.token.TokenStream
 import org.printscript.parser.token.expect
@@ -19,7 +19,6 @@ class AssignmentParser(
 ) : StatementParser {
     override fun canHandle(type: TokenType): Boolean = type == TokenType.IDENTIFIER
 
-    // El identificador de la izquierda es el destino, no un valor: no lo parsea el ExpressionParser.
     override fun parse(stream: TokenStream): Result<Parsed<Statement>, PrintScriptError> {
         val nameResult = stream.expect(TokenType.IDENTIFIER, "como nombre de la variable")
         if (nameResult is Result.Failure) return nameResult

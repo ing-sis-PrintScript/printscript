@@ -1,0 +1,58 @@
+@startuml analyzer-secuencia
+title Modulo analyzer - analizar "let mi_variable: number = 1; println(1 + 2);"
+
+participant "AnalyzeRunner" as R
+participant "PrintScriptAnalyzer" as A
+participant "IdentifierNamingRule" as N
+participant "CallArgumentRule" as C
+participant "DiagnosticEmitter" as E
+
+note over R : config = camelCase + restrictPrintlnArguments
+
+R -> A : analyze(sequenceOf(VariableDeclaration), emit)
+activate A
+A -> A : visit(VariableDeclaration)
+A -> N : check(VariableDeclaration, emit)
+N --> A : (no es un Identifier, no opina)
+A -> C : check(VariableDeclaration, emit)
+C --> A : (no es una CallExpression, no opina)
+
+A -> A : children(VariableDeclaration) = [Identifier, NumberLiteral]
+A -> A : visit(Identifier)
+A -> N : check(Identifier("mi_variable"), emit)
+N -> E : emit(Diagnostic("identifier-naming", ERROR))
+N --> A
+A -> C : check(Identifier, emit)
+C --> A : (no opina)
+A --> R
+deactivate A
+
+note over A : Las dos reglas ven TODOS los nodos. Cada una decide sola.
+
+R -> A : analyze(sequenceOf(ExpressionStatement), emit)
+activate A
+A -> A : children -> CallExpression -> [Identifier(println), BinaryExpression]
+A -> C : check(CallExpression(println), emit)
+C -> E : emit(Diagnostic("println-argument", ERROR))
+C --> A
+A --> R
+deactivate A
+
+== Si el parser devolvio un error ==
+
+R -> R : es Result.Failure
+R -> E : emit(Diagnostic("syntax", ERROR))
+note right
+  El analyzer ni se entera: el runner
+  reporta el error de sintaxis y sigue
+  con el statement siguiente.
+end note
+
+note over R, E
+  Entra:  una Sequence<Result<ASTNode, PrintScriptError>> (lo que da el parser)
+  Sale:   nada. Los problemas salen por el DiagnosticEmitter, a medida que aparecen.
+
+  No devuelve una lista: un archivo con miles de problemas no se acumula en memoria.
+end note
+
+@enduml

@@ -1,0 +1,70 @@
+@startuml parser-secuencia
+title Modulo parser - parsear "let x = 5;"
+
+participant "cliente" as C
+participant "Parser" as P
+participant "ParsedStatements" as Seq
+participant "StatementParsers" as SP
+participant "DeclarationParser" as DP
+participant "TokenStream" as TS
+participant "PrecedenceExpressionParser" as EP
+
+C -> P : parse(tokens: TokenSource)
+activate P
+P --> C : Sequence<Result<Statement, PrintScriptError>>
+deactivate P
+
+note over C, Seq : Todavia no se leyo ningun token
+
+C -> Seq : iterator().next()
+activate Seq
+Seq -> TS : peek()
+activate TS
+TS --> Seq : Token(LET)
+deactivate TS
+
+Seq -> SP : parse(stream)
+activate SP
+SP -> SP : firstOrNull { canHandle(LET) }
+SP -> DP : parse(stream)
+activate DP
+
+DP -> TS : expect(LET), expect(IDENTIFIER), skip(COLON), expect(TYPE_NUMBER)
+TS --> DP : Parsed(token, rest)
+
+DP -> EP : parse(stream)
+activate EP
+EP --> DP : Parsed(NumberLiteral(5.0), rest)
+deactivate EP
+
+DP -> TS : expect(SEMICOLON)
+TS --> DP : Parsed(token, rest)
+
+DP --> SP : Success(Parsed(VariableDeclaration, rest))
+deactivate DP
+SP --> Seq : Success(Parsed(Statement, rest))
+deactivate SP
+
+Seq --> C : Success(VariableDeclaration)
+deactivate Seq
+
+== Si un statement falla ==
+
+C -> Seq : next()
+activate Seq
+Seq -> SP : parse(stream)
+SP --> Seq : Failure(SyntaxError)
+Seq -> Seq : recovery.recover(stream)
+note right : SkipToSemicolon: avanza hasta pasar el ";"
+Seq --> C : Failure(SyntaxError)
+deactivate Seq
+
+note over C, EP
+  Entra:  un TokenSource (los tokens de a uno, sin WHITESPACE)
+  Sale:   una Sequence perezosa de Result<Statement, PrintScriptError>
+
+  Un statement roto no corta el archivo: se reporta y se sigue
+  desde el ";" siguiente.
+end note
+
+@enduml

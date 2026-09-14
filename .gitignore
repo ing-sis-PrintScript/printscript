@@ -23,3 +23,7 @@ gradle-app.setting
 
 # macOS
 .DS_Store
+
+# Notas de trabajo: el unico .md versionado es el README
+*.md
+!README.md

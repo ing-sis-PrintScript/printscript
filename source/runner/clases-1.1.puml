@@ -1,0 +1,88 @@
+@startuml runner-clases-1-1
+title Modulo runner - que cambia en PrintScript 1.1
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+legend top
+  Blanco = cambiado en 1.1
+  Gris   = sin cambios
+endlegend
+
+package "common" {
+  enum Version {
+    V10("1.0")
+    V11("1.1")
+    +of(id: String): Version?
+  }
+}
+
+package "runner" {
+  class Pipeline <<file>> {
+    +statements(source, version, progress)
+  }
+  class ValidateRunner {
+    -version: Version
+  }
+  class ExecuteRunner {
+    -version: Version
+  }
+  class FormatRunner {
+    -version: Version
+  }
+  class AnalyzeRunner {
+    -version: Version
+  }
+  interface SourceFactory <<fun interface>> #F0F4F4
+
+  package "runner.config" {
+    class FormatterConfigFile {
+      +if-brace-same-line
+      +if-brace-below-line
+      +indent-inside-if
+    }
+    class AnalyzerConfigFile {
+      +mandatory-variable-or-literal-in-readInput
+    }
+  }
+}
+
+package "cli" {
+  class VersionOption <<file>> {
+    +versionOption(): --version
+  }
+}
+
+ValidateRunner ..> Pipeline
+ExecuteRunner ..> Pipeline
+AnalyzeRunner ..> Pipeline
+Pipeline --> Version
+ValidateRunner --> Version
+ExecuteRunner --> Version
+FormatRunner --> Version
+AnalyzeRunner --> Version
+VersionOption ..> Version : convierte
+
+note right of Version
+  El unico tipo nuevo. Viaja por
+  todo el pipeline y cada modulo
+  lo resuelve en su Versions.kt,
+  con un when exhaustivo.
+end note
+
+note bottom of VersionOption
+  Una sola declaracion para los
+  cuatro comandos del CLI, igual
+  que configText().
+end note
+
+note left of Pipeline
+  No hay ninguna validacion de
+  version. Un programa de 1.1
+  corrido como 1.0 falla solo:
+  con las reglas de 1.0 esas
+  palabras no son keywords.
+end note
+
+@enduml

@@ -1,0 +1,41 @@
+package org.printscript.runner
+
+import org.printscript.analyzer.Diagnostic
+import org.printscript.analyzer.DiagnosticEmitter
+import org.printscript.analyzer.Severity
+import org.printscript.analyzer.config.AnalyzerConfig
+import org.printscript.analyzer.versions.analyzerFor
+import org.printscript.common.PrintScriptError
+import org.printscript.common.Result
+import org.printscript.common.Version
+import org.printscript.runner.progress.Progress
+
+private const val SYNTAX = "syntax"
+
+class AnalyzeRunner(
+    private val config: AnalyzerConfig,
+    private val version: Version,
+    private val progress: Progress = Progress.NONE,
+) {
+    fun analyze(
+        source: SourceFactory,
+        emit: DiagnosticEmitter,
+    ) {
+        val analyzer = analyzerFor(version, config)
+
+        for (step in statements(source, version, progress)) {
+            when (step) {
+                is Result.Failure -> emit.emit(syntaxProblem(step.error))
+                is Result.Success -> analyzer.analyze(sequenceOf(step), emit)
+            }
+        }
+    }
+
+    private fun syntaxProblem(error: PrintScriptError) =
+        Diagnostic(
+            rule = SYNTAX,
+            message = error.message,
+            range = error.range,
+            severity = Severity.ERROR,
+        )
+}

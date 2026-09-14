@@ -4,4 +4,6 @@ interface PrintScriptIO {
     fun print(message: String)
 
     fun read(prompt: String): String
+
+    fun env(name: String): String?
 }

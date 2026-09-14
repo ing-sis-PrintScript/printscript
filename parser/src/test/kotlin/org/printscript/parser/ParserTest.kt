@@ -1,7 +1,7 @@
 package org.printscript.parser
 
-import org.printscript.ast.ASTNode
 import org.printscript.ast.AssignmentStatement
+import org.printscript.ast.AstNode
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.CallExpression
@@ -17,6 +17,7 @@ import org.printscript.common.Position
 import org.printscript.common.PrintScriptError
 import org.printscript.common.Range
 import org.printscript.common.Result
+import org.printscript.parser.versions.PrintScript10
 import org.printscript.token.ListTokenSource
 import org.printscript.token.Token
 import org.printscript.token.TokenType
@@ -55,14 +56,14 @@ class ParserTest {
 
     private fun eof() = Token(TokenType.EOF, "", Range(Position(1, column), Position(1, column)))
 
-    private fun parse(vararg tokens: Token): List<Result<ASTNode, PrintScriptError>> =
+    private fun parse(vararg tokens: Token): List<Result<AstNode, PrintScriptError>> =
         parser.parse(ListTokenSource(tokens.toList() + eof())).toList()
 
-    private fun single(vararg tokens: Token): ASTNode {
+    private fun single(vararg tokens: Token): AstNode {
         val results = parse(*tokens)
         assertEquals(1, results.size, "esperaba un solo statement, salieron ${results.size}")
         val first = results.first()
-        assertIs<Result.Success<ASTNode>>(first, "esperaba parsear bien: $first")
+        assertIs<Result.Success<AstNode>>(first, "esperaba parsear bien: $first")
         return first.value
     }
 
@@ -242,7 +243,7 @@ class ParserTest {
         assertEquals(3, results.size)
         assertTrue(results.all { it is Result.Success }, "los tres statements tienen que parsear")
 
-        val nodes = results.filterIsInstance<Result.Success<ASTNode>>().map { it.value }
+        val nodes = results.filterIsInstance<Result.Success<AstNode>>().map { it.value }
         assertIs<VariableDeclaration>(nodes[0])
         assertIs<VariableDeclaration>(nodes[1])
         assertIs<ExpressionStatement>(nodes[2])
@@ -287,7 +288,7 @@ class ParserTest {
         assertEquals(4, results.size)
         assertTrue(results.all { it is Result.Success })
 
-        val nodes = results.filterIsInstance<Result.Success<ASTNode>>().map { it.value }
+        val nodes = results.filterIsInstance<Result.Success<AstNode>>().map { it.value }
         assertIs<AssignmentStatement>(nodes[2], "la tercera línea es asignación, no declaración")
     }
 
@@ -306,7 +307,7 @@ class ParserTest {
         val error = errorOf(let(), id("a"), colon(), id("entero"), assign(), num("12"), semi())
 
         assertIs<SyntaxError>(error)
-        assertTrue(error.message.contains("number"), "debería decir qué tipos son válidos: ${error.message}")
+        assertTrue(error.message.contains("entero"), "debería nombrar lo que se escribió: ${error.message}")
     }
 
     @Test
@@ -379,9 +380,9 @@ class ParserTest {
             )
 
         assertEquals(3, results.size)
-        assertIs<Result.Success<ASTNode>>(results[0])
+        assertIs<Result.Success<AstNode>>(results[0])
         assertIs<Result.Failure<PrintScriptError>>(results[1])
-        assertIs<Result.Success<ASTNode>>(results[2], "el statement posterior al error tiene que recuperarse")
+        assertIs<Result.Success<AstNode>>(results[2], "el statement posterior al error tiene que recuperarse")
     }
 
     // ---- RANGES ----

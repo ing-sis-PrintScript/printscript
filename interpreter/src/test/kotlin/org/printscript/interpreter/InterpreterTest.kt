@@ -4,6 +4,7 @@ import org.printscript.ast.AssignmentStatement
 import org.printscript.ast.BinaryExpression
 import org.printscript.ast.BinaryOperator
 import org.printscript.ast.CallExpression
+import org.printscript.ast.DeclarationKind
 import org.printscript.ast.DeclaredType
 import org.printscript.ast.ExpressionStatement
 import org.printscript.ast.Identifier
@@ -30,6 +31,8 @@ class InterpreterTest {
         }
 
         override fun read(prompt: String): String = ""
+
+        override fun env(name: String): String? = null
     }
 
     /** Desempaqueta un Success o falla el test — el paso previo de una cadena que sigue. */
@@ -50,6 +53,7 @@ class InterpreterTest {
                         identifier = Identifier("a", dummyRange),
                         declaredType = DeclaredType.NUMBER,
                         initializer = NumberLiteral(10.0, dummyRange),
+                        kind = DeclarationKind.LET,
                         range = dummyRange,
                     ),
                     Environment(),
@@ -63,6 +67,7 @@ class InterpreterTest {
                         identifier = Identifier("b", dummyRange),
                         declaredType = DeclaredType.NUMBER,
                         initializer = NumberLiteral(2.0, dummyRange),
+                        kind = DeclarationKind.LET,
                         range = dummyRange,
                     ),
                     afterA,
@@ -141,6 +146,7 @@ class InterpreterTest {
                         identifier = Identifier("a", dummyRange),
                         declaredType = DeclaredType.STRING,
                         initializer = null,
+                        kind = DeclarationKind.LET,
                         range = dummyRange,
                     ),
                     Environment(),
@@ -184,6 +190,7 @@ class InterpreterTest {
                 identifier = Identifier("a", dummyRange),
                 declaredType = DeclaredType.NUMBER,
                 initializer = NumberLiteral(1.0, dummyRange),
+                kind = DeclarationKind.LET,
                 range = dummyRange,
             )
 

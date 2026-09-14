@@ -5,8 +5,7 @@ class StandardIO : PrintScriptIO {
         println(message)
     }
 
-    override fun read(prompt: String): String {
-        println(prompt)
-        return readlnOrNull() ?: ""
-    }
+    override fun read(prompt: String): String = readlnOrNull() ?: ""
+
+    override fun env(name: String): String? = System.getenv(name)
 }
