@@ -8,7 +8,7 @@ class LineBreakAfterStatementRule(private val mandatory: Boolean = false) : Spac
         current: Token,
         state: FormattingState,
     ): String? {
-        if (!mandatory || !startsStatementAfterSemicolon(prev, current)) return null
+        if (!mandatory || !startsStatement(prev, current)) return null
 
         return "\n"
     }

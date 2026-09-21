@@ -43,12 +43,17 @@ private fun indented(
     token: Token,
     state: FormattingState,
 ): String {
-    if (indent == null || !spacing.contains('\n')) return spacing
+    if (!spacing.contains('\n')) return spacing
+
+    val lineBreaks = spacing.substringBeforeLast('\n') + "\n"
+    if (indent == null) return lineBreaks + sourceIndentOf(state.pendingWhitespace)
 
     val depth = if (token.type == TokenType.RBRACE) state.blockDepth - 1 else state.blockDepth
 
-    return spacing.substringBeforeLast('\n') + "\n" + indent.render(depth.coerceAtLeast(0))
+    return lineBreaks + indent.render(depth.coerceAtLeast(0))
 }
+
+private fun sourceIndentOf(whitespace: String): String = whitespace.substringAfterLast('\n', missingDelimiterValue = "")
 
 private class FormattedTokens(
     source: TokenSource,
@@ -113,12 +118,12 @@ private class FormattedTokens(
                     }
 
                     TokenType.LBRACE -> {
-                        state = state.copy(blockDepth = state.blockDepth + 1)
+                        state = state.copy(blockDepth = state.blockDepth + 1, lastStatementHead = null)
                         currentHead = null
                     }
 
                     TokenType.RBRACE -> {
-                        state = state.copy(blockDepth = state.blockDepth - 1)
+                        state = state.copy(blockDepth = state.blockDepth - 1, lastStatementHead = null)
                         currentHead = null
                     }
 
