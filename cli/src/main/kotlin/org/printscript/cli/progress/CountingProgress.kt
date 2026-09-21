@@ -12,7 +12,12 @@ internal class CountingProgress(private val out: PrintStream = System.err) : Pro
         draw("Parseando... $statements sentencias")
     }
 
-    override fun done() = draw("")
+    override fun done() {
+        if (statements == 0) return
+
+        out.println()
+        out.flush()
+    }
 
     private fun draw(message: String) {
         out.print("\r" + message.padEnd(width))

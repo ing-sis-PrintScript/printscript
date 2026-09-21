@@ -1,0 +1,7 @@
+{
+  "enforce-spacing-before-colon-in-declaration": false,
+  "enforce-spacing-after-colon-in-declaration": true,
+  "enforce-spacing-around-equals": true,
+  "mandatory-space-surrounding-operations": true,
+  "mandatory-line-break-after-statement": true
+}

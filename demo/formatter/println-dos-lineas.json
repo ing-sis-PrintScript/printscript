@@ -1,0 +1,5 @@
+{
+  "enforce-spacing-after-colon-in-declaration": true,
+  "enforce-spacing-around-equals": true,
+  "line-breaks-after-println": 2
+}
