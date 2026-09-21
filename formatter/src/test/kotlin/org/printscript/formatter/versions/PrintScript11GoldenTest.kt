@@ -80,4 +80,61 @@ class PrintScript11GoldenTest {
             FormatterConfig(indentInsideIf = Indent.of(4), lineBreaksAfterPrintln = BlankLines.ONE),
         )
     }
+
+    @Test
+    fun `un bloque en una linea se abre en renglones`() {
+        verificar(
+            "bloque-en-una-linea.ps",
+            "bloque-en-una-linea-saltos.ps",
+            FormatterConfig(
+                lineBreakAfterStatement = true,
+                ifBrace = BracePosition.SAME_LINE,
+                indentInsideIf = Indent.of(4),
+            ),
+        )
+    }
+
+    @Test
+    fun `el else queda pegado a la llave que cierra el if`() {
+        verificar(
+            "if-else-en-una-linea.ps",
+            "if-else-saltos.ps",
+            FormatterConfig(
+                lineBreakAfterStatement = true,
+                ifBrace = BracePosition.SAME_LINE,
+                indentInsideIf = Indent.of(4),
+            ),
+        )
+    }
+
+    @Test
+    fun `las llaves cortan la linea en blanco de un println anterior`() {
+        verificar(
+            "println-antes-de-if.ps",
+            "println-antes-de-if-sangria-4-y-linea.ps",
+            FormatterConfig(indentInsideIf = Indent.of(4), lineBreaksAfterPrintln = BlankLines.ONE),
+        )
+    }
+
+    @Test
+    fun `sin indent-inside-if el salto obligatorio conserva la sangria del fuente`() {
+        verificar(
+            "if-sangria-del-fuente.ps",
+            "if-sangria-del-fuente.ps",
+            FormatterConfig(lineBreakAfterStatement = true),
+        )
+    }
+
+    @Test
+    fun `los ifs anidados en una linea se abren con sangria por nivel`() {
+        verificar(
+            "if-anidado-en-una-linea.ps",
+            "if-anidado-saltos.ps",
+            FormatterConfig(
+                lineBreakAfterStatement = true,
+                ifBrace = BracePosition.SAME_LINE,
+                indentInsideIf = Indent.of(4),
+            ),
+        )
+    }
 }

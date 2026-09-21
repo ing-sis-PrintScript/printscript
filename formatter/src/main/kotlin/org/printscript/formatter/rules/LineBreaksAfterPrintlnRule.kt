@@ -11,7 +11,7 @@ class LineBreaksAfterPrintlnRule(private val blankLines: BlankLines? = null) : S
         state: FormattingState,
     ): String? {
         if (blankLines == null || state.lastStatementHead != TokenType.PRINTLN) return null
-        if (!startsStatementAfterSemicolon(prev, current)) return null
+        if (!startsStatement(prev, current)) return null
 
         return "\n" + blankLines.render()
     }
